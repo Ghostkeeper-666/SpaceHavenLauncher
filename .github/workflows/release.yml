@@ -36,15 +36,19 @@ jobs:
     - name: Publish macOS
       run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=mac-x64
 
+    - name: Create release folder
+      run: mkdir -p release
+
     - name: Create ZIPs
       run: |
-        mkdir release
+        zip -r release/SpaceHavenLauncher_win-x64-${VERSION}.zip \
+          SH.Launcher/bin/publish/SpaceHavenLauncher-win-x64
 
-        cd SH.Launcher/bin/publish
+        zip -r release/SpaceHavenLauncher_lnx-x64-${VERSION}.zip \
+          SH.Launcher/bin/publish/SpaceHavenLauncher-lnx-x64
 
-        zip -r ../../../../release/SpaceHavenLauncher_win-x64-${VERSION}.zip SpaceHavenLauncher-win-x64
-        zip -r ../../../../release/SpaceHavenLauncher_lnx-x64-${VERSION}.zip SpaceHavenLauncher-lnx-x64
-        zip -r ../../../../release/SpaceHavenLauncher_mac-x64-${VERSION}.zip SpaceHavenLauncher-mac-x64
+        zip -r release/SpaceHavenLauncher_mac-x64-${VERSION}.zip \
+          SH.Launcher/bin/publish/SpaceHavenLauncher-mac-x64
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -55,3 +59,4 @@ jobs:
           release/SpaceHavenLauncher_win-x64-${{ env.VERSION }}.zip
           release/SpaceHavenLauncher_lnx-x64-${{ env.VERSION }}.zip
           release/SpaceHavenLauncher_mac-x64-${{ env.VERSION }}.zip
+          
