@@ -1,0 +1,748 @@
+<Window
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+mc:Ignorable="d" d:DesignWidth="1080" d:DesignHeight="640"
+xmlns:vm="using:SH.Launcher.ViewModels"
+x:Class="SH.Launcher.Views.MainWindow"
+x:DataType="vm:MainWindowViewModel"
+
+RequestedThemeVariant="Dark"
+Icon="/Assets/Icons/spacehaven.ico"
+Title="{Binding Title}"
+MinWidth="1080"
+MinHeight="640"
+HorizontalAlignment="Stretch"
+>
+
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <Grid Background="Black" >
+
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="40" />
+    </Grid.RowDefinitions>
+
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="{Binding State.LeftPaneWidth}" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+
+
+
+
+    <!-- Background Swap -->
+    <Image
+    x:Name="BackgroundA"
+    Grid.Row="0"
+    Grid.RowSpan="1"
+    Grid.Column="0"
+    Grid.ColumnSpan="2"
+    Stretch="UniformToFill"
+    Opacity="0.0"
+    IsHitTestVisible="False"
+    />
+    <Image
+    x:Name="BackgroundB"
+    Grid.Row="0"
+    Grid.RowSpan="1"
+    Grid.Column="0"
+    Grid.ColumnSpan="2"
+    Stretch="UniformToFill"
+    Opacity="0.0"
+    IsHitTestVisible="False"
+    />
+
+
+
+    <!-- Background Darkness -->
+    <Rectangle
+    Grid.Row="0"
+    Grid.RowSpan="2"
+    Grid.Column="0"
+    Grid.ColumnSpan="2"
+    Fill="Black"
+    Opacity="{Binding AppSettings.BackgroundDarkness}"
+    />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <SplitView
+    Grid.Row="0"
+    Grid.RowSpan="1"
+    Grid.Column="0"
+    Grid.ColumnSpan="2"
+    IsPaneOpen="{Binding !AppSettings.IsLeftPaneCollapsed}"
+    Background="Transparent"
+    CompactPaneLength="48"
+    OpenPaneLength="432"
+    DisplayMode="CompactInline"
+    PaneBackground="Transparent"
+    VerticalAlignment="Stretch" >
+
+      <!-- LEFT SIDE -->
+      <SplitView.Pane>
+        <Grid
+        Background="{Binding State.LeftPaneBackgroundColor}"
+        RowDefinitions="48,*"
+        VerticalAlignment="Stretch" >
+
+
+
+
+          <Grid
+          x:Name="ButtonsGrid"
+          Grid.Row="0"
+          Margin="0"
+          Height="48"
+          RowDefinitions="48"
+          ColumnDefinitions="48,*,48,48,48,48,48"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          Background="Transparent"
+          Tapped="OnEmptyAreaClicked" >
+
+
+
+            <!-- Collapse Left Pane Button -->
+            <Border
+            x:Name="CollapseButton"
+            Grid.Row="0"
+            Grid.Column="0"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="ToggleCollapse"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.VerticalOffset="40"
+            ToolTip.Tip="TOGGLE the left panel visibility" >
+
+              <PathIcon
+              Data="{StaticResource CollapseLeft}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="White"
+              Foreground="White"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" >
+
+                <PathIcon.RenderTransform>
+                  <TransformGroup>
+                    <RotateTransform Angle="{Binding State.CollapseIconRotation}" />
+                  </TransformGroup>
+                </PathIcon.RenderTransform>
+              </PathIcon>
+            </Border>
+
+
+
+
+
+
+
+            <!-- SEARCH TEXTBOX -->
+            <TextBox
+            x:Name="SearchTextbox"
+            Grid.Row="0"
+            Grid.Column="1"
+            CornerRadius="5"
+            Height="40"
+            Margin="4"
+            Padding="4 8 0 0"
+            BorderBrush="#3f3f3f"
+            BorderThickness="2"
+            Foreground="White"
+            Background="#bf000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            PlaceholderText="Search mod..."
+            PlaceholderForeground="DarkGray"
+            FontSize="15"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            FontWeight="Regular"
+            Text="{Binding SearchText}"
+            TextChanged="OnSearchTextChanged" />
+
+
+
+
+
+            <!-- RESET SEARCH BUTTON -->
+            <Border
+            x:Name="ResetSearchButton"
+            Grid.Row="0"
+            Grid.Column="2"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="ResetSearch"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.VerticalOffset="40"
+            ToolTip.Tip="Clear Search" >
+
+              <PathIcon
+              Data="{StaticResource ResetSearch}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="#3f3f3f"
+              Foreground="White"
+              Background="Black"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" >
+
+                <PathIcon.RenderTransform>
+                  <TransformGroup>
+                    <RotateTransform Angle="{Binding State.CollapseIconRotation}" />
+                  </TransformGroup>
+                </PathIcon.RenderTransform>
+              </PathIcon>
+            </Border>
+
+
+
+
+
+            <!-- Enable All/Listed -->
+            <Border
+            x:Name="EnableModsButton"
+            Grid.Row="0"
+            Grid.Column="3"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="EnabledListedModsAsync"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.Tip="ENABLE the mods which are visible in the list below &#10;&#10;You can also enable just a part of the mods by restricting the mod list using the search box"
+            ToolTip.VerticalOffset="40" >
+
+              <PathIcon
+              Data="{StaticResource EnableMods}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="LimeGreen"
+              Foreground="LimeGreen"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" />
+
+            </Border>
+
+
+
+
+
+            <!-- Disable All/Listed -->
+            <Border
+            x:Name="DisableModsButton"
+            Grid.Row="0"
+            Grid.Column="4"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="DisabledListedModsAsync"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.Tip="DISABLE the mods which are visible in the list below &#10;&#10;You can also disable just a part of the mods by restricting the mod list using the search box"
+            ToolTip.VerticalOffset="40" >
+
+              <PathIcon
+              Data="{StaticResource DisableMods}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="Red"
+              Foreground="Red"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" />
+
+            </Border>
+
+
+
+
+            <!-- Move Mod Up Button -->
+            <Border
+            x:Name="MoveModUpButton"
+            Grid.Row="0"
+            Grid.Column="5"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="MoveModUp"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.Tip="MOVE UP the selected mod &#10;&#10;Mods are applied from top to bottom &#10;&#10;You can not move the mod while searching"
+            ToolTip.VerticalOffset="40" >
+
+              <PathIcon
+              Data="{StaticResource ArrowUp}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="White"
+              Foreground="White"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" />
+
+            </Border>
+
+
+            <!-- Move Mod Down Button -->
+            <Border
+            x:Name="MoveModDownButton"
+            Grid.Row="0"
+            Grid.Column="6"
+            Width="40"
+            Height="40"
+            Margin="4"
+            Padding="0 0 2 0"
+            Background="#bf000000"
+            CornerRadius="5"
+            BorderThickness="2"
+            BorderBrush="#3f3f3f"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerPressed="MoveModDown"
+            IsHitTestVisible="True"
+
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+            ToolTip.Tip="MOVE DOWN the selected mod &#10;&#10;Mods are applied from top to bottom &#10;&#10;You can not move the mod while searching"
+            ToolTip.VerticalOffset="40" >
+
+              <PathIcon
+              Data="{StaticResource ArrowDown}"
+              RenderTransformOrigin="10.0,10.0"
+              BorderThickness="4"
+              BorderBrush="White"
+              Foreground="White"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False" />
+
+            </Border>
+
+          </Grid>
+
+
+
+
+
+
+
+
+          <!-- List of Left Pane Items -->
+          <ListBox
+          x:Name="LeftPaneListBox"
+          Grid.Row="1"
+          Padding="0,0,0,36"
+          Background="Transparent"
+          ItemsSource="{Binding State.FilteredLeftPaneItems}"
+          SelectedItem="{Binding State.SelectedLeftPaneItem}"
+          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+          ScrollViewer.VerticalScrollBarVisibility="Auto" >
+
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem" >
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+
+
+              <!-- PointerOver -->
+              <Style Selector="ListBox#LeftPaneListBox ListBoxItem:pointerover" >
+                <Setter Property="Background" Value="#bf00070f" />
+              </Style>
+
+              <!-- Pressed -->
+              <Style Selector="ListBox#LeftPaneListBox ListBoxItem:pressed" >
+                <Setter Property="Background" Value="#bf00070f" />
+              </Style>
+
+              <!-- Selected -->
+              <Style Selector="ListBox#LeftPaneListBox ListBoxItem:selected" >
+                <Setter Property="Background" Value="#bf00070f" />
+              </Style>
+
+            </ListBox.Styles>
+
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:LeftPaneItem}" >
+
+                <Grid
+                Margin="0"
+                RowDefinitions="Auto"
+                ColumnDefinitions="48,Auto,*"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+
+                ToolTip.ShowDelay="10"
+                ToolTip.BetweenShowDelay="10"
+                ToolTip.ShowOnDisabled="True"
+                ToolTip.HorizontalOffset="40"
+                ToolTip.VerticalOffset="0"
+                ToolTip.Tip="{Binding Label}" >
+
+                  <Border
+                  Grid.Column="0"
+                  Grid.ColumnSpan="3"
+                  BorderThickness="2"
+                  BorderBrush="{Binding SelectedColor}"
+                  CornerRadius="7"
+                  Background="Transparent"
+                  Margin="8 0 8 0" />
+
+
+                  <Button
+                  Grid.Column="0"
+                  Width="48"
+                  Height="{Binding Height}"
+                  Margin="0"
+                  Padding="0"
+                  CornerRadius="0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Foreground="{Binding LabelColor}"
+                  Background="Transparent"
+                  Command="{Binding IconClickedCommand}" >
+
+                    <Button.Styles>
+                      <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                      <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+                        <Setter Property="Foreground" Value="Gold" />
+                        <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                    </Button.Styles>
+
+                    <Button.Transitions>
+                      <Transitions>
+                        <BrushTransition Property="Foreground" Duration="0:0:0" />
+                        <BrushTransition Property="Background" Duration="0:0:0" />
+                        <BrushTransition Property="BorderBrush" Duration="0:0:0" />
+                      </Transitions>
+                    </Button.Transitions>
+
+                    <Image
+                    Width="24"
+                    Height="24"
+                    Stretch="Uniform"
+                    Margin="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Opacity="0.80"
+                    Source="{Binding Image}"
+
+                    ToolTip.ShowDelay="10"
+                    ToolTip.BetweenShowDelay="10"
+                    ToolTip.ShowOnDisabled="True"
+                    ToolTip.HorizontalOffset="40"
+                    ToolTip.VerticalOffset="0"
+                    ToolTip.Tip="{Binding Label}" />
+
+                  </Button>
+
+
+                  <Button
+                  Grid.Column="1"
+                  Height="{Binding Height}"
+                  Margin="0"
+                  Padding="0"
+                  CornerRadius="0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  VerticalContentAlignment="Center"
+                  Foreground="{Binding LabelColor}"
+                  Background="Transparent"
+                  FontSize="16"
+                  FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+                  FontWeight="Regular"
+                  Command="{Binding TextClickedCommand}"
+                  Content="{Binding Label}"
+
+                  ToolTip.ShowDelay="10"
+                  ToolTip.BetweenShowDelay="10"
+                  ToolTip.ShowOnDisabled="True"
+                  ToolTip.HorizontalOffset="40"
+                  ToolTip.VerticalOffset="0"
+                  ToolTip.Tip="{Binding Label}" >
+
+                    <Button.Styles>
+                      <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                      <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+                        <Setter Property="Foreground" Value="Gold" />
+                        <Setter Property="Background" Value="Transparent" />
+                      </Style>
+                    </Button.Styles>
+
+                    <Button.Transitions>
+                      <Transitions>
+                        <BrushTransition Property="Foreground" Duration="0:0:0" />
+                        <BrushTransition Property="Background" Duration="0:0:0" />
+                        <BrushTransition Property="BorderBrush" Duration="0:0:0" />
+                      </Transitions>
+                    </Button.Transitions>
+                  </Button>
+
+                  <!-- Strikethrough - Currently disabled... -->
+                  <Border
+                  Grid.Column="1"
+                  Height="{Binding Strikethrough}"
+                  Background="Transparent"
+                  Margin="0 1 0 0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Center"
+                  IsHitTestVisible="False" />
+
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+
+        </Grid>
+      </SplitView.Pane>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <!-- RIGHT SIDE -->
+      <SplitView.Content>
+        <Border Background="Transparent" >
+
+          <!-- Short transition effect to remove rendering flicker artifacts -->
+          <TransitioningContentControl Content="{Binding State.CurrentPage}" >
+            <TransitioningContentControl.PageTransition>
+              <CrossFade Duration="0:0:0.1" />
+            </TransitioningContentControl.PageTransition>
+          </TransitioningContentControl>
+
+        </Border>
+      </SplitView.Content>
+
+    </SplitView>
+
+
+
+
+
+    <!-- BOTTOM PART -->
+
+    <!-- Background Transparency Slider -->
+    <Border
+    Grid.Row="0"
+    Grid.RowSpan="2"
+    Grid.Column="0"
+    Grid.ColumnSpan="3"
+    Height="64"
+    VerticalAlignment="Bottom"
+    IsHitTestVisible="False"
+    Opacity="1.0" >
+      
+      <Border.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Rail-Blue-48x64.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,48,64" />
+        
+      </Border.Background>
+    </Border>
+
+    <Grid.Styles>
+      <Style Selector="Slider.smallColoredSlider /template/ Thumb" >
+        <Setter Property="Background" Value="Gray" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="12" />
+      </Style>
+
+      <Style Selector="Slider.smallColoredSlider /template/ Border#TrackBackground" >
+        <Setter Property="Height" Value="4" />
+      </Style>
+    </Grid.Styles>
+
+    <Slider
+    x:Name="BackgroundDarknessSlider"
+    Classes="smallColoredSlider"
+    Grid.Row="1"
+    Grid.RowSpan="1"
+    Grid.Column="0"
+    Grid.ColumnSpan="1"
+    Margin="14 0 14 0"
+    Minimum="0.0"
+    Maximum="1.0"
+    TickFrequency="0.05"
+    IsSnapToTickEnabled="True"
+    Background="DarkSlateGray"
+    Value="{Binding AppSettings.BackgroundDarkness}"
+    Width="{Binding State.LeftPaneWidth.Value}"
+    FlowDirection="RightToLeft"
+
+    ToolTip.HorizontalOffset="40"
+    ToolTip.VerticalOffset="-40"
+    ToolTip.ShowDelay="0"
+    ToolTip.BetweenShowDelay="0"
+    ToolTip.ShowOnDisabled="False"
+    ToolTip.Tip="{Binding AppSettings.BackgroundTransparencyText}"
+        />
+
+
+
+
+    <!-- STATUS BAR TEXT -->
+    <Viewbox
+    Grid.Row="1"
+    Grid.RowSpan="1"
+    Grid.Column="1"
+    Grid.ColumnSpan="1"
+    MaxHeight="36"
+    Stretch="Uniform"
+    VerticalAlignment="Center"
+        >
+      <TextBlock
+      Margin="0"
+      Padding="8 6 8 6"
+      Foreground="{Binding State.StatusBarForecolor}"
+      Background="Transparent"
+      VerticalAlignment="Center"
+      HorizontalAlignment="Center"
+      TextWrapping="NoWrap"
+      FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+      FontWeight="Medium"
+      Text="{Binding State.StatusBarText}"
+            />
+
+    </Viewbox>
+
+
+
+
+
+
+    <!-- SPLASH LOGO -->
+    <Border
+    x:Name="LogoOverlay"
+    Grid.Row="0"
+    Grid.RowSpan="2"
+    Grid.Column="0"
+    Grid.ColumnSpan="2"
+    Background="Black"
+    IsVisible="{Binding State.LogoIsVisible}"
+    Opacity="{Binding State.LogoOpacity}"
+    IsHitTestVisible="False"
+    ZIndex="999"
+        >
+      <Image
+      Source="avares://SpaceHavenLauncher/Assets/Images/Logo.png"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      Stretch="None"
+            />
+    </Border>
+
+  </Grid>
+
+</Window>

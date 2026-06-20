@@ -1,0 +1,114 @@
+<Application
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+x:Class="SH.Launcher.App"
+xmlns:conv="using:SH.Launcher.Converters"
+xmlns:local="using:SH.Launcher"
+xmlns:v="using:SH.Launcher.Views"
+RequestedThemeVariant="Dark" >
+  <!-- "Default" ThemeVariant follows system theme variant. -->
+  <!-- "Dark" or "Light" are other available options. -->
+
+  <Application.DataTemplates>
+    <local:ViewLocator/>
+  </Application.DataTemplates>
+
+  <Application.Resources>
+    <conv:ModVariableRowToBrushConverter x:Key="ModVariableRowToBrushConverter" />
+  </Application.Resources>
+
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <StyleInclude Source="avares://SpaceHavenLauncher/Assets/Icons/Icons.axaml" ></StyleInclude>
+
+
+
+    <!-- DataGrid pointerover -->
+    <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle" >
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Datagrid selected -->
+    <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle" >
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Datagrid selected pointerover -->
+    <Style Selector="DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle" >
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Datagrid selected focused -->
+    <Style Selector="DataGridRow:selected:focus /template/ Rectangle#BackgroundRectangle" >
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Datagrid selected pointerover -->
+    <Style Selector="DataGridRow:selected:pointerover:focus /template/ Rectangle#BackgroundRectangle" >
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+
+
+    <!-- ListBox pointerover -->
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+    <!-- ListBox pressed -->
+    <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+    <!-- ListBox selected -->
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+    <!-- ListBox selected notfocused -->
+    <Style Selector="ListBoxItem:selected:not(:focus) /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+    <!-- ListBox selected pointerover -->
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+    <!-- ListBox selected pressed -->
+    <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+
+
+
+    <!-- Button pointerover -->
+    <Style Selector="Button:pointerover" >
+      <Setter Property="BorderBrush" Value="DarkCyan" />
+      <Setter Property="Background" Value="DarkCyan" />
+      <Setter Property="Foreground" Value="Black" />
+    </Style>
+
+    <!-- Button pressed -->
+    <Style Selector="Button:pressed" >
+      <Setter Property="BorderBrush" Value="Teal" />
+      <Setter Property="Background" Value="Teal" />
+      <Setter Property="Foreground" Value="Black" />
+    </Style>
+
+  </Application.Styles>
+
+</Application>

@@ -1,0 +1,287 @@
+<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+xmlns:vm="using:SH.Launcher.ViewModels"
+xmlns:v="using:SH.Launcher.Views"
+x:DataType="vm:LearningComputerViewModel"
+x:Class="SH.Launcher.Views.LearningComputerView" >
+
+  <!-- ROOT GRID -->
+  <Grid
+	x:Name="RootGrid"
+	RowDefinitions="64,*"
+	Background="Transparent" >
+
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="8" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="8" />
+      <ColumnDefinition Width="250" />
+    </Grid.ColumnDefinitions>
+
+    <!-- VERTICAL SEPARATOR STRIPES -->
+    <Border
+		Grid.Column="0"
+		Grid.Row="0"
+		Grid.RowSpan="2"
+		MinWidth="8"
+		MaxWidth="8"
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch" >
+      <Border.Background>
+        <ImageBrush
+				Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Vertical-8x16.png"
+				TileMode="Tile"
+				Stretch="None"
+				AlignmentX="Left"
+				AlignmentY="Top"
+				DestinationRect="0,0,8,16"
+				Opacity="0.75" />
+      </Border.Background>
+    </Border>
+
+    <Border
+		Grid.Column="2"
+		Grid.Row="0"
+		Grid.RowSpan="2"
+		MinWidth="8"
+		MaxWidth="8"
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch" >
+      <Border.Background>
+        <ImageBrush
+				Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Vertical-8x16.png"
+				TileMode="Tile"
+				Stretch="None"
+				AlignmentX="Left"
+				AlignmentY="Top"
+				DestinationRect="0,0,8,16"
+				Opacity="0.75" />
+      </Border.Background>
+    </Border>
+
+
+    <!-- LEARNING TOPICS -->
+    <TextBox
+		Grid.Row="0"
+		Grid.Column="3"
+		Padding="8 0 8 0"
+		Foreground="#FFD000"
+		BorderBrush="Transparent"
+		CornerRadius="0"
+		BorderThickness="0"
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch"
+		HorizontalContentAlignment="Center"
+		VerticalContentAlignment="Center"
+		FontSize="32"
+		FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+    FontWeight="ExtraBold"
+		TextWrapping="NoWrap"
+		IsHitTestVisible="False"
+		IsReadOnly="True"
+		Text="TOPICS" >
+      <TextBox.Background>
+        <RadialGradientBrush
+				Center="50%,50%"
+				GradientOrigin="50%,50%"
+				RadiusX="100%"
+				RadiusY="80%" >
+          <GradientStop Color="#2F777766" Offset="0" />
+          <GradientStop Color="#0F363330" Offset="1" />
+        </RadialGradientBrush>
+      </TextBox.Background>
+    </TextBox>
+
+    <!-- List of Learning Items -->
+    <ListBox
+		x:Name="LearningItemsListBox"
+		Grid.Row="1"
+		Grid.Column="3"
+		Margin="4"
+		Width="250"
+		MinWidth="250"
+		MaxWidth="250"
+		Background="#BF00000F"
+		ItemsSource="{Binding LearningItems}"
+		SelectedItem="{Binding SelectedItem}"
+		VerticalAlignment="Stretch"
+		HorizontalAlignment="Stretch"
+		ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+		ScrollViewer.VerticalScrollBarVisibility="Auto" >
+      <ListBox.Styles>
+        <Style Selector="ListBoxItem" >
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Margin" Value="0" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+
+        <!-- PointerOver -->
+        <Style Selector="ListBox#LeftPaneListBox ListBoxItem:pointerover" >
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Pressed -->
+        <Style Selector="ListBox#LeftPaneListBox ListBoxItem:pressed" >
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Selected -->
+        <Style Selector="ListBox#LeftPaneListBox ListBoxItem:selected" >
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+      </ListBox.Styles>
+
+      <ListBox.ItemTemplate>
+
+        <DataTemplate DataType="{x:Type vm:LearningItem}" >
+
+          <Button
+					Grid.Column="0"
+					Height="40"
+					Margin="4"
+					Width="240"
+					MinWidth="240"
+					MaxWidth="240"
+					Padding="8 0 8 0"
+					CornerRadius="12"
+					BorderBrush="{Binding SelectedColor}"
+					BorderThickness="4"
+					HorizontalAlignment="Stretch"
+					VerticalAlignment="Stretch"
+					HorizontalContentAlignment="Center"
+					VerticalContentAlignment="Center"
+					Foreground="{Binding SelectedColor}"
+					FontSize="18"
+					FontWeight="Bold"
+					FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+					Command="{Binding TextClickedCommand}"
+					Content="{Binding Label}" >
+            <Button.Styles>
+
+              <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+                <Setter Property="Foreground" Value="#FFC000" />
+                <Setter Property="BorderBrush" Value="#FFFFC000" />
+                <Setter Property="BorderThickness" Value="4 4 4 4" />
+                <Setter Property="Background" >
+                  <Setter.Value>
+                    <RadialGradientBrush
+										Center="50%,50%"
+										GradientOrigin="50%,50%"
+										RadiusX="90%"
+										RadiusY="80%" >
+                      <GradientStop Color="#808070" Offset="0" />
+                      <GradientStop Color="#363330" Offset="1" />
+                    </RadialGradientBrush>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+
+              <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+                <Setter Property="Foreground" Value="#BFFFC000" />
+                <Setter Property="BorderBrush" Value="#7FFFC000" />
+                <Setter Property="BorderThickness" Value="4 4 4 4" />
+                <Setter Property="Background" >
+                  <Setter.Value>
+                    <RadialGradientBrush
+										Center="50%,50%"
+										GradientOrigin="50%,50%"
+										RadiusX="90%"
+										RadiusY="80%" >
+                      <GradientStop Color="#505045" Offset="0" />
+                      <GradientStop Color="#363330" Offset="1" />
+                    </RadialGradientBrush>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+
+            </Button.Styles>
+
+            <Button.Transitions>
+              <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0" />
+                <BrushTransition Property="Background" Duration="0:0:0" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0" />
+              </Transitions>
+            </Button.Transitions>
+
+            <Button.Background>
+              <RadialGradientBrush
+							Center="50%,50%"
+							GradientOrigin="50%,50%"
+							RadiusX="90%"
+							RadiusY="80%" >
+                <GradientStop Color="#505045" Offset="0" />
+                <GradientStop Color="#363330" Offset="1" />
+              </RadialGradientBrush>
+            </Button.Background>
+
+          </Button>
+
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+
+
+    <!-- Markdown Text Area -->
+    <v:MarkdownView
+		x:Name="MarkdownView"
+		Grid.Row="0"
+		Grid.RowSpan="2"
+		Grid.Column="1"
+		Padding="24 0 24 36"
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Top"
+		Markdown="{Binding MarkdownText}" />
+
+
+
+    <!-- Copy Log Button -->
+    <Border
+    x:Name="CopyTextButton"
+    Grid.Row="0"
+    Grid.RowSpan="2"
+    Grid.Column="1"
+    Margin="0 0 40 0"
+    Padding="0"
+    Width="48"
+    Height="48"
+    MinWidth="48"
+    MinHeight="48"
+    MaxWidth="48"
+    MaxHeight="48"
+    Background="#bf000000"
+    CornerRadius="5"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Top"
+    PointerPressed="CopyLogStartAsync"
+    PointerReleased="CopyLogEndAsync"
+    IsHitTestVisible="True"
+
+    ToolTip.ShowDelay="10"
+    ToolTip.BetweenShowDelay="10"
+    ToolTip.ShowOnDisabled="True"
+    ToolTip.Tip="Copy all this text" >
+      <PathIcon
+      x:Name="CopyTextIcon"
+      Data="{StaticResource Copy}"
+      RenderTransformOrigin="10.0,10.0"
+      BorderThickness="4"
+      BorderBrush="DeepSkyBlue"
+      Foreground="DeepSkyBlue"
+      Background="Transparent"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      IsHitTestVisible="False" />
+    </Border>
+
+  </Grid>
+
+</UserControl>

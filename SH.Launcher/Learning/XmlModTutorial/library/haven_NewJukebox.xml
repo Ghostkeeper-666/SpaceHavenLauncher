@@ -1,0 +1,110 @@
+<data>
+  <Element>
+
+    <!-- New Jukebox: Lights -->
+    <me mid="{id}2418" ec="4" costGroup="0" offsetRot="R0" nonSymmetrical="false" alternateY="false">
+      <data>
+        <l type="Light" eid="4" gridOffX="0" gridOffY="0" layer="0">
+          <element id="0" playAnimation="false" walkGridCost="0" lightValue="None">
+            <definedStates>
+              <l state="Standby">
+                <light skipCenter="false" powerTier="Decorative" color="214013ff">
+                  <ray spread="125.0" smoothEdges="true" angle="270" rotate="false" rotatePerSec="0.0" distance="4" brightness="225"/>
+                </light>
+              </l>
+              <l state="NoPowerOrError"/>
+              <l state="InUse">
+                <light skipCenter="false" powerTier="Decorative" color="2e591bff">
+                  <ray spread="125.0" smoothEdges="true" angle="270" rotate="false" rotatePerSec="0.0" distance="4" brightness="190"/>
+                </light>
+              </l>
+            </definedStates>
+            <stateWatchdog/>
+          </element>
+        </l>
+      </data>
+      <linked/>
+      <events/>
+    </me>
+
+    <!-- New Jukebox: Facility -->
+    <me mid="{id}1526" ec="3" costGroup="949" offsetRot="R0" nonSymmetrical="false" alternateY="false">
+      <data>
+        <l type="Object" eid="2" gridOffX="0" gridOffY="0" layer="0">
+          <element id="0" renderOnFloor="false" renderOnFloorPartially="false" noMoveDismantle="false" cannotBeSelected="false" walkGridCost="255" lightValue="HighMinus">
+            <definedStates>
+              <l state="NoPowerOrError" playAnimation="false">
+                <r0 aid="newjukebox1F" flx="false"/>
+                <r90 aid="null" flx="false"/>
+                <r180 aid="newjukebox1B" flx="false"/>
+                <r270 aid="null" flx="false"/>
+              </l>
+              <l state="Standby" playAnimation="false">
+                <r0 aid="newjukebox1F" flx="false"/>
+                <r90 aid="null" flx="false"/>
+                <r180 aid="newjukebox1B" flx="false"/>
+                <r270 aid="null" flx="false"/>
+              </l>
+              <l state="InUse" playAnimation="true">
+                <r0 aid="newjukebox1F" flx="false"/>
+                <r90 aid="null" flx="false"/>
+                <r180 aid="newjukebox1B" flx="false"/>
+                <r270 aid="null" flx="false"/>
+              </l>
+            </definedStates>
+            <additionaFullLit x="0" y="0" mirX="0" mirY="0" atNoPower="false" atStandby="true" atInuse="true">
+              <r0 aid="jukebox1FlightPlay1" flx="false"/>
+              <r90 aid="null" flx="false"/>
+              <r180 aid="null" flx="false"/>
+              <r270 aid="null" flx="false"/>
+            </additionaFullLit>
+            <features addFacilityIcons="true" noPressureDmg="false" normalState="true" produceInNormal="false" inUseState="true">
+              <entertainment>
+                <juke/>
+                <singleUserTasks>
+                  <l task="StandWork" usage="Both" gridOffX="0" gridOffY="-1" dir="D7" setStateInUse="false">
+                    <activate activateOffX="0" activateOffY="-1"/>
+                    <r0offset charOffX="-14" charOffY="6"/>
+                    <r180offset charOffX="12" charOffY="-6"/>
+                  </l>
+                </singleUserTasks>
+              </entertainment>
+              <environment repairBlockFail="0.1" coldOffTempC="-100" coldSlowTempC="0" hotSlowTempC="60" hotOffTempC="200" coldTempSlowdown="0.8" hotTempSlowdown="1.0" cyclesForDmg="100" cyclesDmgChance="0.1" hazTimeDmg="360" hazDmgChance="0.5" waterTimeDmg="360" waterDmgChance="0.1" tempTimeDmg="360" tempDmgChance="0.1"/>
+              <noiseAndComfort onlyWhenInuse="false" category="Music">
+                <constantSound>
+                  <atInUse auid="{id}4495"/>
+                </constantSound>
+                <radiusBeauty roomDrop="20" work="0" sleep="-20" leisure="20" radius="8"/>
+              </noiseAndComfort>
+            </features>
+            <commonPower powerCategory="Facilities"/>
+          </element>
+        </l>
+      </data>
+      <linked>
+        <l id="{id}2418" eid="3" gridOffX="0" gridOffY="0" rot="R0" layer="0" damageGroup="0"/>
+      </linked>
+      <events/>
+      <objectInfo placeInMenu="11" disableRotation="false" disableBuildTest="false" buildInstant="false" disableAirlockTest="false" debugOnly="false" canDismantleOnly="false" randomRot="false" viewMode="Normal" systemPoints="0" canBuildAt="All" outdoorObject="false" indoorObject="true">
+        <cu>
+          <groups>
+            <l rep="949" buildTools="30">
+              <customPrice>
+                <l elementId="930" howMuch="1"/>
+              </customPrice>
+            </l>
+          </groups>
+        </cu>
+        <name tid="{id}0906"/>
+        <desc tid="{id}0907"/>
+        <guiIcon aid="build_icon_newjukebox"/>
+        <subCat id="1507"/>
+        <difficultyLevel skill="Construction" level="2"/>
+        <restrictions>
+          <l type="Floor" gridX="0" gridY="-1" sizeX="1" sizeY="1"/>
+        </restrictions>
+      </objectInfo>
+    </me>
+
+  </Element>
+</data>

@@ -1,0 +1,48 @@
+<AllAnimations>
+  <animations>
+
+    <ba n="newjukebox1F" f="30" ks="1" id="4157">
+      <bones>
+        <b id="0">
+          <pos>
+            <p f="1" x="0" y="0" sx="1" sy="1" r="0" col="-1"/>
+          </pos>
+        </b>
+      </bones>
+      <items>
+        <assetPos vf="1:0" bi="0" x="0" y="0" sx="1" sy="1" r="0" filename="newjukebox700.png"/>
+        <assetPos vf="1:1" bi="0" x="0" y="0" sx="1" sy="1" r="0" filename="newjukebox700.png"/>
+        <assetPos vf="1:1" bi="0" x="-0" y="22" sx="1" sy="1" r="0" filename="newjukebox142.png"/>
+      </items>
+    </ba>
+
+    <ba n="newjukebox1B" f="30" ks="1" id="4158">
+      <bones>
+        <b id="0">
+          <pos>
+            <p f="1" x="0" y="0" sx="1" sy="1" r="0" col="-1"/>
+          </pos>
+        </b>
+      </bones>
+      <items>
+        <assetPos vf="1:1" bi="0" x="0" y="0" sx="1" sy="1" r="0" filename="newjukebox700.png"/>
+        <assetPos vf="1:0" bi="0" x="7" y="-4" sx="1" sy="1" r="0" filename="newjukebox1064.png"/>
+        <assetPos vf="1:1" bi="0" x="1" y="22" sx="1" sy="1" r="0" filename="newjukebox143.png"/>
+      </items>
+    </ba>
+
+    <ba n="build_icon_newjukebox" f="30" ks="1" id="4435">
+      <bones>
+        <b id="0">
+          <pos>
+            <p f="1" x="0" y="0" sx="1" sy="1" r="0" col="-1"/>
+          </pos>
+        </b>
+      </bones>
+      <items>
+        <assetPos vf="1:1" bi="0" x="0" y="0" sx="1" sy="1" r="0" filename="newjukebox5438.png"/>
+      </items>
+    </ba>
+
+  </animations>
+</AllAnimations>

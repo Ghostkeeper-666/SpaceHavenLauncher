@@ -1,0 +1,16 @@
+<Patch>
+
+	<Operation Class="AttributeSet">
+		<xpath>/data/Element/me[@mid="{id}1526"]/objectInfo/cu/groups/l/customPrice/l[@elementId="930"]</xpath>
+		<attribute>howMuch</attribute>
+		<value>{TechBlocksCost}</value>
+	</Operation>
+
+	<Operation Class="Add">
+		<xpath>/data/Tech/tech[@id="2564"]/unlocks</xpath>
+		<value>
+			<l type="Building" buildingId="{id}1526"/>
+		</value>
+	</Operation>
+
+</Patch>

@@ -1,0 +1,39 @@
+<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+xmlns:vm="using:SH.Launcher.ViewModels"
+x:Class="SH.Launcher.Views.AirlockView"
+x:DataType="vm:AirlockViewModel" >
+
+  <!-- ROOT GRID -->
+  <Grid
+  x:Name="RootGrid"
+  ColumnDefinitions="8,*"
+  Background="Transparent"
+  RowDefinitions="*" >
+    <!-- LEFT VERTICAL SEPARATOR STRIPES -->
+    <Border
+    x:Name="VerticalGridSplitter"
+    Grid.Column="0"
+    Grid.Row="0"
+    MinWidth="8"
+    MaxWidth="8"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch" >
+      <Border.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Vertical-8x16.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,8,16"
+        Opacity="0.75" />
+      </Border.Background>
+    </Border>
+  </Grid>
+
+</UserControl>

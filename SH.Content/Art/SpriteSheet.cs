@@ -1,0 +1,210 @@
+﻿using SH.Content.Xml.Textures;
+using SH.Framework.Logging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SH.Content.Art;
+
+public sealed class SpriteSheet
+{
+    private SpriteSheet(TextureXml textureXml, string cimFilePath)
+    {
+        TextureXml = textureXml;
+        CimFilePath = cimFilePath;
+        FileName = Path.GetFileName(CimFilePath);
+        Name = int.Parse(Path.GetFileNameWithoutExtension(CimFilePath));
+    }
+
+    public TextureXml TextureXml { get; }
+    public string CimFilePath { get; }
+    public int Name { get; }
+    public string FileName { get; }
+    public int Area => Width * Height;
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    public int PixelFormat { get; private set; }
+    public byte[] PixelData { get; private set; }
+    public OrderedDictionary<int, Sprite> SpritesByName { get; } = [];
+    public OrderedDictionary<int, Sprite> SpritesById { get; } = [];
+
+    public static bool TryLoad(string cimFilePath, TextureXml textureXml, out SpriteSheet spriteSheet, ILogger logger)
+    {
+        try
+        {
+            spriteSheet = new(textureXml, cimFilePath);
+            spriteSheet.Load(logger);
+
+            foreach (TextureRegionXml region in spriteSheet.TextureXml.RegionsByName.Values)
+            {
+                Sprite sprite = new(spriteSheet, region);
+                if (!sprite.TryReadPixelData(logger))
+                {
+                    logger?.Error($"[{spriteSheet.Name}] Unable to read sprite pixel data from texture region {region.Name}");
+                    continue;
+                }
+
+                if (!spriteSheet.SpritesByName.TryAdd(region.Name, sprite))
+                {
+                    string imageComparison =
+                        spriteSheet.SpritesByName[region.Name].Equals(sprite) ?
+                        "The images are identical" : "The images are DIFFERENT!";
+
+                    logger?.Warn($@"Ignoring duplicate region NAME ""{region.Name}"" found for texture ""{spriteSheet.Name}"". {imageComparison}");
+                }
+
+                if (!spriteSheet.SpritesById.TryAdd(region.Id, sprite))
+                {
+                    string imageComparison =
+                        spriteSheet.SpritesById[region.Id].Equals(sprite) ?
+                        "The images are identical" : "The images are DIFFERENT!";
+
+                    logger?.Warn($@"Ignoring duplicate region ID ""{region.Id}"" found for texture ""{spriteSheet.Name}"". {imageComparison}");
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex);
+            spriteSheet = null;
+            return false;
+        }
+    }
+
+    private void Load(ILogger logger)
+    {
+        static int readInt32BigEndian(Stream s)
+        {
+            Span<byte> buffer = stackalloc byte[4];
+            s.ReadExactly(buffer);
+            return BinaryPrimitives.ReadInt32BigEndian(buffer);
+        }
+
+        using (FileStream fs = new(CimFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 81920, useAsync: false))
+        using (ZLibStream zs = new(fs, CompressionMode.Decompress))
+        {
+            Width = readInt32BigEndian(zs);
+            Height = readInt32BigEndian(zs);
+            PixelFormat = readInt32BigEndian(zs);
+            if (PixelFormat != 4)
+                logger?.Warn($@"WARNING: Unexpected PixelFormat={PixelFormat}bytes for CIM file ""{CimFilePath}""");
+            PixelData = new byte[4 * Width * Height];
+            zs.ReadExactly(PixelData);
+        }
+    }
+
+    public bool TryWrite(string cimFilePath, ILogger logger)
+    {
+        try
+        {
+            using FileStream fs = new(
+                cimFilePath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 81920,
+                useAsync: false);
+
+            using ZLibStream zs = new(fs, CompressionLevel.SmallestSize, leaveOpen: false);
+
+            static void writeInt32BigEndian(Stream s, int value)
+            {
+                Span<byte> buffer = stackalloc byte[4];
+                BinaryPrimitives.WriteInt32BigEndian(buffer, value);
+                s.Write(buffer);
+            }
+
+            writeInt32BigEndian(zs, Width);
+            writeInt32BigEndian(zs, Height);
+            writeInt32BigEndian(zs, 4);
+            zs.Write(PixelData, 0, PixelData.Length);
+            zs.Flush();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex);
+            return false;
+        }
+    }
+
+    public async Task<bool> TryExportSpritesToPngAsync(string exportDir, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            logger?.Debug($"[{FileName}] Exporting individual sprites to PNG");
+
+            exportDir = Path.Combine(exportDir, Name.ToString());
+            if (!Directory.Exists(exportDir))
+                try { Directory.CreateDirectory(exportDir); } catch { }
+
+            foreach (Sprite sprite in SpritesByName.Values)
+            {
+                string exportPath = Path.Combine(exportDir, $"{sprite.Name}.png");
+                await sprite.TryExportToPngAsync(exportPath, logger, ct);
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            logger?.Error(ex);
+            return false;
+        }
+    }
+
+    public async Task<bool> TryExportToPngAsync(string exportDir, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            if (!Directory.Exists(exportDir))
+                try { Directory.CreateDirectory(exportDir); } catch { }
+
+            using Image<Rgba32> image = new(Width, Height, new Rgba32(0, 0, 0, 0));
+
+            int pos = 0;
+            for (int y = 0; y < Height; ++y)
+            {
+                for (int x = 0; x < Width; ++x)
+                {
+                    byte r = PixelData[pos++];
+                    byte g = PixelData[pos++];
+                    byte b = PixelData[pos++];
+                    byte a = PixelData[pos++];
+                    image[x, y] = new Rgba32(r, g, b, a);
+                }
+            }
+
+            PngEncoder encoder = new()
+            {
+                CompressionLevel = PngCompressionLevel.BestCompression,
+                FilterMethod = PngFilterMethod.Adaptive,
+                ColorType = PngColorType.RgbWithAlpha,
+                TransparentColorMode = PngTransparentColorMode.Preserve,
+            };
+
+            await image.SaveAsync(Path.Combine(exportDir, $"{Name}.png"), encoder, ct);
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            logger?.Error(ex);
+            return false;
+        }
+    }
+
+    public override string ToString() => Name.ToString();
+}
+

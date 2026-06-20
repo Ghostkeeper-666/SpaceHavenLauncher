@@ -1,0 +1,9 @@
+<Patch>
+
+	<Operation Class="AttributeSet">
+		<xpath>/audio/a[@n="facility_newjukebox"]</xpath>
+		<attribute>vo</attribute>
+		<value>{NewJukeboxVolume}</value>
+	</Operation>
+
+</Patch>

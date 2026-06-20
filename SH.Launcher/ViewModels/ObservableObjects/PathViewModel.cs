@@ -1,0 +1,130 @@
+﻿using SH.Framework.IO;
+using SH.Framework.Logging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Launcher.Models;
+using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using System.Threading;
+using SH.Content;
+
+namespace SH.Launcher.ViewModels;
+
+public partial class PathViewModel : ObservableObject
+{
+    public PathData Data { get; private set; }
+
+    public PathViewModel(PathData data) =>
+        SetData(data);
+
+    public async Task<bool> TryReadSpaceHavenVersion(ILogger logger, CancellationToken ct)
+    {
+        if (!await Data.TryReadSpaceHavenVersion(logger, ct))
+            return false;
+        SpaceHavenVersion = Data.SpaceHavenVersion;
+        return true;
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        SyncData(e.PropertyName);
+        base.OnPropertyChanged(e);
+    }
+
+    public PathViewModel SetData(PathData data)
+    {
+        Data = data;
+        AppName = SpaceHavenLauncher.APP_NAME;
+        AppVersion = SpaceHavenLauncher.GetAppVersion();
+        SpaceHavenName = SpaceHavenConstants.SpaceHavenName;
+        SpaceHavenVersion = Data.SpaceHavenVersion;
+        AppDir = data.AppDir;
+        WorkDir = data.WorkDir;
+        SteamDir = data.SteamDir;
+        SteamModsDir = data.SteamModsDir;
+        SpaceHavenDir = data.SpaceHavenDir;
+        ClassicModsDir = data.ClassicModsDir;
+        SpaceHavenJarDir = data.SpaceHavenJarDir;
+        ModValuesDir = data.ModValuesDir;
+        return this;
+    }
+
+    private void SyncData(string propertyName)
+    {
+        try
+        {
+            switch (propertyName)
+            {
+                case nameof(AppDir):
+                    Data?.AppDir = AppDir;
+                    return;
+                case nameof(SteamDir):
+                    Data?.SteamDir = SteamDir;
+                    return;
+                case nameof(SteamModsDir):
+                    Data?.SteamModsDir = SteamModsDir;
+                    return;
+                case nameof(SpaceHavenDir):
+                    Data?.SpaceHavenDir = SpaceHavenDir;
+                    return;
+                case nameof(ClassicModsDir):
+                    Data?.ClassicModsDir = ClassicModsDir;
+                    return;
+                case nameof(SpaceHavenJarDir):
+                    Data?.SpaceHavenJarDir = SpaceHavenJarDir;
+                    return;
+                case nameof(WorkDir):
+                    Data?.WorkDir = WorkDir;
+                    return;
+                case nameof(ModValuesDir):
+                    Data?.ModValuesDir = ModValuesDir;
+                    return;
+                default:
+                    break;
+            }
+        }
+        catch { }
+    }
+
+    public string LearningDir => Data.LearningDir;
+
+    [ObservableProperty]
+    private string _AppName;
+
+    [ObservableProperty]
+    private VersionInfo _AppVersion;
+
+    [ObservableProperty]
+    private string _SpaceHavenName;
+
+    [ObservableProperty]
+    private VersionInfo _SpaceHavenVersion;
+
+    [ObservableProperty]
+    private string _SteamDir;
+
+    [ObservableProperty]
+    private string _SteamModsDir;
+
+    [ObservableProperty]
+    private string _ClassicModsDir;
+
+    [ObservableProperty]
+    private string _SpaceHavenDir;
+
+    [ObservableProperty]
+    private string _SpaceHavenJarDir;
+
+    [ObservableProperty]
+    private string _AppDir;
+
+    [ObservableProperty]
+    private string _WorkDir;
+
+    [ObservableProperty]
+    private string _ModValuesDir;
+
+
+
+}

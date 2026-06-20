@@ -1,0 +1,13 @@
+<mod>
+  <name>XML Mod Tutorial</name> <!-- Unique name -->
+  <author>Myself</author>
+  <version>1.0.0</version>
+  <modid>0</modid> <!-- AUTO ID mode -->
+  <description>This mod adds a new jukebox.</description>
+  <spacehaven op=">=" v="1.0.0" />
+  <foregroundcolor>#9F9FFF</foregroundcolor> <!-- Purple -->
+  <config>
+    <var default="1" value="2" name="{TechBlocksCost}">New Jukebox: Tech Blocks Cost</var>
+    <var default="100" value="50" name="{NewJukeboxVolume}">New Jukebox: Audio Volume</var>
+  </config>
+</mod>

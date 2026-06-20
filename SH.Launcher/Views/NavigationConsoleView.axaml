@@ -1,0 +1,904 @@
+<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+xmlns:conv="using:SH.Launcher.Converters"
+xmlns:vm="using:SH.Launcher.ViewModels"
+xmlns:v="clr-namespace:SH.Launcher.Views"
+x:Class="SH.Launcher.Views.NavigationConsoleView"
+x:DataType="vm:NavigationConsoleViewModel" >
+
+  <UserControl.Resources>
+    <conv:NavigationConsoleWidthToHeightConverter x:Key="NavigationConsoleWidthToHeightConverter" />
+    <conv:LogLevelToBrushConverter x:Key="LogLevelToBrushConverter" />
+  </UserControl.Resources>
+
+
+
+
+  <!-- ROOT GRID -->
+  <Grid
+  x:Name="RootGrid"
+  ColumnDefinitions="8,*"
+  Background="Transparent" >
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="8" />
+      <RowDefinition Height="*" MinHeight="48" />
+    </Grid.RowDefinitions>
+
+    <!-- LEFT VERTICAL SEPARATOR STRIPES -->
+    <Border
+    x:Name="VerticalGridSplitter"
+    Grid.Column="0"
+    Grid.Row="0"
+    Grid.RowSpan="3"
+    MinWidth="8"
+    MaxWidth="8"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch" >
+      <Border.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Vertical-8x16.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,8,16"
+        Opacity="0.75" />
+      </Border.Background>
+    </Border>
+
+
+
+
+    <!-- NAVIGATION CONSOLE -->
+    <Grid
+    x:Name="NavigationConsoleGrid"
+    Grid.Row="0"
+    Grid.Column="1"
+    RowDefinitions="*"
+    ColumnDefinitions="*"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Top" >
+      <Grid.Height>
+        <Binding Path="Bounds.Width" RelativeSource="{RelativeSource Self}" Converter="{StaticResource NavigationConsoleWidthToHeightConverter}" />
+      </Grid.Height>
+
+      <!-- NAVIGATION CONSOLE IMAGES -->
+      <Grid
+      x:Name="NavigationConsoleImagesGrid"
+      RowDefinitions="*"
+      ColumnDefinitions="1520*,550*,566*,1460*"
+      HorizontalAlignment="Stretch"
+      VerticalAlignment="Stretch"
+      IsHitTestVisible="True"
+      PointerMoved="OnPointerMovedAsync"
+      PointerPressed="OnMouseClickPressedAsync"
+      PointerReleased="OnMouseClickReleasedAsync" >
+        <Grid.Background>
+          <ImageBrush Source="avares://SpaceHavenLauncher/Assets/Images/NavigationConsole/Background.jpg" Stretch="Uniform" Opacity="1.00" />
+        </Grid.Background>
+
+        <Image
+        x:Name="LeftButtonsImage"
+        Grid.Row="0"
+        Grid.Column="0"
+        Stretch="UniformToFill"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Opacity="1.00"
+        Source="avares://SpaceHavenLauncher/Assets/Images/NavigationConsole/LeftButtons-Standby.jpg"
+        IsHitTestVisible="False" />
+
+        <Image
+        x:Name="LeftLeverImage"
+        Grid.Row="0"
+        Grid.Column="1"
+        Stretch="UniformToFill"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Opacity="1.00"
+        Source="avares://SpaceHavenLauncher/Assets/Images/NavigationConsole/LeftLever-Standby.jpg"
+        IsHitTestVisible="False" />
+
+        <Image
+        x:Name="RightLeverImage"
+        Grid.Row="0"
+        Grid.Column="2"
+        Stretch="UniformToFill"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Opacity="1.00"
+        Source="avares://SpaceHavenLauncher/Assets/Images/NavigationConsole/RightLever-Standby.jpg"
+        IsHitTestVisible="False" />
+
+        <Image
+        x:Name="RightButtonsImage"
+        Grid.Row="0"
+        Grid.Column="3"
+        Stretch="UniformToFill"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Opacity="1.00"
+        Source="avares://SpaceHavenLauncher/Assets/Images/NavigationConsole/RightButtons-Standby.jpg"
+        IsHitTestVisible="False" />
+      </Grid>
+
+
+
+
+
+      <!-- ======================================================================================================================= -->
+
+
+
+
+
+      <!-- THE 3 SCREENS -->
+      <Grid
+      x:Name="NavigationConsoleTextGrid"
+      Grid.Row="0"
+      Grid.Column="0"
+      Background="Transparent"
+      HorizontalAlignment="Stretch"
+      VerticalAlignment="Stretch"
+      PointerMoved="OnPointerMovedAsync"
+      IsHitTestVisible="false"
+      ColumnDefinitions="32*,36*,14*,48*,12*,43*,23*" >
+        <Grid.RowDefinitions>
+          <RowDefinition Height="6*" />
+          <RowDefinition Height="32*" />
+          <RowDefinition Height="62*" />
+        </Grid.RowDefinitions>
+
+
+
+
+
+        <!-- ======================================================================================================================= -->
+
+
+
+
+
+        <!-- LEFT SCREEN -->
+        <Grid
+        x:Name="LeftScreenGrid"
+        Grid.Column="1"
+        Grid.Row="1"
+        Background="Transparent"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" >
+          <Grid.RowDefinitions>
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+          </Grid.RowDefinitions>
+
+
+
+          <!-- LEFT SCREEN TITLE -->
+          <Grid x:Name="LeftScreenTitleGrid" Grid.Row="0" ColumnDefinitions="10*,85*,5*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- TEXT -->
+            <Viewbox Grid.Column="1" Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding LeftScreen.Title}"
+              Foreground="LightCyan"
+              LetterSpacing="0.5"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Bold"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Stretch" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- LEFT SCREEN LINE 0 -->
+          <Grid x:Name="LeftScreenLine0_MainGrid" Grid.Row="2" ColumnDefinitions="6*,22*,5*,69*,1*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="LeftScreenLine0_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding LeftScreen.ProgressBarBackground[0][0]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[0][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding LeftScreen.ProgressBarBackground[0][1]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[0][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding LeftScreen.ProgressBarBackground[0][2]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[0][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding LeftScreen.ProgressBarBackground[0][3]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[0][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding LeftScreen.ProgressBarBackground[0][4]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[0][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="LeftScreenLine0_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding LeftScreen.Texts[0]}"
+                Foreground="{Binding LeftScreen.TextColor[0]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- LEFT SCREEN LINE 1 -->
+          <Grid x:Name="LeftScreenLine1_MainGrid" Grid.Row="3" ColumnDefinitions="4*,22*,5*,69*,2*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="LeftScreenLine1_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding LeftScreen.ProgressBarBackground[1][0]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[1][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding LeftScreen.ProgressBarBackground[1][1]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[1][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding LeftScreen.ProgressBarBackground[1][2]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[1][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding LeftScreen.ProgressBarBackground[1][3]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[1][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding LeftScreen.ProgressBarBackground[1][4]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[1][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="LeftScreenLine1_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding LeftScreen.Texts[1]}"
+                Foreground="{Binding LeftScreen.TextColor[1]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- LEFT SCREEN LINE 2 -->
+          <Grid x:Name="LeftScreenLine2_MainGrid" Grid.Row="4" ColumnDefinitions="2*,22*,5*,69*,3*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="LeftScreenLine2_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding LeftScreen.ProgressBarBackground[2][0]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[2][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding LeftScreen.ProgressBarBackground[2][1]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[2][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding LeftScreen.ProgressBarBackground[2][2]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[2][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding LeftScreen.ProgressBarBackground[2][3]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[2][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding LeftScreen.ProgressBarBackground[2][4]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[2][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="LeftScreenLine2_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding LeftScreen.Texts[2]}"
+                Foreground="{Binding LeftScreen.TextColor[2]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- LEFT SCREEN LINE 3 -->
+          <Grid x:Name="LeftScreenLine3_MainGrid" Grid.Row="5" ColumnDefinitions="0*,22*,5*,69*,4*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="LeftScreenLine3_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding LeftScreen.ProgressBarBackground[3][0]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[3][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding LeftScreen.ProgressBarBackground[3][1]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[3][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding LeftScreen.ProgressBarBackground[3][2]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[3][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding LeftScreen.ProgressBarBackground[3][3]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[3][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding LeftScreen.ProgressBarBackground[3][4]}" BorderBrush="{Binding LeftScreen.ProgressBarBorder[3][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="LeftScreenLine3_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding LeftScreen.Texts[3]}"
+                Foreground="{Binding LeftScreen.TextColor[3]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+        </Grid>
+
+
+
+
+
+        <!-- ======================================================================================================================= -->
+
+
+
+
+
+        <!-- CENTRAL SCREEN -->
+        <Grid
+        x:Name="CentralScreenGrid"
+        Grid.Column="3"
+        Grid.Row="1"
+        Background="Transparent"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        ColumnDefinitions="35*,10*,200*,10*,35*" >
+          <Grid.RowDefinitions>
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+          </Grid.RowDefinitions>
+
+
+
+          <!-- CENTRAL SCREEN TITLE -->
+          <Grid
+          x:Name="CentralScreenTitleGrid"
+          Grid.Row="0"
+          Grid.Column="0"
+          Grid.ColumnSpan="7"
+          RowDefinitions="*"
+          ColumnDefinitions="*"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch" >
+            <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding CentralScreen.Title}"
+              Foreground="LightCyan"
+              LetterSpacing="0.5"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Bold"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Stretch" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LEFT PROGRESS BAR -->
+          <Grid x:Name="CentralScreenLeftProgressBarGrid" Grid.Column="0" Grid.Row="2" Grid.RowSpan="4" ColumnDefinitions="*" RowDefinitions="2*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,2*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Border Grid.Row="1"  Background="{Binding CentralScreen.ProgressBarBackground[7]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[7]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="3"  Background="{Binding CentralScreen.ProgressBarBackground[6]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[6]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="5"  Background="{Binding CentralScreen.ProgressBarBackground[5]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[5]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="7"  Background="{Binding CentralScreen.ProgressBarBackground[4]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="9"  Background="{Binding CentralScreen.ProgressBarBackground[3]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="11" Background="{Binding CentralScreen.ProgressBarBackground[2]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="13" Background="{Binding CentralScreen.ProgressBarBackground[1]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="15" Background="{Binding CentralScreen.ProgressBarBackground[0]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LEFT PROGRESS BAR -->
+          <Grid x:Name="CentralScreenRightProgressBarGrid" Grid.Column="4" Grid.Row="2" Grid.RowSpan="4" ColumnDefinitions="*" RowDefinitions="2*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,1*,4*,2*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Border Grid.Row="1"  Background="{Binding CentralScreen.ProgressBarBackground[7]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[7]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="3"  Background="{Binding CentralScreen.ProgressBarBackground[6]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[6]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="5"  Background="{Binding CentralScreen.ProgressBarBackground[5]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[5]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="7"  Background="{Binding CentralScreen.ProgressBarBackground[4]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="9"  Background="{Binding CentralScreen.ProgressBarBackground[3]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="11" Background="{Binding CentralScreen.ProgressBarBackground[2]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="13" Background="{Binding CentralScreen.ProgressBarBackground[1]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            <Border Grid.Row="15" Background="{Binding CentralScreen.ProgressBarBackground[0]}" BorderBrush="{Binding CentralScreen.ProgressBarBorder[0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LINE 0 -->
+          <Grid x:Name="CentralScreenLine0Grid" Grid.Column="2" Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding CentralScreen.Text[0]}"
+              Foreground="{Binding CentralScreen.TextColor[0]}"
+              LetterSpacing="0.5"
+              FontSize="4"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Medium"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LINE 1 -->
+          <Grid x:Name="CentralScreenLine1Grid" Grid.Column="2" Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding CentralScreen.Text[1]}"
+              Foreground="{Binding CentralScreen.TextColor[1]}"
+              LetterSpacing="0.5"
+              FontSize="4"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Medium"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LINE 2 -->
+          <Grid x:Name="CentralScreenLine2Grid" Grid.Column="2" Grid.Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding CentralScreen.Text[2]}"
+              Foreground="{Binding CentralScreen.TextColor[2]}"
+              LetterSpacing="0.5"
+              FontSize="4"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Medium"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- CENTRAL SCREEN LINE 3 -->
+          <Grid x:Name="CentralScreenLine3Grid" Grid.Column="2" Grid.Row="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding CentralScreen.Text[3]}"
+              Foreground="{Binding CentralScreen.TextColor[3]}"
+              LetterSpacing="0.5"
+              FontSize="4"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Medium"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+            </Viewbox>
+          </Grid>
+
+
+        </Grid>
+
+
+
+
+
+        <!-- ======================================================================================================================= -->
+
+
+
+
+
+
+        <!-- RIGHT SCREEN -->
+        <Grid
+        x:Name="RightScreenGrid"
+        Grid.Column="5"
+        Grid.Row="1"
+        Background="Transparent"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" >
+          <Grid.RowDefinitions>
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+            <RowDefinition Height="20*" />
+          </Grid.RowDefinitions>
+
+
+
+          <!-- RIGHT SCREEN TITLE -->
+          <Grid x:Name="RightScreenTitleGrid" Grid.Row="0" ColumnDefinitions="4*,84*,12*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- TEXT -->
+            <Viewbox Grid.Column="1" Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <TextBlock
+              Text="{Binding RightScreen.Title}"
+              Foreground="LightCyan"
+              LetterSpacing="0.5"
+              FontStyle="Italic"
+              FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+              FontWeight="Bold"
+              TextAlignment="Center"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Stretch" />
+            </Viewbox>
+          </Grid>
+
+
+
+          <!-- RIGHT SCREEN LINE 0 -->
+          <Grid x:Name="RightScreenLine0_MainGrid" Grid.Row="2" ColumnDefinitions="1*,22*,5*,69*,6*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="RightScreenLine0_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding RightScreen.ProgressBarBackground[0][0]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[0][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding RightScreen.ProgressBarBackground[0][1]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[0][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding RightScreen.ProgressBarBackground[0][2]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[0][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding RightScreen.ProgressBarBackground[0][3]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[0][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding RightScreen.ProgressBarBackground[0][4]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[0][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="RightScreenLine0_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding RightScreen.Texts[0]}"
+                Foreground="{Binding RightScreen.TextColor[0]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- RIGHT SCREEN LINE 1 -->
+          <Grid x:Name="RightScreenLine1_MainGrid" Grid.Row="3" ColumnDefinitions="2*,22*,5*,69*,5*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="RightScreenLine1_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding RightScreen.ProgressBarBackground[1][0]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[1][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding RightScreen.ProgressBarBackground[1][1]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[1][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding RightScreen.ProgressBarBackground[1][2]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[1][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding RightScreen.ProgressBarBackground[1][3]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[1][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding RightScreen.ProgressBarBackground[1][4]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[1][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="RightScreenLine1_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding RightScreen.Texts[1]}"
+                Foreground="{Binding RightScreen.TextColor[1]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- RIGHT SCREEN LINE 2 -->
+          <Grid x:Name="RightScreenLine2_MainGrid" Grid.Row="4" ColumnDefinitions="3*,22*,5*,69*,4*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="RightScreenLine2_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding RightScreen.ProgressBarBackground[2][0]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[2][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding RightScreen.ProgressBarBackground[2][1]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[2][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding RightScreen.ProgressBarBackground[2][2]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[2][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding RightScreen.ProgressBarBackground[2][3]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[2][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding RightScreen.ProgressBarBackground[2][4]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[2][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="RightScreenLine2_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding RightScreen.Texts[2]}"
+                Foreground="{Binding RightScreen.TextColor[2]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+
+
+          <!-- RIGHT SCREEN LINE 3 -->
+          <Grid x:Name="RightScreenLine3_MainGrid" Grid.Row="5" ColumnDefinitions="4*,22*,5*,69*,3*"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <!-- PROGRESS BAR -->
+            <Grid x:Name="RightScreenLine3_ProgressBarGrid" Grid.Column="1" ColumnDefinitions="10*,1*,10*,1*,10*,1*,10*,1*,10*" RowDefinitions="29*,38*,33*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Border Grid.Row="1" Grid.Column="0" Background="{Binding RightScreen.ProgressBarBackground[3][0]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[3][0]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="2" Background="{Binding RightScreen.ProgressBarBackground[3][1]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[3][1]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="4" Background="{Binding RightScreen.ProgressBarBackground[3][2]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[3][2]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="6" Background="{Binding RightScreen.ProgressBarBackground[3][3]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[3][3]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+              <Border Grid.Row="1" Grid.Column="8" Background="{Binding RightScreen.ProgressBarBackground[3][4]}" BorderBrush="{Binding RightScreen.ProgressBarBorder[3][4]}" BorderThickness="1" Margin="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+            <!-- TEXT -->
+            <Grid x:Name="RightScreenLine3_TextGrid" Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+              <Viewbox Stretch="Uniform" ClipToBounds="true" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+                <TextBlock
+                Text="{Binding RightScreen.Texts[3]}"
+                Foreground="{Binding RightScreen.TextColor[3]}"
+                LetterSpacing="0.5"
+                FontSize="4"
+                FontStyle="Italic"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Medium"
+                TextAlignment="Left"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center" />
+              </Viewbox>
+            </Grid>
+          </Grid>
+
+        </Grid>
+
+
+
+
+
+
+
+
+
+
+      </Grid>
+
+
+    </Grid>
+
+
+
+
+
+    <!-- ======================================================================================================================= -->
+
+
+
+
+
+    <!-- MIDDLE HORIZONTAL SEPARATOR STRIPES -->
+    <Border
+    x:Name="HorizontalGridSplitter"
+    Grid.Column="1"
+    Grid.Row="1"
+    MinHeight="8"
+    MaxHeight="8"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch" >
+      <Border.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Horizontal-16x8.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,16,8"
+        Opacity="0.75" />
+      </Border.Background>
+    </Border>
+
+
+
+
+
+    <!-- ======================================================================================================================= -->
+
+
+
+
+
+    <!-- LOG AREA -->
+    <ListBox
+    x:Name="LogListBox"
+    Grid.Row="2"
+    Grid.Column="1"
+    Margin="0 0 0 30"
+    Padding="16 16 16 0"
+    Background="Transparent"
+    ItemsSource="{Binding State.LogHistory}"
+    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+    ScrollViewer.VerticalScrollBarVisibility="Auto" >
+
+      <!-- Kill theme selection background just for this ListBox -->
+      <ListBox.Resources>
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentLowBrush" Color="Transparent" />
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentMediumBrush" Color="Transparent" />
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentHighBrush" Color="Transparent" />
+        <SolidColorBrush x:Key="ListBoxItemBackgroundSelected" Color="Transparent" />
+        <SolidColorBrush x:Key="ListBoxItemBackgroundSelectedUnfocused" Color="Transparent" />
+      </ListBox.Resources>
+
+      <ListBox.Styles>
+        <!-- Base container layout + border state -->
+        <Style Selector="ListBoxItem" >
+          <Setter Property="MinHeight" Value="0" />
+          <Setter Property="Margin" Value="0" />
+          <Setter Property="Padding" Value="0 1 0 1" />
+          <Setter Property="Foreground" Value="MintCream" />
+          <Setter Property="HorizontalAlignment" Value="Stretch" />
+          <Setter Property="VerticalAlignment" Value="Stretch" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="VerticalContentAlignment" Value="Top" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <!-- Hover -->
+        <Style Selector="ListBoxItem:pointerover" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Pressed -->
+        <Style Selector="ListBoxItem:pressed" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Selected (focused) -->
+        <Style Selector="ListBoxItem:selected" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Selected, not focused -->
+        <Style Selector="ListBoxItem:selected:not(:focus)" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Selected + Hover -->
+        <Style Selector="ListBoxItem:selected:pointerover" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+        <!-- Selected + Pressed -->
+        <Style Selector="ListBoxItem:selected:pressed" >
+          <Setter Property="BorderThickness" Value="1" />
+          <Setter Property="BorderBrush" Value="#bf3f4f5f" />
+          <Setter Property="Background" Value="#bf00070f" />
+        </Style>
+
+      </ListBox.Styles>
+
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <Border
+          Padding="0"
+          BorderThickness="0"
+          BorderBrush="Transparent"
+          Background="Transparent" >
+            <TextBlock
+            Text="{Binding Text}"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+            FontWeight="Regular"
+            FontSize="13"
+            Margin="0"
+            Padding="0"
+            LineSpacing="1.15"
+            TextWrapping="Wrap"
+            Background="#01000000"
+            Foreground="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}}"
+            PointerPressed="LogLineClickedAsync"
+            PointerEntered="LogLinePointerEnteredAsync"
+            PointerExited="LogLinePointerExitedAsync" />
+          </Border>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+
+
+
+
+    <!-- Toggle Log View -->
+    <Border
+    x:Name="ToggleLogViewButton"
+    Grid.Row="2"
+    Grid.Column="1"
+    Margin="0 0 20 0"
+    Padding="0"
+    Width="48"
+    Height="48"
+    MinWidth="48"
+    MinHeight="48"
+    MaxWidth="48"
+    MaxHeight="48"
+    Background="#bf000000"
+    CornerRadius="5"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Top"
+    PointerPressed="OnToggleLogView"
+    IsHitTestVisible="True"
+
+    ToolTip.ShowDelay="10"
+    ToolTip.BetweenShowDelay="10"
+    ToolTip.ShowOnDisabled="True"
+    ToolTip.Tip="Toggle Log View" >
+      <PathIcon
+      Data="{Binding ToggleLogViewButtonIcon}"
+      RenderTransformOrigin="10.0,10.0"
+      BorderThickness="2"
+      BorderBrush="Gold"
+      Foreground="Gold"
+      Background="Transparent"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      IsHitTestVisible="False" />
+    </Border>
+
+
+
+
+
+    <!-- Copy Log Button -->
+    <Border
+    x:Name="CopyLogButton"
+    Grid.Row="2"
+    Grid.Column="1"
+    Margin="0 0 68 0"
+    Padding="0"
+    Width="48"
+    Height="48"
+    MinWidth="48"
+    MinHeight="48"
+    MaxWidth="48"
+    MaxHeight="48"
+    Background="#bf000000"
+    CornerRadius="5"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Top"
+    PointerPressed="CopyLogStartAsync"
+    PointerReleased="CopyLogEndAsync"
+    IsHitTestVisible="True"
+
+    ToolTip.ShowDelay="10"
+    ToolTip.BetweenShowDelay="10"
+    ToolTip.ShowOnDisabled="True"
+    ToolTip.Tip="Copy Log" >
+      <PathIcon
+      x:Name="CopyLogIcon"
+      Data="{StaticResource Copy}"
+      RenderTransformOrigin="10.0,10.0"
+      BorderThickness="4"
+      BorderBrush="Gold"
+      Foreground="Gold"
+      Background="Transparent"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      IsHitTestVisible="False" />
+    </Border>
+
+
+
+  </Grid>
+
+</UserControl>

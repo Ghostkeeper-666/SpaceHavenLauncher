@@ -1,0 +1,1361 @@
+<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:conv="using:SH.Launcher.Converters"
+xmlns:vm="using:SH.Launcher.ViewModels"
+xmlns:v="using:SH.Launcher.Views"
+mc:Ignorable="d"
+x:Class="SH.Launcher.Views.ModPageView"
+x:DataType="vm:ModPageViewModel"
+>
+  <UserControl.Resources>
+    <conv:ErrorFlagToBrushConverter x:Key="ErrorFlagToBrushConverter" />
+  </UserControl.Resources>
+
+
+
+  <Grid
+  x:Name="RootGrid"
+  RowDefinitions="333,8,*"
+  ColumnDefinitions="8,*"
+  Background="Transparent"
+  HorizontalAlignment="Stretch"
+  VerticalAlignment="Stretch" >
+
+
+    <!-- LEFT VERTICAL SEPARATOR STRIPES -->
+    <Border
+    Grid.Column="0"
+    Grid.Row="0"
+    Grid.RowSpan="3"
+    IsHitTestVisible="False" >
+      <Border.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Vertical-8x16.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,8,16"
+        Opacity="0.75" />
+      </Border.Background>
+    </Border>
+
+
+
+
+    <ScrollViewer
+    Grid.Row="0"
+    Grid.Column="1"
+    Background="Transparent"
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch" >
+      <Grid
+      Background="Transparent"
+      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
+      ColumnDefinitions="Auto,32,*"
+      HorizontalAlignment="Stretch"
+      VerticalAlignment="Stretch" >
+
+
+        <!-- TITLE -->
+        <Button
+        Grid.Row="0"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Padding="16 16 16 0"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Center"
+        HorizontalContentAlignment="Left"
+        VerticalContentAlignment="Center"
+        Foreground="{Binding TitleBrush}"
+        Background="Transparent"
+        FontSize="24"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        Command="{Binding TitleClickedCommand}"
+        Content="{Binding Title}"
+        Cursor="Hand" >
+          <Button.Styles>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="LightCyan" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="White" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+          </Button.Styles>
+        </Button>
+
+
+
+        <!-- TAGS -->
+        <Grid
+        Grid.Row="1"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Margin="8 4 0 0"
+        Background="Transparent"
+        RowDefinitions="40"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" >
+
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{Binding Mod.XmlLibraryFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.XmlPatchFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.AudioFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.TextureFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.JarFilesWidth}" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <!-- LIBRARY TAG -->
+          <Border
+          Grid.Column="0"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+
+          ToolTip.Tip="{Binding Mod.XmlLibraryFiles}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="LIBRARY" />
+          </Border>
+
+          <!-- PATCH TAG -->
+          <Border
+          Grid.Column="1"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ToolTip.Tip="{Binding Mod.XmlPatchFiles}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="PATCH" />
+          </Border>
+
+          <!-- AUDIO TAG -->
+          <Border
+          Grid.Column="2"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ToolTip.Tip="{Binding Mod.AudioFiles}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="AUDIO" />
+          </Border>
+
+          <!-- TEXTURES TAG -->
+          <Border
+          Grid.Column="3"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ToolTip.Tip="{Binding Mod.TextureFiles}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="TEXTURE" />
+          </Border>
+
+          <!-- JAVA TAG -->
+          <Border
+          Grid.Column="4"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ToolTip.Tip="{Binding Mod.JarFiles}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="JAVA" />
+          </Border>
+
+        </Grid>
+
+
+
+
+
+
+        <!-- PATH -->
+        <TextBlock
+        Grid.Row="2"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Padding="16 16 16 0"
+        Foreground="{Binding Mod.ForegroundColor}"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="PATH" />
+
+        <Button
+        Grid.Row="3"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Center"
+        HorizontalContentAlignment="Left"
+        VerticalContentAlignment="Center"
+        Foreground="LightCyan"
+        Background="Transparent"
+        FontSize="14"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        FontWeight="Regular"
+        Command="{Binding DirectoryClickedCommand}"
+        Content="{Binding Mod.Directory}"
+        Cursor="Hand"
+
+        ToolTip.Tip="Click to open this location"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+          <Button.Styles>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="SkyBlue" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="MediumPurple" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+          </Button.Styles>
+        </Button>
+
+
+
+
+
+
+        <!-- AUTHOR -->
+        <TextBlock
+        Grid.Row="4"
+        Grid.Column="0"
+        Grid.ColumnSpan="1"
+        Padding="16 16 16 0"
+        Foreground="{Binding Mod.ForegroundColor}"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="AUTHOR" />
+
+        <TextBlock
+        Grid.Row="5"
+        Grid.Column="0"
+        Grid.ColumnSpan="1"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        Foreground="LightCyan"
+        Background="Transparent"
+        FontSize="14"
+        FontWeight="Regular"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.Author}" />
+
+
+
+        <!-- MOD ID / AUTO ID / CUSTOM ID -->
+        <TextBlock
+        Grid.Row="4"
+        Grid.Column="2"
+        Grid.ColumnSpan="1"
+        Padding="16 16 16 0"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="{Binding Mod.IdTitle}"
+
+            ToolTip.Tip="{Binding Mod.ModIdErrorText}"
+            ToolTip.ShowDelay="10"
+            ToolTip.BetweenShowDelay="10"
+            ToolTip.ShowOnDisabled="True"
+                >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasModIdError" />
+              <Binding Path="Mod.ForegroundColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+        <Grid
+        Grid.Row="5"
+        Grid.Column="2"
+        Grid.ColumnSpan="1"
+        Margin="16 2 0 0"
+        ColumnDefinitions="140,80,*"
+        RowDefinitions="*"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+
+        ToolTip.Tip="{Binding Mod.IdHelp}"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+
+          <NumericUpDown
+          Grid.Column="0"
+          Padding="8 4 8 0"
+          BorderThickness="1"
+          CornerRadius="0"
+          Foreground="LightCyan"
+          Background="Transparent"
+          FontSize="14"
+          FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+          FontWeight="SemiBold"
+          Minimum="7"
+          Maximum="214747"
+          Increment="1"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          HorizontalContentAlignment="Left"
+          Value="{Binding Mod.FinalId}"
+
+          ToolTip.Tip="{Binding Mod.IdHelp}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <NumericUpDown.BorderBrush>
+              <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+                <Binding Path="Mod.HasModIdError" />
+                <Binding Path="Mod.ForegroundColor" />
+              </MultiBinding>
+            </NumericUpDown.BorderBrush>
+          </NumericUpDown>
+
+          <Button
+          Grid.Column="1"
+          Padding="0 0 0 0"
+          BorderThickness="1"
+          CornerRadius="0"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          HorizontalContentAlignment="Center"
+          VerticalContentAlignment="Center"
+          Background="#7F000000"
+          Foreground="LightCyan"
+          FontSize="12"
+          FontWeight="Regular"
+          FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+          Command="{Binding Mod.ResetId}"
+          Content="RESET ID"
+          Cursor="Hand"
+
+          ToolTip.Tip="{Binding Mod.IdHelp}"
+          ToolTip.ShowDelay="10"
+          ToolTip.BetweenShowDelay="10"
+          ToolTip.ShowOnDisabled="True" >
+            <Button.BorderBrush>
+              <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+                <Binding Path="Mod.HasModIdError" />
+                <Binding Path="Mod.ForegroundColor" />
+              </MultiBinding>
+            </Button.BorderBrush>
+          </Button>
+
+        </Grid>
+
+
+
+        <!-- MOD DEPENDENCIES -->
+        <TextBlock
+        Grid.Row="6"
+        Grid.Column="0"
+        Padding="16 16 16 0"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="DEPENDENCIES"
+
+        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasModDependenciesError" />
+              <Binding Path="Mod.ForegroundColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+        <TextBlock
+        Grid.Row="7"
+        Grid.Column="0"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        Background="Transparent"
+        FontSize="14"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.AllModDependenciesText}"
+
+        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasModDependenciesError" />
+              <Binding Path="Mod.DefaultTextColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+
+
+
+
+
+        <!-- MOD CONFLICTS -->
+        <TextBlock
+        Grid.Row="6"
+        Grid.Column="2"
+        Padding="16 16 16 0"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="MOD CONFLICTS"
+
+        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasModConflictsError" />
+              <Binding Path="Mod.ForegroundColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+        <TextBlock
+        Grid.Row="7"
+        Grid.Column="2"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        Background="Transparent"
+        FontSize="14"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.AllModConflictsText}"
+
+        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}"
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasModConflictsError" />
+              <Binding Path="Mod.DefaultTextColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+
+
+
+
+
+        <!-- SPACE HAVEN COMPATIBILITY -->
+        <TextBlock
+        Grid.Row="8"
+        Grid.Column="0"
+        Padding="16 16 16 0"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="SPACE HAVEN VERSION" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasSpaceHavenCompatibilityError" />
+              <Binding Path="Mod.ForegroundColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+        <TextBlock
+        Grid.Row="9"
+        Grid.Column="0"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        Background="Transparent"
+        FontSize="14"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.SpaceHavenCompatibility}" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasSpaceHavenCompatibilityError" />
+              <Binding Path="Mod.DefaultTextColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+
+
+
+
+        <!-- LAUNCHER COMPATIBILITY -->
+        <TextBlock
+        Grid.Row="8"
+        Grid.Column="2"
+        Padding="16 16 16 0"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="NoWrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="LAUNCHER VERSION" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasAppCompatibilityError" />
+              <Binding Path="Mod.ForegroundColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+        <TextBlock
+        Grid.Row="9"
+        Grid.Column="2"
+        Margin="0 4 0 0"
+        Padding="16 2 16 0"
+        Background="Transparent"
+        FontSize="14"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.AppCompatibility}" >
+          <TextBlock.Foreground>
+            <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
+              <Binding Path="Mod.HasAppCompatibilityError" />
+              <Binding Path="Mod.DefaultTextColor" />
+            </MultiBinding>
+          </TextBlock.Foreground>
+        </TextBlock>
+
+
+
+
+
+        <!-- DESCRIPTION -->
+        <TextBlock
+        Grid.Row="10"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Padding="16 16 16 0"
+        Foreground="{Binding Mod.ForegroundColor}"
+        Background="Transparent"
+        FontSize="18"
+        FontWeight="Bold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        TextWrapping="Wrap"
+        TextTrimming="CharacterEllipsis"
+        HorizontalAlignment="Stretch"
+        Text="DESCRIPTION" />
+
+        <!-- DESCRIPTION.MD -->
+        <v:MarkdownView
+        x:Name="MarkdownDescriptionTextBlock"
+        Grid.Row="11"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Padding="16 10 16 16"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        HeaderColor="{Binding Mod.ForegroundColor}"
+        LinkColor="{Binding Mod.ForegroundColor}"
+        Markdown="{Binding Mod.MarkdownDescription}"
+        IsVisible="{Binding Mod.HasMarkdownDescription}" />
+
+        <!-- INFO.XML DESCRIPTION -->
+        <TextBlock
+        x:Name="InfoXmlDescriptionTextBlock"
+        Grid.Row="11"
+        Grid.Column="0"
+        Grid.ColumnSpan="3"
+        Padding="16 10 16 16"
+        FontSize="14"
+        TextWrapping="Wrap"
+        TextTrimming="WordEllipsis"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Top"
+        Text="{Binding Mod.InfoXmlDescription}"
+        IsVisible="{Binding !Mod.HasMarkdownDescription}" />
+
+      </Grid>
+
+    </ScrollViewer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- MIDDLE HORIZONTAL SEPARATOR STRIPES -->
+    <GridSplitter
+    Grid.Row="1"
+    Grid.Column="1"
+    Height="8"
+    HorizontalAlignment="Stretch"
+    ResizeDirection="Rows"
+    ResizeBehavior="PreviousAndNext"
+    Cursor="SizeNorthSouth" >
+      <GridSplitter.Background>
+        <ImageBrush
+        Source="avares://SpaceHavenLauncher/Assets/Images/Stripes-Horizontal-16x8.png"
+        TileMode="Tile"
+        Stretch="None"
+        AlignmentX="Left"
+        AlignmentY="Top"
+        DestinationRect="0,0,16,8"
+        Opacity="0.75" />
+      </GridSplitter.Background>
+    </GridSplitter>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Variables Root Grid -->
+    <Grid Grid.Row="2" Grid.Column="1" >
+
+      <Grid.RowDefinitions>
+        <RowDefinition Height="48" />
+        <RowDefinition Height="*" MinHeight="1" />
+      </Grid.RowDefinitions>
+
+
+
+
+
+
+
+
+
+
+      <!-- Variable TOOLBAR Grid -->
+      <Grid
+      x:Name="VariableToolbarGrid"
+      Grid.Row="0"
+      Background="Transparent"
+      RowDefinitions="48"
+      ColumnDefinitions="*,*,*,*,*,*,*" >
+
+        <Border
+        Grid.Column="0"
+        Grid.ColumnSpan="2"
+        Background="Transparent"
+        BorderBrush="black"
+        BorderThickness="0,0,1,0" />
+        <Border
+        Grid.Column="2"
+        Background="Transparent"
+        BorderBrush="black"
+        BorderThickness="0,0,1,0" />
+        <Border
+        Grid.Column="3"
+        Background="Transparent"
+        BorderBrush="black"
+        BorderThickness="0,0,1,0" />
+        <Border
+        Grid.Column="4"
+        Background="Transparent"
+        BorderBrush="black"
+        BorderThickness="0,0,1,0" />
+        <Border
+        Grid.Column="5"
+        Background="Transparent"
+        BorderBrush="black"
+        BorderThickness="0,0,1,0" />
+
+
+
+        <!-- SEARCH TEXTBOX -->
+        <TextBox
+        x:Name="SearchTextbox"
+        Grid.Column="0"
+        CornerRadius="5"
+        Height="36"
+        Margin="2"
+        BorderBrush="#3f3f3f"
+        BorderThickness="2"
+        Foreground="{Binding Mod.ForegroundColor}"
+        Background="Black"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Center"
+        TextAlignment="Left"
+        PlaceholderText="Search variable..."
+        PlaceholderForeground="LightSlateGray"
+        FontSize="15"
+        FontWeight="Regular"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        Text="{Binding SearchText}"
+        TextChanged="OnSearchTextChanged" />
+
+
+
+
+
+        <!-- RESET SEARCH BUTTON -->
+        <Border
+        x:Name="ResetSearchButton"
+        Grid.Column="1"
+        Width="36"
+        Height="36"
+        Margin="2"
+        Padding="0 0 2 0"
+        Background="Black"
+        CornerRadius="5"
+        BorderThickness="2"
+        BorderBrush="#3f3f3f"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        PointerPressed="ResetSearch"
+        IsHitTestVisible="True"
+
+        ToolTip.ShowDelay="10"
+        ToolTip.BetweenShowDelay="10"
+        ToolTip.ShowOnDisabled="True"
+        ToolTip.Tip="Clear Search Text" >
+          <PathIcon
+          Data="{StaticResource ResetSearch}"
+          RenderTransformOrigin="10.0,10.0"
+          BorderThickness="4"
+          BorderBrush="LightSlateGray"
+          Foreground="{Binding Mod.ForegroundColor}"
+          Background="Black"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          IsHitTestVisible="False" >
+            <PathIcon.RenderTransform>
+              <TransformGroup>
+                <RotateTransform Angle="{Binding State.CollapseIconRotation}" />
+              </TransformGroup>
+            </PathIcon.RenderTransform>
+          </PathIcon>
+        </Border>
+
+
+
+
+
+        <!-- USE ORIGINAL BUTTON -->
+        <Button
+        x:Name="UseOriginalButton"
+        Grid.Column="2"
+        MinHeight="32"
+        Margin="1 0 1 0"
+        CornerRadius="5"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        HorizontalContentAlignment="Center"
+        VerticalContentAlignment="Center"
+        Foreground="Black"
+        Background="#9fbfbf"
+        FontSize="11"
+        FontWeight="ExtraBold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        Command="{Binding UseOriginalCommand}"
+        Content="USE ORIGINAL" >
+          <Button.Styles>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="Black" />
+              <Setter Property="Background" Value="#bfdfdf" />
+            </Style>
+            <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="White" />
+              <Setter Property="Background" Value="#4f5f5f" />
+            </Style>
+          </Button.Styles>
+        </Button>
+
+
+
+        <!-- USE SUGGESTED BUTTON -->
+        <Button
+        x:Name="UseSuggestedButton"
+        Grid.Column="3"
+        MinHeight="32"
+        Margin="1 0 1 0"
+        CornerRadius="5"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        HorizontalContentAlignment="Center"
+        VerticalContentAlignment="Center"
+        Foreground="Black"
+        Background="#9fbfbf"
+        FontSize="11"
+        FontWeight="ExtraBold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        Command="{Binding UseSuggestedCommand}"
+        Content="USE SUGGESTED" >
+          <Button.Styles>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="Black" />
+              <Setter Property="Background" Value="#bfdfdf" />
+            </Style>
+            <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="White" />
+              <Setter Property="Background" Value="#4f5f5f" />
+            </Style>
+          </Button.Styles>
+
+        </Button>
+
+
+
+        <!-- USE PRVIOUS BUTTON -->
+        <Button
+        x:Name="UsePreviousButton"
+        Grid.Column="4"
+        MinHeight="32"
+        Margin="1 0 1 0"
+        CornerRadius="5"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        HorizontalContentAlignment="Center"
+        VerticalContentAlignment="Center"
+        Foreground="Black"
+        Background="#9fbfbf"
+        FontSize="11"
+        FontWeight="ExtraBold"
+        FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+        Command="{Binding UseOriginalCommand}"
+        Content="USE PREVIOUS" >
+          <Button.Styles>
+            <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="Black" />
+              <Setter Property="Background" Value="#bfdfdf" />
+            </Style>
+            <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
+              <Setter Property="Foreground" Value="White" />
+              <Setter Property="Background" Value="#4f5f5f" />
+            </Style>
+          </Button.Styles>
+        </Button>
+
+
+
+      </Grid>
+
+
+
+
+
+
+
+      <!-- Variable Values Grid -->
+      <DataGrid
+      x:Name="VariableValuesGrid"
+
+      Grid.Row="1"
+
+      IsReadOnly="False"
+
+      BorderThickness="1"
+      MinHeight="1"
+
+      Margin="0"
+      Background="#7f000000"
+
+      ItemsSource="{Binding Variables}"
+      HeadersVisibility="Column"
+      AutoGenerateColumns="False"
+
+      GridLinesVisibility="All"
+      BorderBrush="DarkSlateGray"
+      HorizontalGridLinesBrush="DarkSlateGray"
+      VerticalGridLinesBrush="DarkSlateGray"
+
+      HorizontalScrollBarVisibility="Auto"
+      VerticalScrollBarVisibility="Auto"
+
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+
+      CanUserResizeColumns="True"
+      SelectionChanged="OnSelectionChanged"
+      PreparingCellForEdit="OnPreparingCellForEdit"
+      CellEditEnded="OnCellEditEnded"
+      KeyDown="OnDataGridKeyDown" >
+
+
+
+
+
+        <DataGrid.Styles>
+
+          <!-- 1st column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(1) TextBlock" >
+            <Setter Property="Foreground" Value="LightCyan" />
+          </Style>
+
+          <!-- 2nd column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(2) TextBlock" >
+            <Setter Property="Foreground" Value="LightCyan" />
+          </Style>
+
+          <!-- 3rd column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(3) TextBlock" >
+            <Setter Property="Foreground" Value="LightCyan" />
+          </Style>
+
+          <!-- 4th column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(4) TextBlock" >
+            <Setter Property="Foreground" Value="LightCyan" />
+          </Style>
+
+          <!-- 5th column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(5) TextBlock" >
+            <Setter Property="Foreground" Value="LightCyan" />
+          </Style>
+
+          <!-- 6th column header -->
+          <Style Selector="DataGridColumnHeader:nth-child(6) TextBlock" >
+            <Setter Property="Foreground" Value="Transparent" />
+          </Style>
+
+          <!-- Column Headers -->
+          <Style Selector="DataGridColumnHeader" >
+
+            <Setter Property="AreSeparatorsVisible" Value="false" />
+            <Setter Property="Padding" Value="8 0 8 0" />
+
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontFamily" Value="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed" />
+
+            <Setter Property="Foreground" Value="Gold" />
+            <Setter Property="Background" Value="Transparent" />
+
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="SeparatorBrush" Value="Transparent" />
+
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+
+            <Setter Property="Template" >
+              <ControlTemplate>
+                <Grid>
+                  <Border>
+                    <ContentPresenter
+                    Name="HeaderContent"
+                    Background="{TemplateBinding Background}"
+                    Padding="8 0 8 0"
+                    BorderBrush="DarkSlateGray"
+                    BorderThickness="0 0 1 1"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    FontSize="15"
+                    Content="{TemplateBinding Content}" />
+                  </Border>
+
+                  <!-- Resize gripper (overlay, no layout space taken) -->
+                  <Thumb Width="6" HorizontalAlignment="Right" Background="Transparent" />
+                </Grid>
+              </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^ DataGridColumnHeader[Content=null]" >
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+
+            <Style Selector="^ DataGridColumnHeader[Content='']" >
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+
+          </Style>
+
+          <!-- Base row style -->
+          <Style Selector="DataGridRow" >
+            <Setter Property="BorderBrush" Value="DarkSlateGray" />
+            <Setter Property="BorderThickness" Value="0 0 1 1" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Opacity" Value="1.0" />
+          </Style>
+
+          <!-- Hovered row: red background, yellow 1px border -->
+          <Style Selector="DataGridRow:pointerover" >
+            <Setter Property="Background" Value="#bf00070f" />
+          </Style>
+
+          <!-- Selected row: yellow background, yellow 1px border -->
+          <Style Selector="DataGridRow:selected" >
+            <Setter Property="Background" Value="#bf00070f" />
+          </Style>
+
+          <!-- VALUE column display cells: center text -->
+          <Style Selector="DataGridCell:nth-child(2) TextBlock" >
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Regular" />
+            <Setter Property="FontFamily" Value="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" />
+          </Style>
+
+          <!-- VALUE column editing cells: center text in TextBox -->
+          <Style Selector="DataGridCell:nth-child(2) TextBox" >
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Regular" />
+            <Setter Property="FontFamily" Value="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" />
+          </Style>
+
+          <!-- All Cells -->
+          <Style Selector="DataGridCell" >
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderBrush" Value="DarkSlateGray" />
+
+            <Setter Property="Foreground" >
+              <Setter.Value>
+                <MultiBinding Converter="{StaticResource ModVariableRowToBrushConverter}" >
+                  <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=DataGridRow}" />
+                  <Binding />
+                  <!-- equivalent to Path="." -->
+                </MultiBinding>
+              </Setter.Value>
+            </Setter>
+
+          </Style>
+
+        </DataGrid.Styles>
+
+
+
+
+
+        <!-- VARIABLE -->
+        <DataGrid.Columns>
+
+          <DataGridTemplateColumn
+          Header="VARIABLE"
+          CanUserResize="True"
+          IsReadOnly="True"
+          MinWidth="200"
+          Width="Auto" >
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock
+                Margin="0"
+                Padding="4"
+                Background="Transparent"
+                Foreground="LightCyan"
+                FontSize="13"
+                FontWeight="Regular"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                Text="{Binding Description}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+
+
+
+          <!-- CURRENT VALUE -->
+          <DataGridTemplateColumn
+          Header="CURRENT&#10;  VALUE"
+          CanUserResize="True"
+          MinWidth="110"
+          Width="Auto" >
+            <!-- DISPLAY MODE -->
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock
+                Margin="0"
+                Padding="4"
+                Background="Transparent"
+                FontSize="15"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Regular"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                TextAlignment="Center"
+                Text="{Binding CurrentValue}"
+                Foreground="{Binding CurrentValueForeground}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+
+            <!-- EDIT MODE -->
+            <DataGridTemplateColumn.CellEditingTemplate>
+              <DataTemplate>
+                <TextBox
+                BorderThickness="0"
+                Margin="0"
+                Padding="4"
+                CornerRadius="0"
+                Background="Transparent"
+                FontSize="15"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Regular"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Text="{Binding CurrentValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Foreground="{Binding CurrentValueForeground}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellEditingTemplate>
+
+          </DataGridTemplateColumn>
+
+
+
+
+
+          <!-- ORIGINAL VALUE -->
+          <DataGridTemplateColumn
+          Header="ORIGINAL&#10;   VALUE"
+          CanUserResize="True"
+          IsReadOnly="True"
+          MinWidth="110"
+          Width="Auto" >
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button
+                Margin="0"
+                Padding="4"
+                CornerRadius="0"
+                Background="Transparent"
+                Foreground="{Binding OriginalValueForeground}"
+                FontSize="15"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Regular"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Content="{Binding OriginalValue}"
+                Command="{Binding UseOriginalCommand}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+
+
+
+          <!-- SUGGESTED VALUE -->
+          <DataGridTemplateColumn
+          Header="SUGGESTED&#10;     VALUE"
+          CanUserResize="True"
+          IsReadOnly="True"
+          MinWidth="110"
+          Width="Auto" >
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button
+                Margin="0"
+                Padding="4"
+                Background="Transparent"
+                Foreground="{Binding SuggestedValueForeground}"
+                FontSize="15"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Regular"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Content="{Binding SuggestedValue}"
+                Command="{Binding UseSuggestedCommand}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+
+
+
+          <!-- OLD MOD VERSION -->
+          <DataGridTemplateColumn
+          Header="OLD MOD&#10; VERSION"
+          CanUserResize="True"
+          IsReadOnly="True"
+          MinWidth="110"
+          Width="Auto" >
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button
+                Margin="0"
+                Padding="4"
+                Background="Transparent"
+                Foreground="{Binding PreviousValueForeground}"
+                FontSize="15"
+                FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+                FontWeight="Regular"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Content="{Binding PreviousValue}"
+                Command="{Binding UsePreviousCommand}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+
+
+
+
+          <!-- EMPTY -->
+          <DataGridTextColumn
+          Header="{x:Null}"
+          CanUserResize="True"
+          Foreground="Transparent"
+          IsReadOnly="True"
+          MinWidth="0"
+          Width="*" />
+
+
+
+
+
+        </DataGrid.Columns>
+
+      </DataGrid>
+
+
+
+
+
+    </Grid>
+
+  </Grid>
+
+</UserControl>
