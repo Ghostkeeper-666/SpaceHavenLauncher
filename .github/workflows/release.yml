@@ -42,9 +42,9 @@ jobs:
 
         cd SH.Launcher/bin/publish
 
-        zip -r ../../../../release/SpaceHavenLauncher_win-x64-${VERSION}.zip SpaceHavenLauncher_win-x64
-        zip -r ../../../../release/SpaceHavenLauncher_lnx-x64-${VERSION}.zip SpaceHavenLauncher_lnx-x64
-        zip -r ../../../../release/SpaceHavenLauncher_mac-x64-${VERSION}.zip SpaceHavenLauncher_mac-x64
+        zip -r ../../../../release/SpaceHavenLauncher_win-x64-${VERSION}.zip SpaceHavenLauncher-win-x64
+        zip -r ../../../../release/SpaceHavenLauncher_lnx-x64-${VERSION}.zip SpaceHavenLauncher-lnx-x64
+        zip -r ../../../../release/SpaceHavenLauncher_mac-x64-${VERSION}.zip SpaceHavenLauncher-mac-x64
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
