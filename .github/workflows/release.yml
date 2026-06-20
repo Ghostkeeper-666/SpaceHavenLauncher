@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Get version from tag
+      run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+    - name: Restore
+      run: dotnet restore
+
+    - name: Publish Windows
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=win-x64
+
+    - name: Publish Linux
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=lnx-x64
+
+    - name: Publish macOS
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=mac-x64
+
+    - name: Create ZIPs
+      run: |
+        mkdir release
+
+        cd SH.Launcher/bin/publish
+
+        zip -r ../../../../release/SpaceHavenLauncher_win-x64-${VERSION}.zip SpaceHavenLauncher_win-x64
+        zip -r ../../../../release/SpaceHavenLauncher_lnx-x64-${VERSION}.zip SpaceHavenLauncher_lnx-x64
+        zip -r ../../../../release/SpaceHavenLauncher_mac-x64-${VERSION}.zip SpaceHavenLauncher_mac-x64
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: SpaceHavenLauncher ${{ env.VERSION }}
+        tag_name: ${{ github.ref_name }}
+        files: |
+          release/SpaceHavenLauncher_win-x64-${{ env.VERSION }}.zip
+          release/SpaceHavenLauncher_lnx-x64-${{ env.VERSION }}.zip
+          release/SpaceHavenLauncher_mac-x64-${{ env.VERSION }}.zip
