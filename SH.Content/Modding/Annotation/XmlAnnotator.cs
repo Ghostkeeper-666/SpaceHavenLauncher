@@ -96,7 +96,6 @@ public sealed class XmlAnnotator
                 return false;
 
             // Done.
-            Log.Success("XML annotation is complete");
             return true;
         }
         catch (OperationCanceledException) { throw; }

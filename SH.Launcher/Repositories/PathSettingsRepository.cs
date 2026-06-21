@@ -41,7 +41,7 @@ public sealed class PathSettingsRepository
             {
                 data.SteamDir = ResolveSteamDir(data.AppDir);
                 if (data.SteamDir.IsNullOrWhiteSpace())
-                    Log.Warn("Unable to resolve the Steam directory");
+                    Log.Warn("Unable to detect the Steam directory");
             }
 
             // Space Haven Directory:
@@ -50,7 +50,7 @@ public sealed class PathSettingsRepository
                 data.SpaceHavenDir = ResolveSpaceHavenDir(data.AppDir);
                 if (data.SpaceHavenDir.IsNullOrWhiteSpace())
                 {
-                    Log.Error($"Unable to resolve the {SpaceHavenConstants.SpaceHavenName} directory");
+                    Log.Error($"Unable to detect the {SpaceHavenConstants.SpaceHavenName} directory");
                     success = false;
                 }
             }
@@ -61,7 +61,7 @@ public sealed class PathSettingsRepository
                 data.SpaceHavenJarDir = ResolveSpaceHavenJarDir(data.SpaceHavenDir);
                 if (data.SpaceHavenJarDir.IsNullOrWhiteSpace())
                 {
-                    Log.Error($"Unable to resolve the {SpaceHavenConstants.SpaceHavenName} JAR directory");
+                    Log.Error($"Unable to detect the {SpaceHavenConstants.SpaceHavenName} JAR directory");
                     success = false;
                 }
             }
@@ -71,7 +71,7 @@ public sealed class PathSettingsRepository
             {
                 data.SteamModsDir = ResolveSteamModsDir(data.SteamDir);
                 if (data.SteamModsDir.IsNullOrWhiteSpace())
-                    Log.Warn("Unable to resolve the Steam mods directory");
+                    Log.Warn("Unable to detect the Steam Workshop mods directory");
             }
 
             // Classic Mods Directory:
@@ -80,7 +80,7 @@ public sealed class PathSettingsRepository
                 data.ClassicModsDir = ResolveClassicModsDir(data.SpaceHavenJarDir);
                 if (data.ClassicModsDir.IsNullOrWhiteSpace())
                 {
-                    Log.Error("Unable to resolve the classic mods directory");
+                    Log.Warn("Unable to detect the Classic Mods directory");
                     success = false;
                 }
             }
@@ -109,7 +109,7 @@ public sealed class PathSettingsRepository
     public string ResolveAppDir()
     {
         string dir = SpaceHavenLauncher.GetAppDir();
-        Log.Info($@"{nameof(ResolveAppDir)}: Resolved {SpaceHavenLauncher.APP_NAME} directory as ""{dir}""");
+        Log.Debug($@"{nameof(ResolveAppDir)}: Resolved {SpaceHavenLauncher.APP_NAME} directory as ""{dir}""");
         return dir;
     }
 
@@ -131,7 +131,7 @@ public sealed class PathSettingsRepository
         }
 
         // Done.
-        Log.Info($@"{nameof(ResolveWorkDir)}: Resolved {SpaceHavenLauncher.APP_NAME} work directory as ""{dir}""");
+        Log.Debug($@"{nameof(ResolveWorkDir)}: Resolved {SpaceHavenLauncher.APP_NAME} work directory as ""{dir}""");
         return dir;
     }
 
@@ -159,7 +159,7 @@ public sealed class PathSettingsRepository
                     return null;
 
                 // Done.
-                Log.Info($@"{nameof(ResolveSteamDir)}: Auto detected Steam directory ""{dir}""");
+                Log.Debug($@"{nameof(ResolveSteamDir)}: Auto detected Steam directory ""{dir}""");
                 return dir;
             }
             catch (Exception ex)
@@ -220,7 +220,7 @@ public sealed class PathSettingsRepository
                 }
 
                 // Done.
-                Log.Info($@"{nameof(ResolveSteamDir)}: Auto detected Steam directory ""{dir}""");
+                Log.Debug($@"{nameof(ResolveSteamDir)}: Auto detected Steam directory ""{dir}""");
                 return dir;
             }
             catch (Exception ex)
@@ -288,7 +288,7 @@ public sealed class PathSettingsRepository
 
                 // Done.
                 string dir = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(path));
-                Log.Info($@"{nameof(ResolveSpaceHavenDir)}: Auto detected Space Haven directory ""{dir}""");
+                Log.Debug($@"{nameof(ResolveSpaceHavenDir)}: Auto detected Space Haven directory ""{dir}""");
                 return dir;
             }
             catch (Exception ex)
@@ -321,7 +321,7 @@ public sealed class PathSettingsRepository
                 return null;
 
             string dir = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(spaceHavenJarPath));
-            Log.Info($@"{nameof(ResolveSpaceHavenJarDir)}: Auto detected Space Haven JAR directory ""{dir}""");
+            Log.Debug($@"{nameof(ResolveSpaceHavenJarDir)}: Auto detected Space Haven JAR directory ""{dir}""");
             return dir;
         }
         catch (Exception ex)
@@ -341,7 +341,7 @@ public sealed class PathSettingsRepository
             if (!Directory.Exists(dir))
                 return null;
 
-            Log.Info($@"{nameof(ResolveSteamModsDir)}: Auto detected Steam mods directory ""{dir}""");
+            Log.Debug($@"{nameof(ResolveSteamModsDir)}: Auto detected Steam mods directory ""{dir}""");
             return dir;
         }
         catch (Exception ex)
@@ -362,7 +362,7 @@ public sealed class PathSettingsRepository
                 if (!IOUtils.TryCreateDirectory(dir, Log))
                     return null;
 
-            Log.Info($@"{nameof(ResolveClassicModsDir)}: Auto detected classic mods directory ""{dir}""");
+            Log.Debug($@"{nameof(ResolveClassicModsDir)}: Auto detected classic mods directory ""{dir}""");
             return dir;
         }
         catch (Exception ex)
@@ -383,7 +383,7 @@ public sealed class PathSettingsRepository
                 if (!IOUtils.TryCreateDirectory(dir, Log))
                     return null;
 
-            Log.Info($@"{nameof(ResolveModValuesDir)}: Auto detected mod values directory ""{dir}""");
+            Log.Debug($@"{nameof(ResolveModValuesDir)}: Auto detected mod values directory ""{dir}""");
             return dir;
         }
         catch (Exception ex)
@@ -444,7 +444,7 @@ public sealed class PathSettingsRepository
             data.ModValuesDir = rootNode.Element(nameof(PathData.ModValuesDir))?.Value?.Trim();
 
             // Done.
-            Log.Info($"Path settings were successfully loaded", data.PathSettingsPath);
+            Log.Success($"Path settings were successfully loaded", data.PathSettingsPath);
             return data;
         }
         catch (Exception ex)
@@ -478,7 +478,7 @@ public sealed class PathSettingsRepository
                 return false;
 
             // Done.
-            Log.Info($"Path settings were successfully saved", data.PathSettingsPath);
+            Log.Debug($"Path settings were successfully saved", data.PathSettingsPath);
             return true;
         }
         catch (OperationCanceledException) { throw; }

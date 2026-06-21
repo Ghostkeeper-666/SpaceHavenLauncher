@@ -35,7 +35,7 @@ public sealed class AppSettingsRepository
             // No such file?
             if (Paths.ApplicationSettingsPath.IsNullOrWhiteSpace() || !File.Exists(Paths.ApplicationSettingsPath))
             {
-                Log.Warn($@"Creating new application settings file ""{Paths.ApplicationSettingsPath}""");
+                Log.Info($@"Creating new application settings file ""{Paths.ApplicationSettingsPath}""");
                 await TrySaveAsync(data, ct);
                 return data; // no file? => return fresh new application settings
             }
@@ -71,6 +71,8 @@ public sealed class AppSettingsRepository
 
             data.LogVerbosity =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.LogVerbosity))?.Value ?? string.Empty, out ELogVerbosity logVerbosity) ? logVerbosity : ELogVerbosity.Minimal;
+            
+Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
 
             data.ModPageSplitterHeight =
                 int.TryParse(root.Element(nameof(AppSettingsData.ModPageSplitterHeight))?.Value ?? string.Empty, out int modPageSplitterHeight) ? modPageSplitterHeight : data.ModPageSplitterHeight;
@@ -118,6 +120,9 @@ public sealed class AppSettingsRepository
             root.Add(new XElement(nameof(AppSettingsData.MonitorIndex), data.MonitorIndex));
             root.Add(new XElement(nameof(AppSettingsData.IsLeftPaneCollapsed), data.IsLeftPaneCollapsed));
             root.Add(new XElement(nameof(AppSettingsData.LogVerbosity), data.LogVerbosity));
+
+Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
+
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));

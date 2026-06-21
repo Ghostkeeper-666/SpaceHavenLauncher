@@ -814,8 +814,8 @@ public sealed class Builder : IAsyncDisposable
                     t.SetAttributeValue("w", spriteSheet.Width);
                     t.SetAttributeValue("h", spriteSheet.Height);
                     t.SetAttributeValue("f", 1);
-                    t.SetAttributeValue("min", 1);
-                    t.SetAttributeValue("max", 1);
+                    t.SetAttributeValue("min", 0);
+                    t.SetAttributeValue("max", 0);
                     t.SetAttributeValue(NodeType.MergedByMod, $"{mod}");
                     parentTexturesCimNode.Add(t);
                 }

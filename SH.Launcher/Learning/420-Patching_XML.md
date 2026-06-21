@@ -71,6 +71,13 @@ These patch operations are fully compatible with the old **Mod Loader**:
 ```
 
 
+# XPATH
+
+All patch operations use the **XPATH** system to target one or more XML nodes.
+
+A good documentation for learning how **XPATH** works can be found in [Rim World's Wiki](https://rimworldwiki.com/wiki/Modding_Tutorials/PatchOperations)
+
+
 # Conditionally Enabling or Disabling Path Operations
 
 Just use: `<enable>...</enable>` OR `<disable>...</disable>`

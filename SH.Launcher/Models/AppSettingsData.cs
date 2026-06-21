@@ -11,7 +11,7 @@ public sealed class AppSettingsData
     {
         MonitorIndex = 0,
         IsLeftPaneCollapsed = false,
-        LogVerbosity = ELogVerbosity.Minimal,
+        LogVerbosity = ELogVerbosity.Normal,
         ModPageSplitterHeight = 380,
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,

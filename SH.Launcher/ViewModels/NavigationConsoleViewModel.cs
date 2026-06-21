@@ -126,7 +126,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             DeploymentService svc = new(Paths.Data, Log);
 
             // There must be an original JAR file in order to proceed:
-            Log.Info($@"Performing backup of original files...", Paths.Data.BackupDir);
+            Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
             if (!await svc.TryBackupOriginal(State.InitializeCTS.Token, backup))
             {
                 Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
@@ -139,7 +139,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             await Task.Yield();
 
             // There must be a template jar file in order to proceed:
-            Log.Info($@"Preparing template files...", Paths.Data.TemplateDir);
+            Log.Debug($@"Preparing template files...", Paths.Data.TemplateDir);
             if (!await Task.Run(() => svc.TryPrepareTemplateAsync(State.InitializeCTS.Token, template)))
             {
                 Log.Error("Unable to prepare template JAR file", Paths.Data.TemplateDir);
@@ -152,7 +152,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             await Task.Yield();
 
             // Read version info:
-            Log.Info($@"Reading version...", Paths.Data.TemplateDir);
+            Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
             VersionParserService versionParser = new();
             if (!await Paths.TryReadSpaceHavenVersion(Log, State.InitializeCTS.Token))
             {
@@ -166,7 +166,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             await Task.Yield();
 
             // The cached mod jar must match the current original jar:
-            Log.Info($@"Validating mod cache...", Paths.Data.CacheDir);
+            Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
             if (!await Task.Run(() => svc.TryValidateModifiedCache(State.InitializeCTS.Token, cache)))
             {
                 Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
@@ -179,7 +179,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             await Task.Yield();
 
             // Load mods:
-            Log.Info($@"Loading mods...");
+            Log.Debug($@"Loading mods...");
             if (!await TryReloadModsAsync(ct, loadMods))
             {
                 Log.Error("Unable to all load mods");
@@ -684,6 +684,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         else extractOriginalLibrary.Complete();
 
                         // Annotate ORIGINAL Libraries:
+                        Log.Info($"Writing XML annotation...");
                         XmlAnnotationService xmlAnnotationService = new(Log);
                         if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportOriginalDir, AppSettings.XmlAnnotationLanguage, default))
                         {
@@ -743,6 +744,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         else extractModifiedLibrary.Complete();
 
                         // Annotate MODIFIED Libraries:
+                        Log.Info($"Writing XML annotation...");
                         XmlAnnotationService xmlAnnotationService = new(Log);
                         if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportModifiedDir, AppSettings.XmlAnnotationLanguage, default))
                         {
@@ -833,45 +835,45 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Textures
             TexturesXmlRepository texturesXmlRepository = new(Log);
-            Log.Debug($"Reading texture XML information from {texturesXmlPath}");
+            Log.Info($"Reading textures...");
             clock.Restart();
             if (!await texturesXmlRepository.TryReadAsync(texturesXmlPath, parallelOptions.CancellationToken, loadATexturesXml))
-                throw new Exception("[textures.xml] Unable to read all textures XML information");
-            Log.Success($"{loadATexturesXml} = {clock.Elapsed.TotalMilliseconds} ms");
+                throw new Exception("Unable to read all textures XML information");
+            Log.Debug($"{loadATexturesXml} = {clock.Elapsed.TotalMilliseconds} ms");
             loadATexturesXml.Complete();
 
             // Animations
             AnimationsXmlRepository animationsXmlRepository = new(Log);
-            Log.Debug($@"[animations.xml] Reading animation XML information from ""{animationsXmlPath}""...");
+            Log.Info($@"Reading animations...");
             clock.Restart();
             if (!await animationsXmlRepository.TryReadAsync(animationsXmlPath, parallelOptions.CancellationToken, loadAnimationsXml))
-                throw new Exception("[animations.xml] Unable to read all animations XML information");
-            Log.Success($"{loadAnimationsXml} = {clock.Elapsed.TotalMilliseconds} ms");
+                throw new Exception("Unable to read all animations XML information");
+            Log.Debug($"{loadAnimationsXml} = {clock.Elapsed.TotalMilliseconds} ms");
             loadAnimationsXml.Complete();
 
             // Load Art
-            Log.Debug($"Loading game art...");
+            Log.Info($"Loading game art...");
             ArtRepository artRepository = new(texturesXmlRepository, animationsXmlRepository, Log);
             clock.Restart();
             if (!await artRepository.TryLoadAsync(libraryDirectory, parallelOptions.CancellationToken, loadGameArt))
                 throw new Exception("Unable to load all game art");
-            Log.Success($"{loadGameArt} = {clock.Elapsed.TotalMilliseconds} ms");
+            Log.Debug($"{loadGameArt} = {clock.Elapsed.TotalMilliseconds} ms");
             loadGameArt.Complete();
 
             // Export CIM to PNG:
-            Log.Debug($"Exporting sprite sheets...");
+            Log.Info($"Exporting sprite sheets...");
             clock.Restart();
             if (!await artRepository.TryExportSpriteSheetsToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, exportSpriteSheets))
                 throw new Exception("Unable to export all sprite sheets to PNG");
-            Log.Success($"{exportSpriteSheets} = {clock.Elapsed.TotalMilliseconds} ms");
+            Log.Debug($"{exportSpriteSheets} = {clock.Elapsed.TotalMilliseconds} ms");
             exportSpriteSheets.Complete();
 
             // Export individual sprites to PNG:
-            Log.Debug($"Exporting sprites...");
+            Log.Info($"Exporting sprites...");
             clock.Restart();
             if (!await artRepository.TryExportSpritesToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, exportSprites))
                 throw new Exception("Unable to export all sprites to PNG");
-            Log.Success($"{exportSprites} = {clock.Elapsed.TotalMilliseconds} ms");
+            Log.Debug($"{exportSprites} = {clock.Elapsed.TotalMilliseconds} ms");
             exportSprites.Complete();
 
             // Done.

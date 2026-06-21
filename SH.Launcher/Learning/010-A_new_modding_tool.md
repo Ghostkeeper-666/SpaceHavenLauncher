@@ -32,24 +32,30 @@ What motivated the development of a complete new tool?
 
 # Why is Space Haven Launcher a next generation modding tool ?
 
-**Space Haven Launcher** capabilities:
-- It provides a very useful **mods.json** file for JAVA mods
-- It validates mods during load time: conflicts, dependencies, ID issues
-- It allows the player to resolve mod ID conflicts
-- It provides an easy and responsive user interface for displaying many mods with many mod variables
-- It provides valuable log feedback for players AND moddders
-- It provides help and information about modding
-- It is configurable and persists user settings
-- It does not touch the original spacehaven.jar file in order to run a modded game
-- It does not write intermediary files to mod directories 
-- It perfectly detects when the modded game needs to be rebuilt
-- It provides a high-performance XML mod build system
-- It does not  during night-time gameplays
-- Instead of flash-banging your eyes, it shows mod backgrounds, fan art, and screenshots of early stages of the game!
+**For Players**
+
+- **No more flashbangs** at night-time - instead of it you get fan art, game screenshots, and mod backgrounds
+- **Responsive UI**: ultra-fast loading times, progress bars everywhere, and a visible log let you know what's going on
+- **Mod variable values**: they are stored for the current and all previous versions of the mod - it's easy merge them
+- **MOD ID conflicts** can now be resolved by the player too
+- **Fast and reliable detection of mod build rebuilding** - no need to clear stuff manually anymore
+- No pollution in Space Haven's and Mods' folders - all **intermediate files** are written elsewhere (good for Steam sync)
+- Support and validation for **mod dependencies**, "**known mod incompatibilities**", Space Haven version, etc
+- Valuable log feedback: **right clicking a log line** opens the related file, directory, program tab, or internet link
+
+**For Modders**
+
+- First of all, **a lot of modding help** is available - check **Learning Computer** tab - there is a full XML mod tutorial
+- The new **AUTO-ID** system stops **MOD ID** conflicts
+- **XML mods**: it provides a high-performance, robust, verbose XML mod build
+- **JAVA mods**: it generates a super useful **mods.json** in Space Haven's JAR folder, with all evaluated variables and stuff!
+- In the **Work Directory** of Space haven Launcher, there is plenty of information on how mods where joined together
+- The **original spacehaven.jar is never touched**: a new **modifiedspacehaven.jar** is generated instead
+- Optimized texture generation: **CIM files are smaller**
+- **Improved XML Annotation**: exported game assets provide a **separate haven file** with XML annotations in your language of choice
 
 # Roadmap - Future Work
 
-- Implement an improved XML annotation system
 - Finish the 'haven' file learning topic
 - Provide a complete JAVA mod tutorial
 - Preview of new facilities (and save it to *.webp files too)

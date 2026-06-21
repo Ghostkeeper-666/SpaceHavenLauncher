@@ -108,7 +108,7 @@ public sealed class ModValuesRepositoryService
             string oldVersion = rootNode.Attribute("version")?.Value;
             if (setToCurrentValue)
             {
-                Log.Warn($@"[{mod.Name}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
+                Log.Info($@"[{mod.Name}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
                 mod.IsEnabled = bool.TryParse(rootNode.Attribute("enabled")?.Value ?? "true", out bool enabled) && enabled;
                 mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value ?? "0", out int customID) ? customID : 0;
             }

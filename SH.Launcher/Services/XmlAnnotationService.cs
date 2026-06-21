@@ -23,9 +23,6 @@ public sealed class XmlAnnotationService
             XmlAnnotator xmlAnnotator = new(Log);
             if (!await xmlAnnotator.TryRunAsync(baseDir, language, ct))
                 return false;
-
-            // Done.
-            Log.Success("XML annotation is complete");
             return true;
         }
         catch (OperationCanceledException) { throw; }

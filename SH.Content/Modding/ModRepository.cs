@@ -78,7 +78,7 @@ public sealed class ModRepository
                     Log.Error($@"The mod '{mod.Name}' could not be loaded twice. Please check for duplicate mods in your mod root directories. Keeping ""{mods[mod.Name].Directory}"" and skipping ""{mod.Directory}""", mod.Directory);
                     continue;
                 }
-                Log.Info($@"Mod '{mod.Name}' was loaded successfully", mod.Directory);
+                Log.Debug($@"Mod '{mod.Name}' was loaded successfully", mod.Directory);
             }
 
             // Breathe:

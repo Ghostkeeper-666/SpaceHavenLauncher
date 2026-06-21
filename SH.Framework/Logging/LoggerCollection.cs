@@ -11,7 +11,10 @@ public sealed class LoggerCollection : ILogger
 
 
     private readonly List<ILogger> Children = [];
-    public ELogLevel LogLevel { get; set; } = ELogLevel.Debug;
+
+    public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
+    public void SetLogLevel(ELogLevel logLevel) => Warn($"Log level has changed to '{LogLevel = logLevel}'");
+
     public string Prefix { get; set; }
     public string Suffix { get; set; }
 

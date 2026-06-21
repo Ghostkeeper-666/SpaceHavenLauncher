@@ -7,6 +7,7 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -114,7 +115,7 @@ public sealed class ArtRepository
                 return false;
             }
 
-            Log.Info($"[{filename}] Reading sprite data from CIM file");
+            Log.Debug($"[{filename}] Reading sprite data from CIM file");
             if (!SpriteSheet.TryLoad(cimFilePath, texture, out SpriteSheet spriteSheet, Log))
             {
                 Log.Error($"[{filename}] Unable to read sprite data from CIM file");
@@ -135,36 +136,50 @@ public sealed class ArtRepository
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    if (!SpritesByName.TryAdd(kvp.Key, kvp.Value))
+                    if (SpritesByName.TryAdd(kvp.Key, kvp.Value))
                     {
-                        string imageComparison =
-                            SpritesByName[kvp.Key].Equals(kvp.Value) ?
-                            "The images are identical" : "The images are DIFFERENT!";
+                        if (kvp.Value.Name > LastSpriteName)
+                            LastSpriteName = kvp.Value.Name;
+                    }
+                    else
+                    {
+                        Sprite sprite = kvp.Value;
+                        int name = kvp.Key;
+                        bool isSameImage = SpritesByName[name].Equals(sprite);
+                        string comparisonText = isSameImage ? "identical" : "DIFFERENT";
+                        string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION NAME=""{name}"": it was reused for {comparisonText} sprite image content";
 
-                        Log.Warn($@"A duplicate region NAME ""{kvp.Key}"" was defined for two different textures. Keeping the one with lowest texture ID. {imageComparison}");
+                        if (isSameImage) Log.Debug(message);
+                        else Log.Warn(message);
+                        
                         if (SpritesByName[kvp.Key].SpriteSheet.Name > kvp.Value.SpriteSheet.Name)
                             SpritesByName[kvp.Key] = kvp.Value;
                     }
-                    else if (kvp.Value.Name > LastSpriteName)
-                        LastSpriteName = kvp.Value.Name;
                 }
 
                 foreach (KeyValuePair<int, Sprite> kvp in spriteSheet.SpritesById)
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    if (!SpritesById.TryAdd(kvp.Key, kvp.Value))
+                    if (SpritesById.TryAdd(kvp.Key, kvp.Value))
                     {
-                        string imageComparison =
-                            SpritesById[kvp.Key].Equals(kvp.Value) ?
-                            "The images are identical" : "The images are DIFFERENT!";
+                        if (kvp.Value.Id > LastSpriteId)
+                            LastSpriteId = kvp.Value.Id;
+                    }
+                    else
+                    {
+                        Sprite sprite = kvp.Value;
+                        int id = kvp.Key;
+                        bool isSameImage = SpritesById[id].Equals(sprite);
+                        string comparisonText = isSameImage ? "identical" : "DIFFERENT";
+                        string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION ID=""{id}"": it was reused for {comparisonText} sprite image content";
 
-                        Log.Warn($@"A duplicate region ID ""{kvp.Key}"" was defined for two different textures. Keeping the one with lowest texture ID. {imageComparison}");
+                        if (isSameImage || id == 0) Log.Debug(message);
+                        else Log.Warn(message);
+
                         if (SpritesById[kvp.Key].SpriteSheet.Name > kvp.Value.SpriteSheet.Name)
                             SpritesById[kvp.Key] = kvp.Value;
                     }
-                    else if (kvp.Value.Id > LastSpriteId)
-                        LastSpriteId = kvp.Value.Id;
                 }
             }
 

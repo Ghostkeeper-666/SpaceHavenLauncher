@@ -53,20 +53,24 @@ public sealed class SpriteSheet
 
                 if (!spriteSheet.SpritesByName.TryAdd(region.Name, sprite))
                 {
-                    string imageComparison =
-                        spriteSheet.SpritesByName[region.Name].Equals(sprite) ?
-                        "The images are identical" : "The images are DIFFERENT!";
-
-                    logger?.Warn($@"Ignoring duplicate region NAME ""{region.Name}"" found for texture ""{spriteSheet.Name}"". {imageComparison}");
+                    int name = region.Name;
+                    bool isSameImage = spriteSheet.SpritesByName[name].Equals(sprite);
+                    string comparisonText = isSameImage ? "identical" : "DIFFERENT";
+                    string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION NAME=""{name}"": it was reused for {comparisonText} sprite image content";
+                    
+                    if (isSameImage) logger?.Debug(message);
+                    else logger?.Warn(message);
                 }
 
                 if (!spriteSheet.SpritesById.TryAdd(region.Id, sprite))
                 {
-                    string imageComparison =
-                        spriteSheet.SpritesById[region.Id].Equals(sprite) ?
-                        "The images are identical" : "The images are DIFFERENT!";
+                    int id = region.Id;
+                    bool isSameImage = spriteSheet.SpritesById[id].Equals(sprite);
+                    string comparisonText = isSameImage ? "identical" : "DIFFERENT";
+                    string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION ID=""{id}"": it was reused for {comparisonText} sprite image content";
 
-                    logger?.Warn($@"Ignoring duplicate region ID ""{region.Id}"" found for texture ""{spriteSheet.Name}"". {imageComparison}");
+                    if (isSameImage || id == 0) logger?.Debug(message);
+                    else logger?.Warn(message);
                 }
             }
 
@@ -96,7 +100,7 @@ public sealed class SpriteSheet
             Height = readInt32BigEndian(zs);
             PixelFormat = readInt32BigEndian(zs);
             if (PixelFormat != 4)
-                logger?.Warn($@"WARNING: Unexpected PixelFormat={PixelFormat}bytes for CIM file ""{CimFilePath}""");
+                logger?.Info($@"WARNING: Unexpected PixelFormat={PixelFormat}bytes for CIM file ""{CimFilePath}""");
             PixelData = new byte[4 * Width * Height];
             zs.ReadExactly(PixelData);
         }

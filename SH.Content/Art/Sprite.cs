@@ -82,8 +82,7 @@ public sealed class Sprite : IEquatable<Sprite>
         }
     }
 
-
-    bool IEquatable<Sprite>.Equals(Sprite other)
+    public bool Equals(Sprite other)
     {
         if (Width != other.Width)
             return false;
@@ -120,5 +119,10 @@ public sealed class Sprite : IEquatable<Sprite>
         return true;
     }
 
+    public override bool Equals(object obj) =>
+        obj is Sprite other && Equals(other);
+
     public override string ToString() => Name.ToString();
+
+    public override int GetHashCode() => Name.GetHashCode();
 }

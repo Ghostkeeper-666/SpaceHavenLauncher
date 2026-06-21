@@ -77,7 +77,7 @@ public partial class AppSettingsViewModel : ObservableObject
                     break;
                 case nameof(LogVerbosity):
                     Data?.LogVerbosity = LogVerbosity;
-                    Log?.LogLevel = LogVerbosity.ToLogLevel();
+                    State.Log.SetLogLevel(LogVerbosity.ToLogLevel());
                     break;
                 case nameof(ModPageSplitterHeight):
                     Data?.ModPageSplitterHeight = ModPageSplitterHeight;

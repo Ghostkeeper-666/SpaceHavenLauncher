@@ -7,7 +7,10 @@ namespace SH.Framework.Logging;
 public sealed class VoidLogger : ILogger
 {
     public event EventHandler<LogMessage> OnMessage;
-    public ELogLevel LogLevel { get; set; }
+
+    public ELogLevel LogLevel => ELogLevel.None;
+    public void SetLogLevel(ELogLevel logLevel) { }
+
     public string Prefix { get; set; }
     public string Suffix { get; set; }
 

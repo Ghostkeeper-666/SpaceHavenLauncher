@@ -107,8 +107,9 @@ Space Haven file: **textures**
 This section defines **Sprite Sheet** metadata:
 - Attribute **i** defines the name of the CIM file containing the **Sprite Sheet** image
 - Attribute **w** is the width, and attribute **h** is the height in pixels of the **Sprite Sheet** image
-- Attribute **f** - (*NOT DOCUMENTED*, could be related to scaling)
-- Attribute **min** and **max** - (*NOT DOCUMENTED*, could be related to scaling)
+- Attribute **f** means enable filtering: "**0**" for yes, "**1**" for no
+- Attribute **min** is the filter interpolation applied when shrinking the image: "**0**" for **Nearest**, "**1**" for **Linear**
+- Attribute **max** is the filter interpolation applied when growing the image: "**0**" for **Nearest**, "**1**" for **Linear**
 
 ### The &lt;regions&gt; section
 

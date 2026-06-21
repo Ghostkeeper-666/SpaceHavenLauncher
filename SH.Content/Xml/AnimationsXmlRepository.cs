@@ -74,12 +74,12 @@ public sealed class AnimationsXmlRepository
 
                     if (ById.ContainsKey(animation.Id))
                     {
-                        Log.Warn($"Unable to add animation with duplicate ID={animation.Id}");
-                        continue;
+                        Log.Debug($"Animation '{animation.Name}' has same ID={animation.Id} as animation '{ById[animation.Id].Name}'");
+                        // It's not the primary key, so we continue...
                     }
                     if (ByName.ContainsKey(animation.Name))
                     {
-                        Log.Warn($"Unable to add animation with duplicate NAME={animation.Name}");
+                        Log.Info($"Ignoring animation with duplicate NAME={animation.Name}");
                         continue;
                     }
 
@@ -179,13 +179,13 @@ public sealed class AnimationsXmlRepository
                 string[] pair = vf.Split(':', StringSplitOptions.RemoveEmptyEntries);
                 if (pair.Length != 2)
                 {
-                    Log.Warn($@"Ignoring assetPos ""{item.AnimationName ?? item.SpriteName.ToString()}"" malformed vf information in animation ""{animation.Name}""");
+                    Log.Debug($@"Ignoring assetPos ""{item.AnimationName ?? item.SpriteName.ToString()}"" malformed vf information in animation ""{animation.Name}""");
                     continue;
                 }
                 int frameId = Convert.ToInt32(pair[0]);
                 if (visibility.ContainsKey(frameId))
                 {
-                    Log.Warn($@"Ignoring assetPos ""{item.AnimationName ?? item.SpriteName.ToString()}"" duplicate vf entry for frameId={frameId} in animation ""{animation.Name}""");
+                    Log.Debug($@"Ignoring assetPos ""{item.AnimationName ?? item.SpriteName.ToString()}"" duplicate vf entry for frameId={frameId} in animation ""{animation.Name}""");
                     continue;
                 }
                 bool isVisible = Convert.ToInt32(pair[1]) != 0;

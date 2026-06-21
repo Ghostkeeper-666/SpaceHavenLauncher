@@ -24,7 +24,8 @@ internal sealed class ModBuildData : IAsyncDisposable
         Build = build ?? throw new ArgumentNullException(nameof(build));
         BuildSeqNum = buildSeqNum;
         FullFileLogger = new FileLogger(FullLogPath);
-        ErrorFileLogger = new FileLogger(ErrorLogPath) { LogLevel = ELogLevel.Warn };
+        ErrorFileLogger = new FileLogger(ErrorLogPath);
+        ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
         Log = new LoggerCollection(logger, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
         SpriteAtlas = new(mod.Name);
     }

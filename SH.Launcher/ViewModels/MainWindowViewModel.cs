@@ -103,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase
             PathData pathData = repo.TryLoad() ?? new();
             bool success = repo.ResolveAll(pathData);
             if (!success)
-                Log.Error("Unable to locate all required paths. Please set them in System Core, then re-initialize the Navigation Console");
+                Log.Error("Unable to locate all required paths. Please set them on System Core. Afterwards, re-initialize the Navigation Console");
             if (!await repo.TrySave(pathData, ct))
                 Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
             State.Paths = new PathViewModel(pathData);
@@ -142,13 +142,16 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             AppSettingsRepository repo = new(Paths.Data, Log);
+            
             AppSettingsData data = await repo.TryLoadOrCreateAsync(ct);
+            if (data != null)
+                State.Log.SetLogLevel(data.LogVerbosity.ToLogLevel());
+            
             if(data == null)
             {
                 Log.Error($@"Unable to load or create application settings => please check for write permissions in ""{Paths.WorkDir}""");
                 data = AppSettingsData.GetDefault(); // continue anyway
             }
-            State.Log.LogLevel = State.AppSettings.LogVerbosity.ToLogLevel();
             State.AppSettings.SetData(data);
             return true;
         }
