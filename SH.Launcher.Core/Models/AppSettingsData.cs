@@ -1,6 +1,6 @@
 ﻿using SH.Content.Enums;
 
-namespace SH.Launcher.Models;
+namespace SH.Launcher.Core.Models;
 
 /// <summary>
 /// A class for persisting application settings

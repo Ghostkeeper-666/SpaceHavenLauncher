@@ -8,8 +8,8 @@ using Avalonia.Threading;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
 using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -89,7 +89,7 @@ public partial class MainWindow : Window
         // Save PATH Settings:
         try
         {
-            PathSettingsRepository repo = new(Log);
+            PathSettingsRepositoryService repo = new(Log);
             await repo.TrySave(Paths.Data, default);
         }
         catch { }
@@ -106,7 +106,7 @@ public partial class MainWindow : Window
             AppSettingsData data = AppSettings.GetData();
             try { data.MonitorIndex = this.GetMonitorIndex(); } catch { }
 
-            AppSettingsRepository repo = new(Paths.Data, Log);
+            AppSettingsRepositoryService repo = new(Paths.Data, Log);
             await repo.TrySaveAsync(data, default);
         }
         catch { }
@@ -216,21 +216,21 @@ public partial class MainWindow : Window
 
         string[] backgroundUris = new string[]
         {
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game1.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt1.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game2.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt2.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game3.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt3.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game4.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt4.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game5.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt5.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game6.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt6.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game7.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/FanArt7.jpg",
-            $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/Game8.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game1.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt1.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game2.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt2.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game3.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt3.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game4.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt4.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game5.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt5.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game6.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt6.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game7.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt7.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game8.jpg",
         };
 
         Bitmap forcedBackground = null;

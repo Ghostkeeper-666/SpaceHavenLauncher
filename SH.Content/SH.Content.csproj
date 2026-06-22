@@ -7,7 +7,6 @@
     <Nullable>disable</Nullable>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	  <LangVersion>latest</LangVersion>
-	  <RootNamespace>SH.Content</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -17,12 +16,12 @@ public sealed class ProgressInfo : IProgressInfo
     private void OnChildProgressChanged(object sender, ProgressEventArgs e)
     {
         int value = Value;
-        if (CachedValue != value)
+        if (CachedValue != value || HasStarted == false)
         {
+            HasStarted = true;
             CachedValue = value;
             ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
         }
-        else Debug.Write(".");
     }
 
     public ProgressInfo(string name) =>
@@ -114,9 +113,22 @@ public sealed class ProgressInfo : IProgressInfo
         1.0 - NormalizedValue;
     public double RemainingValue =>
         Max - Value;
+    public bool HasStarted { get; private set; }
 
-
-
+    /// <summary>
+    /// This method only serves to signal that a process has started, for UI display purpose.
+    /// Its children should not be started, since not every child process may have started yet.
+    /// </summary>
+    public void Start()
+    {
+        lock (Lock)
+        {
+            if (IsDisposed || HasStarted)
+                return;
+            HasStarted = true;
+        }
+        ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
+    }
 
     public void Reset()
     {
@@ -125,15 +137,13 @@ public sealed class ProgressInfo : IProgressInfo
             if (IsDisposed)
                 return;
 
-            if (ChildrenDict.Count > 0)
-            {
-                foreach (IProgressInfo c in ChildrenDict.Keys)
-                    c.Reset();
-                return;
-            }
-
+            HasStarted = false;
             LocalNormalizedValue = 0.0;
             CachedValue = Value;
+
+            if (ChildrenDict.Count > 0)
+                foreach (IProgressInfo c in ChildrenDict.Keys)
+                    c.Reset();
         }
         ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
     }
@@ -145,15 +155,13 @@ public sealed class ProgressInfo : IProgressInfo
             if (IsDisposed)
                 return;
 
-            if (ChildrenDict.Count > 0)
-            {
-                foreach (IProgressInfo c in ChildrenDict.Keys)
-                    c.Complete();
-                return;
-            }
-
+            HasStarted = true;
             LocalNormalizedValue = 1.0;
             CachedValue = Value;
+
+            if (ChildrenDict.Count > 0)
+                foreach (IProgressInfo c in ChildrenDict.Keys)
+                    c.Complete();
         }
         ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
     }
@@ -164,10 +172,14 @@ public sealed class ProgressInfo : IProgressInfo
     public void SetNormalized(double normalizedValue)
     {
         int value;
+        bool hasStarted;
         lock (Lock)
         {
             if (IsDisposed)
                 return;
+
+            hasStarted = HasStarted;
+            HasStarted = true;
 
             value = CachedValue;
 
@@ -185,9 +197,8 @@ public sealed class ProgressInfo : IProgressInfo
 
             CachedValue = Value;
         }
-        if (value != CachedValue)
+        if (value != CachedValue || hasStarted != HasStarted)
             ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
-        //else Debug.Write(".");
     }
 
     public void Increment() =>
@@ -199,6 +210,7 @@ public sealed class ProgressInfo : IProgressInfo
     public void IncrementNormalized(double normalizedIncrementValue)
     {
         int value;
+        bool hasStarted;
         lock (Lock)
         {
             if (IsDisposed)
@@ -206,6 +218,9 @@ public sealed class ProgressInfo : IProgressInfo
 
             if (normalizedIncrementValue <= 0.0)
                 return;
+
+            hasStarted = HasStarted;
+            HasStarted = true;
 
             value = CachedValue;
 
@@ -225,9 +240,8 @@ public sealed class ProgressInfo : IProgressInfo
 
             CachedValue = Value;
         }
-        if (value != CachedValue)
+        if (value != CachedValue || hasStarted != HasStarted)
             ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
-        //else Debug.Write(".");
     }
 
 

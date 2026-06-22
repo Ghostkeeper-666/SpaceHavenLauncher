@@ -1,14 +1,14 @@
 ﻿using SH.Content;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Services;
+using SH.Launcher.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Models;
+namespace SH.Launcher.Core.Models;
 
 /// <summary>
 /// A class for persisting path information
@@ -160,8 +160,10 @@ public sealed class PathData
 
 
     public string ExportDir => Path.Combine(WorkDir, "export");
-    public string ExportOriginalDir => Path.Combine(ExportDir, "original");
-    public string ExportModifiedDir => Path.Combine(ExportDir, "modified");
+    public string ExportOriginalFilesDir => Path.Combine(ExportDir, "OriginalFiles");
+    public string ExportModifiedFilesDir => Path.Combine(ExportDir, "ModifiedFiles");
+    public string ExportOriginalTexturesDir => Path.Combine(ExportDir, "OriginalTextures");
+    public string ExportModifiedTexturesDir => Path.Combine(ExportDir, "ModifiedTextures");
 
     #endregion Derived Properties
 

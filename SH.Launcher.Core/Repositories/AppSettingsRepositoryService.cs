@@ -2,22 +2,22 @@
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace SH.Launcher.Repositories;
+namespace SH.Launcher.Core.Repositories;
 
-public sealed class AppSettingsRepository
+public sealed class AppSettingsRepositoryService
 {
     private readonly PathData Paths;
 
     private readonly ILogger Log;
 
-    public AppSettingsRepository(PathData paths, ILogger logger)
+    public AppSettingsRepositoryService(PathData paths, ILogger logger)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Log = logger ?? new VoidLogger();
@@ -113,7 +113,7 @@ public sealed class AppSettingsRepository
             XElement root = new("AppSettings");
 
             // TODO: Version it, for future use...
-            root.SetAttributeValue("launcherVersion", SpaceHavenLauncher.GetAppVersion());
+            root.SetAttributeValue("launcherVersion", SpaceHavenLauncher.Version);
             doc.Add(root);
 
             // Write fields:

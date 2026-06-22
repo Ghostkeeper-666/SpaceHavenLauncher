@@ -11,6 +11,7 @@
     <FileVersion>$(AssemblyVersion)</FileVersion>
 		<Version>$(AssemblyVersion)</Version>
 		<Copyright>Ghostkeeper666</Copyright>
+    <ApplicationIcon>SpaceHavenLauncher.ico</ApplicationIcon>
 		<AssemblyTitle>Space Haven Launcher</AssemblyTitle>    
   </PropertyGroup>
 
@@ -35,20 +36,13 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Markdig" Version="1.2.0" />
     <PackageReference Include="MessageBox.Avalonia" Version="12.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="RectpackSharp" Version="1.2.0" />
-    <PackageReference Include="SharpZipLib" Version="1.4.2" />
-    <PackageReference Include="SkiaSharp" Version="3.119.4" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Assets\Images\SystemCore\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SH.Content\SH.Content.csproj" />
     <ProjectReference Include="..\SH.Framework\SH.Framework.csproj" />
+    <ProjectReference Include="..\SH.Launcher.Core\SH.Launcher.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,6 +51,9 @@
     </None>
     <None Update="aspectjweaver-1.9.19.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Icons\SpaceHavenLauncher.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Learning\000-Welcome!.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -173,6 +170,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SpaceHaven.icns">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SpaceHavenLauncher.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

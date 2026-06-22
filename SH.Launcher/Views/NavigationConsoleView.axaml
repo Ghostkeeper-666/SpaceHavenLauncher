@@ -847,8 +847,8 @@ x:DataType="vm:NavigationConsoleViewModel" >
       Data="{Binding ToggleLogViewButtonIcon}"
       RenderTransformOrigin="10.0,10.0"
       BorderThickness="2"
-      BorderBrush="Gold"
-      Foreground="Gold"
+      BorderBrush="White"
+      Foreground="White"
       Background="Transparent"
       HorizontalAlignment="Center"
       VerticalAlignment="Center"
@@ -889,14 +889,55 @@ x:DataType="vm:NavigationConsoleViewModel" >
       Data="{StaticResource Copy}"
       RenderTransformOrigin="10.0,10.0"
       BorderThickness="4"
-      BorderBrush="Gold"
-      Foreground="Gold"
+      BorderBrush="LimeGreen"
+      Foreground="LimeGreen"
       Background="Transparent"
       HorizontalAlignment="Center"
       VerticalAlignment="Center"
       IsHitTestVisible="False" />
     </Border>
 
+
+
+
+
+    <!-- Clear Log Button -->
+    <Border
+    x:Name="ClearLogButton"
+    Grid.Row="2"
+    Grid.Column="1"
+    Margin="0 0 116 0"
+    Padding="0"
+    Width="48"
+    Height="48"
+    MinWidth="48"
+    MinHeight="48"
+    MaxWidth="48"
+    MaxHeight="48"
+    Background="#bf000000"
+    CornerRadius="5"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Top"
+    PointerPressed="ClearLogStartAsync"
+    PointerReleased="ClearLogEndAsync"
+    IsHitTestVisible="True"
+
+    ToolTip.ShowDelay="10"
+    ToolTip.BetweenShowDelay="10"
+    ToolTip.ShowOnDisabled="True"
+    ToolTip.Tip="Clear Log" >
+      <PathIcon
+      x:Name="ClearLogIcon"
+      Data="{StaticResource Delete}"
+      RenderTransformOrigin="10.0,10.0"
+      BorderThickness="4"
+      BorderBrush="Red"
+      Foreground="Red"
+      Background="Transparent"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      IsHitTestVisible="False" />
+    </Border>
 
 
   </Grid>

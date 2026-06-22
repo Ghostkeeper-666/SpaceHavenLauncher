@@ -4,8 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -21,25 +21,25 @@ public partial class LeftPaneItem : ObservableObject
         switch (Type)
         {
             case EPageType.LearningComputer:
-                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/LearningComputerIcon.png");
+                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/LearningComputerIcon.png");
                 break;
 
             case EPageType.NavigationConsole:
-                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/NavigationConsoleIcon.png");
+                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/NavigationConsoleIcon.png");
                 break;
 
             case EPageType.SystemCore:
-                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/SystemCoreIcon.png");
+                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/SystemCoreIcon.png");
                 break;
 
             case EPageType.Airlock:
-                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/AirlockIcon.png");
+                Image = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/AirlockIcon.png");
                 break;
 
             case EPageType.Mod:
-                EnabledImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/ModIncludedIcon.png");
-                ErrorImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/ModErrorIcon.png");
-                DisabledImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Icons/ModExcludedIcon.png");
+                EnabledImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/ModIncludedIcon.png");
+                ErrorImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/ModErrorIcon.png");
+                DisabledImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Icons/ModExcludedIcon.png");
                 Image = EnabledImage;
                 break;
 

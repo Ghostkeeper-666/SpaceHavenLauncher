@@ -116,16 +116,16 @@ public partial class CentralScreen : ObservableObject
         DispatchQueue.TryEnqueue(async () => await SetProgressBarAsync(e.Progress.NormalizedValue));
 
     public async void OnProgress_CentralScreenLine0Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(0, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(async () => await SetTextAsync(0, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine1Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(1, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(async () => await SetTextAsync(1, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine2Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(2, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(async () => await SetTextAsync(2, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine3Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(3, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(async () => await SetTextAsync(3, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
 
     public void ShowEmptyOnMonitor()
@@ -229,12 +229,12 @@ public partial class CentralScreen : ObservableObject
 
 
 
-    private async Task SetTextAsync(int line, double progress) => State.DispatchQueue.TryEnqueue(() =>
+    private async Task SetTextAsync(int line, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
     {
         TextColor[line] =
-            progress >= 0.01 ? TextBrush_Active :
-            progress > 0.0 ? TextBrush_Inactive :
-            TextBrush_Offline;
+            !hasStarted ? TextBrush_Offline :
+            progress <= 0.0 ? TextBrush_Inactive :
+            TextBrush_Active;
     });
 
 

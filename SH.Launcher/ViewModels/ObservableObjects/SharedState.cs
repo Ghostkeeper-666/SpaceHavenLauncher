@@ -9,7 +9,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

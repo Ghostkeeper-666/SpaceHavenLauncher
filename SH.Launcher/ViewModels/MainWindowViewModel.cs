@@ -2,8 +2,8 @@
 using CommunityToolkit.Mvvm.Input;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
 using SH.Launcher.Views;
 using System;
 using System.Linq;
@@ -99,7 +99,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            PathSettingsRepository repo = new(Log);
+            PathSettingsRepositoryService repo = new(Log);
             PathData pathData = repo.TryLoad() ?? new();
             bool success = repo.ResolveAll(pathData);
             if (!success)
@@ -108,7 +108,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
             State.Paths = new PathViewModel(pathData);
             Paths.PropertyChanged += Paths_PropertyChanged;
-            Title = $"{Paths.AppName}  {Paths.AppVersion}";
+            Title = $"{SpaceHavenLauncher.Name}  {SpaceHavenLauncher.Version}";
             return success;
         }
         catch (OperationCanceledException) { throw; }
@@ -123,11 +123,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         switch (e.PropertyName)
         {
-            case nameof(PathViewModel.AppName):
-            case nameof(PathViewModel.AppVersion):
             case nameof(PathViewModel.SpaceHavenName):
             case nameof(PathViewModel.SpaceHavenVersion):
-                Title = $"{Paths.AppName} {Paths.AppVersion}";
+                Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version}";
                 if (Paths.SpaceHavenVersion != null)
                     Title += $"  -  {Paths.SpaceHavenName} {Paths.SpaceHavenVersion}";
                 return;
@@ -141,7 +139,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            AppSettingsRepository repo = new(Paths.Data, Log);
+            AppSettingsRepositoryService repo = new(Paths.Data, Log);
             
             AppSettingsData data = await repo.TryLoadOrCreateAsync(ct);
             if (data != null)

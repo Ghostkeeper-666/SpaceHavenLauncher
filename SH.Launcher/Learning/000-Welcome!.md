@@ -2,13 +2,11 @@
 
 Let's go through this FAQ before asking questions...
 
-# User friendly interface
-
 **Space Haven Launcher** mimics the game's theme:
-- [Learning Computer](tab://LearningComputer): the right place to **learn about Space Haven modding**
-- [Navigation Console](tab://NavigationConsole): initializes the mod system, **launches original or modified game**, exports game assets
-- [System Core](tab://SystemCore): the **settings** central - check this page if any directory was not detected
-- [Airlock](tab://Airlock): a relaxing **screensaver**, with fan art and screenshots from early stages of the game
+- [Learning Computer](tab://LearningComputer): the right place to **understand** the basics
+- [System Core](tab://SystemCore): the **settings** central - check this page if any directory was not auto-detected
+- [Navigation Console](tab://NavigationConsole): **launches original** or **modified games**, re-initializes Space Haven Launcher, exports game assets
+- [Airlock](tab://Airlock): a relaxing **screensaver**, with some fan art and screenshots from early stages of the game
 
 # Directories and paths
 

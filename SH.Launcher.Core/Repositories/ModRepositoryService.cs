@@ -2,14 +2,14 @@
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Repositories;
+namespace SH.Launcher.Core.Repositories;
 
 public sealed class ModRepositoryService
 {

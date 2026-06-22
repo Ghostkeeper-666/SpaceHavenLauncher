@@ -3,9 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Content.Enums;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Linq;
+using SH.Framework.IO;
 
 namespace SH.Launcher.ViewModels;
 
@@ -13,7 +14,7 @@ public partial class SystemCoreViewModel : ViewModelBase
 {
     public SystemCoreViewModel() { }
 
-    private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/SystemCore.jpg");
+    private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/SystemCore.jpg");
 
     public SharedState State => SharedState.State;
     public ILogger Log => State.Log;
@@ -22,6 +23,9 @@ public partial class SystemCoreViewModel : ViewModelBase
 
     public void SetBackgroundImage() =>
         State.ForcedBackground = BackgroundImage;
+
+    [ObservableProperty]
+    private bool _IsWin = OS.IsWin;
 
     [ObservableProperty]
     private ELogVerbosity[] _LogVerbosityValues = Enum.GetValues<ELogVerbosity>().ToArray();

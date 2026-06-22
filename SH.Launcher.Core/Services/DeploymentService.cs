@@ -6,15 +6,15 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Services;
+namespace SH.Launcher.Core.Services;
 
 /// <summary>
 /// Manipulates files (to/from) game directory
@@ -32,7 +32,7 @@ public sealed class DeploymentService
 
     private async Task<bool> IsModifiedJar(string jarPath)
     {
-        JarRepository repo = new(Paths, Log);
+        JarRepositoryService repo = new(Paths, Log);
         VersionInfo version = await repo.TryReadVersionAsync(jarPath, Log);
         return version.ToString().Contains("MODIFIED", StringComparison.OrdinalIgnoreCase);
     }
@@ -41,7 +41,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.01);
+            progress?.Start();
 
             bool spaceHavenJarIsOriginal = File.Exists(Paths.SpaceHavenJarPath) && !await IsModifiedJar(Paths.SpaceHavenJarPath);
 
@@ -93,7 +93,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.01);
+            progress?.Start();
 
             // Try to reuse existing template:
             if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&
@@ -126,7 +126,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.01);
+            progress?.Start();
 
             // Try to reuse existing modified:
             if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&

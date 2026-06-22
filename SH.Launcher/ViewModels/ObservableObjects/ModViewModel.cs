@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -47,7 +47,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         Background = data.BackgroundImagePath;
 
         AppCompatibility = data.AppCompatibility.ToDisplayString("\r\n") ?? "(any)";
-        HasAppCompatibilityError = !data.AppCompatibility.MatchAll(Paths.AppName, Paths.AppVersion);
+        HasAppCompatibilityError = !data.AppCompatibility.MatchAll(SpaceHavenLauncher.Name, SpaceHavenLauncher.Version);
 
         SpaceHavenCompatibility = data.SpaceHavenCompatibility.ToDisplayString("\r\n") ?? "(any)";
         HasSpaceHavenCompatibilityError = !data.SpaceHavenCompatibility.MatchAll(Paths.SpaceHavenName, Paths.SpaceHavenVersion);
@@ -111,19 +111,19 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
 
         // If background is not defined by the mod, use default backgrounds for known Space Haven modders:
         if (Author.StartsWith("ghostkeeper", StringComparison.OrdinalIgnoreCase))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-Ghostkeeper.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Ghostkeeper.jpg");
         else if (Author.StartsWith("paperfox", StringComparison.OrdinalIgnoreCase))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-PaperFox.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-PaperFox.jpg");
         else if (Author.Equals("sub", StringComparison.OrdinalIgnoreCase) || Author.Equals("subzero", StringComparison.OrdinalIgnoreCase) || Author.Equals("sub-zero", StringComparison.OrdinalIgnoreCase))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-SubZero.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-SubZero.jpg");
         else if (Author.Contains("fuklaw", StringComparison.OrdinalIgnoreCase))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-Fuklaw.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Fuklaw.jpg");
         else if (Author.Contains("chewday", StringComparison.OrdinalIgnoreCase))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-Chewday.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Chewday.jpg");
         else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-Ravage.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Ravage.jpg");
         else if (Name.Contains("Bikini"))
-            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/bg-Bikini.jpg");
+            State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Bikini.jpg");
     }
 
     partial void OnFinalIdChanged(int value)

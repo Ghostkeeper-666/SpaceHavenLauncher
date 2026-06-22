@@ -102,28 +102,28 @@ public partial class RightScreen : ObservableObject
     public void Reset()
     {
         for (int step = 0; step < Steps; ++step)
-            Set((ERightScreenStep)step, false, 0.0);
+            Set((ERightScreenStep)step, false, 0.0, false);
     }
 
     public async void OnExportOriginalLibraryProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalLibrary, false, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportOriginalTexturesProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalTextures, false, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportModifiedLibraryProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedLibrary, false, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportModifiedTexturesProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedTextures, false, e.Progress.NormalizedValue));
+        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public void SetError(ERightScreenStep step)
     {
-        Set(step, true, 0.0);
+        Set(step, true, 0.0, false);
         RightButtonsState = EControlState.Error;
     }
 
-    private void Set(ERightScreenStep step, bool error, double progress) => State.DispatchQueue.TryEnqueue(() =>
+    private void Set(ERightScreenStep step, bool error, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
     {
         int line = (int)step;
 

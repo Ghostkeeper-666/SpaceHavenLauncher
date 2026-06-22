@@ -6,7 +6,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Services;
+namespace SH.Launcher.Core.Services;
 
 public sealed class XmlAnnotationService
 {
@@ -21,6 +21,7 @@ public sealed class XmlAnnotationService
     {
         try
         {
+            progress?.Start();
             XmlAnnotator xmlAnnotator = new(Log);
             if (!await xmlAnnotator.TryRunAsync(baseDir, language, ct, progress))
                 return false;

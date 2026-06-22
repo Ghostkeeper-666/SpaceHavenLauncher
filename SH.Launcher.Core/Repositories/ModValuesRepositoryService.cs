@@ -1,7 +1,7 @@
 ﻿using SH.Content.Modding;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace SH.Launcher.Repositories;
+namespace SH.Launcher.Core.Repositories;
 
 public sealed class ModValuesRepositoryService
 {

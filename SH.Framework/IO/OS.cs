@@ -108,7 +108,7 @@ public static class OS
         {
             try
             {
-                switch (OS.Type)
+                switch (Type)
                 {
                     case EOSType.Windows:
                         Process.Start(new ProcessStartInfo
@@ -148,7 +148,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={OS.Type}");
+                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
                 }
             }
             catch (Exception ex)
@@ -168,7 +168,7 @@ public static class OS
         {
             try
             {
-                switch (OS.Type)
+                switch (Type)
                 {
                     case EOSType.Windows:
                         Process.Start(new ProcessStartInfo
@@ -206,7 +206,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={OS.Type}");
+                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
                 }
             }
             catch (Exception ex)
@@ -230,7 +230,7 @@ public static class OS
         {
             try
             {
-                switch (OS.Type)
+                switch (Type)
                 {
                     case EOSType.Windows:
                         Process.Start(new ProcessStartInfo
@@ -257,7 +257,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={OS.Type}");
+                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
                 }
             }
             catch (Exception ex)

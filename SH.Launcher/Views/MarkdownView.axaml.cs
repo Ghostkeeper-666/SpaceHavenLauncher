@@ -10,7 +10,7 @@ using Markdig.Syntax.Inlines;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -308,7 +308,7 @@ public partial class MarkdownView : UserControl
                     [ToolTip.TipProperty] = $"Click to open \n\n{linkInline.Url}",
                 };
 
-                linkTextBlock.PointerPressed += OpenLink(SpaceHavenLauncher.GetAppDir(), linkInline?.Url, State.Log);
+                linkTextBlock.PointerPressed += OpenLink(SpaceHavenLauncher.Directory, linkInline?.Url, State.Log);
 
                 Avalonia.Controls.Documents.InlineUIContainer container = new(linkTextBlock)
                 {

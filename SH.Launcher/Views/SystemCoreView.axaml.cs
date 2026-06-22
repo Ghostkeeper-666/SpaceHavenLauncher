@@ -3,7 +3,8 @@ using Avalonia.Controls;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Repositories;
+using SH.Launcher.Core.Services;
 using SH.Launcher.Services;
 using SH.Launcher.ViewModels;
 using System.IO;
@@ -33,7 +34,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_SpaceHavenDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.SpaceHavenDir = repo.ResolveSpaceHavenDir(Paths.AppDir);
         if (!Paths.SpaceHavenDir.IsNullOrWhiteSpace())
         {
@@ -52,7 +53,7 @@ public partial class SystemCoreView : UserControl
         dir = Path.TrimEndingDirectorySeparator(dir);
         Paths.SpaceHavenDir = dir;
 
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         if (!Paths.SpaceHavenDir.IsNullOrWhiteSpace())
         {
             Paths.SpaceHavenJarDir = repo.ResolveSpaceHavenJarDir(Paths.SpaceHavenDir);
@@ -65,7 +66,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_SpaceHavenJarDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.SpaceHavenJarDir = repo.ResolveSpaceHavenJarDir(Paths.SpaceHavenDir);
     }
 
@@ -83,7 +84,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_SteamDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.SteamDir = repo.ResolveSteamDir(Paths.AppDir);
         if (!Paths.SteamDir.IsNullOrWhiteSpace())
             Paths.SteamModsDir = repo.ResolveSteamModsDir(Paths.SteamDir);
@@ -98,7 +99,7 @@ public partial class SystemCoreView : UserControl
         dir = Path.TrimEndingDirectorySeparator(dir);
         Paths.SteamDir = dir;
 
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         if (!Paths.SteamDir.IsNullOrWhiteSpace())
             Paths.SteamModsDir = repo.ResolveSteamModsDir(Paths.SteamDir);
     }
@@ -107,7 +108,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_SteamModsDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.SteamModsDir = repo.ResolveSteamModsDir(Paths.SteamDir);
     }
 
@@ -125,7 +126,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_ClassicModsDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.ClassicModsDir = repo.ResolveClassicModsDir(Paths.SpaceHavenJarDir);
     }
 
@@ -143,7 +144,7 @@ public partial class SystemCoreView : UserControl
 
     private void Resolve_ModValuesDir(object sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        PathSettingsRepository repo = new(Log);
+        PathSettingsRepositoryService repo = new(Log);
         Paths.ModValuesDir = repo.ResolveModValuesDir(Paths.WorkDir);
     }
 
@@ -180,4 +181,6 @@ public partial class SystemCoreView : UserControl
     private void Open_ModValuesDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ModValuesDir, Log));
 
+    private void CreateWindowsShortcut(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(() => new IconService(Log).CreateSpaceHavenLauncherWindowsDesktopIcon());
 }

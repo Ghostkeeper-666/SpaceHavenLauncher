@@ -11,5 +11,6 @@
     <Build Solution="Debug|*" Project="false" />
   </Project>
   <Project Path="SH.Framework/SH.Framework.csproj" />
+  <Project Path="SH.Launcher.Core/SH.Launcher.Core.csproj" Id="402170b2-5486-4ce9-a4bd-ad672d4f84be" />
   <Project Path="SH.Launcher/SH.Launcher.csproj" />
 </Solution>

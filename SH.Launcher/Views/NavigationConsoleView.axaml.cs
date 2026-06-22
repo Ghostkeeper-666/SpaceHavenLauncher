@@ -9,7 +9,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using SH.Launcher.ViewModels;
 using SH.Launcher.ViewModels.Enums;
 using System;
@@ -197,19 +197,19 @@ public partial class NavigationConsoleView : UserControl
     {
         if (isHovered && !isPressed && state != EControlState.Running)
             NavigationConsoleControlImages[(int)control].Set(
-                $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/NavigationConsole/CONTROL-Hovered.jpg"
+                $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-Hovered.jpg"
                 .Replace("CONTROL", control.ToString())
             );
 
         else if (isPressed && state != EControlState.Running)
             NavigationConsoleControlImages[(int)control].Set(
-                $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/NavigationConsole/CONTROL-Running.jpg"
+                $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-Running.jpg"
                 .Replace("CONTROL", control.ToString())
             );
 
         else
             NavigationConsoleControlImages[(int)control].Set(
-                $"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/NavigationConsole/CONTROL-STATE.jpg"
+                $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-STATE.jpg"
                 .Replace("CONTROL", control.ToString())
                 .Replace("STATE", state.ToString())
             );
@@ -420,7 +420,7 @@ public partial class NavigationConsoleView : UserControl
                 State.DispatchQueue.TryEnqueue(() => State.CopyToClipboardAsync(logMessage.Text));
 
             else if (point.Properties.IsRightButtonPressed)
-                State.DispatchQueue.TryEnqueue(() => OS.OpenLinkAsync(SpaceHavenLauncher.GetAppDir(), logMessage.Link, Log));
+                State.DispatchQueue.TryEnqueue(() => OS.OpenLinkAsync(SpaceHavenLauncher.Directory, logMessage.Link, Log));
         }
         catch (Exception ex)
         {
@@ -468,7 +468,24 @@ public partial class NavigationConsoleView : UserControl
     private async void CopyLogEndAsync(object sender, PointerReleasedEventArgs e)
     {
         await Task.Delay(100);
-        CopyLogIcon.Foreground = Brushes.Gold;
+        CopyLogIcon.Foreground = Brushes.LimeGreen;
+    }
+
+    private async void ClearLogStartAsync(object sender, PointerPressedEventArgs e)
+    {
+        ClearLogIcon.Foreground = Brushes.Cyan;
+        Log.Debug(new string('#', 200));
+        await Task.Yield();
+        await Task.Delay(100);
+        await Task.Yield();
+        State.LogHistory.Clear();
+    }
+
+    private async void ClearLogEndAsync(object sender, PointerReleasedEventArgs e)
+    {
+        await Task.Delay(100);
+        Log.Success("The log history has been cleared");
+        ClearLogIcon.Foreground = Brushes.Red;
     }
 
 

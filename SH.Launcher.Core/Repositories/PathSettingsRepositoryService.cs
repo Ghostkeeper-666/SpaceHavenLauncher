@@ -2,7 +2,7 @@
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,12 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace SH.Launcher.Repositories;
+namespace SH.Launcher.Core.Repositories;
 
-#warning TODO: Create a new path finding system which combinates diverse possible paths, e.g. on D:, E:, F:, etc
-public sealed class PathSettingsRepository
+#warning TODO: Create a new path finding system which combines diverse possible paths!
+public sealed class PathSettingsRepositoryService
 {
-    public PathSettingsRepository(ILogger logger) =>
+    public PathSettingsRepositoryService(ILogger logger) =>
         Log = logger ?? new VoidLogger();
 
     private readonly ILogger Log;
@@ -33,7 +33,7 @@ public sealed class PathSettingsRepository
             {
                 data.WorkDir = ResolveWorkDir();
                 if (data.WorkDir.IsNullOrWhiteSpace())
-                    Log.Error($"Unable to resolve {SpaceHavenLauncher.APP_NAME} work directory");
+                    Log.Error($"Unable to resolve {SpaceHavenLauncher.Name} work directory");
             }
 
             // Steam Directory:
@@ -108,8 +108,8 @@ public sealed class PathSettingsRepository
 
     public string ResolveAppDir()
     {
-        string dir = SpaceHavenLauncher.GetAppDir();
-        Log.Debug($@"{nameof(ResolveAppDir)}: Resolved {SpaceHavenLauncher.APP_NAME} directory as ""{dir}""");
+        string dir = SpaceHavenLauncher.Directory;
+        Log.Debug($@"{nameof(ResolveAppDir)}: Resolved {SpaceHavenLauncher.Name} directory as ""{dir}""");
         return dir;
     }
 
@@ -131,7 +131,7 @@ public sealed class PathSettingsRepository
         }
 
         // Done.
-        Log.Debug($@"{nameof(ResolveWorkDir)}: Resolved {SpaceHavenLauncher.APP_NAME} work directory as ""{dir}""");
+        Log.Debug($@"{nameof(ResolveWorkDir)}: Resolved {SpaceHavenLauncher.Name} work directory as ""{dir}""");
         return dir;
     }
 

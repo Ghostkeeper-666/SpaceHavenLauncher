@@ -1,7 +1,7 @@
 ﻿using SH.Framework.IO;
 using SH.Framework.Logging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -35,8 +35,6 @@ public partial class PathViewModel : ObservableObject
     public PathViewModel SetData(PathData data)
     {
         Data = data;
-        AppName = SpaceHavenLauncher.APP_NAME;
-        AppVersion = SpaceHavenLauncher.GetAppVersion();
         SpaceHavenName = SpaceHavenConstants.SpaceHavenName;
         SpaceHavenVersion = Data.SpaceHavenVersion;
 
@@ -89,12 +87,6 @@ public partial class PathViewModel : ObservableObject
     }
 
     public string LearningDir => Data.LearningDir;
-
-    [ObservableProperty]
-    private string _AppName;
-
-    [ObservableProperty]
-    private VersionInfo _AppVersion;
 
     [ObservableProperty]
     private string _SpaceHavenName;

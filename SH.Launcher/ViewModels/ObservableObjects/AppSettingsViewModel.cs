@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Content.Enums;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -108,7 +108,7 @@ public partial class AppSettingsViewModel : ObservableObject
             }
             if (Paths != null)
             {
-                AppSettingsRepository repo = new(Paths.Data, Log);
+                AppSettingsRepositoryService repo = new(Paths.Data, Log);
                 await repo.TrySaveAsync(Data, default);
             }
         }

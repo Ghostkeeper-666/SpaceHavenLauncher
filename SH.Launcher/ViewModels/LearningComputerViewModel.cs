@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -16,7 +16,7 @@ public partial class LearningComputerViewModel : ViewModelBase
 {
     public LearningComputerViewModel() { }
 
-    private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/LearningComputer.jpg");
+    private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/LearningComputer.jpg");
 
     public SharedState State => SharedState.State;
     public ILogger Log => State.Log;

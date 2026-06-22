@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Services;
+namespace SH.Launcher.Core.Services;
 
 public sealed class VersionParserService
 {

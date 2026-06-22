@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SH.Launcher.Models;
+namespace SH.Launcher.Core.Models;
 
 [Flags]
 public enum EExportOption

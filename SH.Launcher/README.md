@@ -4,15 +4,23 @@ This is a launcher program made for Space Haven. It starts the original game as 
 
 ## Installation
 
-- **Everyone**: make sure Space Haven Launcher has write permissions on Space Haven folder
+**Everyone**:
+- make sure Space Haven Launcher has write permissions on Space Haven folder
 
-- **linux users**: check whether the application has execute permissions:
+**Windows**:
+- Place the app anywhere, run the app, then on the app's System Core tab you can create a desktop icon
 
-`chmod 755 ./SpaceHavenLauncher`
+**Linux**:
+- check whether the application has execute permissions:
+```chmod 755 ./SpaceHavenLauncher```
 
-- **macOS users**: you need to codesign the beta versions of this application:
-
-`codesign --force --deep --sign - *`
+**macOS**:
+- place the application here:
+```/Applications/SpaceHavenLauncher.app```
+- remove the "downloaded" app flag:
+```xattr -dr com.apple.quarantine SpacehavenLauncher.app```
+- due to temporary lack of notarization, codesign the application too:
+```codesign --force --deep --sign - *```
 
 ## Mod Installation
 

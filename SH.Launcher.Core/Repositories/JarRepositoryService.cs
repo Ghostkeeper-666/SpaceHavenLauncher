@@ -3,7 +3,7 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using ICSharpCode.SharpZipLib.Zip;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,15 +12,15 @@ using System.Threading.Tasks;
 using System.Threading;
 using SH.Content;
 
-namespace SH.Launcher.Repositories;
+namespace SH.Launcher.Core.Repositories;
 
-public sealed class JarRepository
+public sealed class JarRepositoryService
 {
     private readonly PathData Paths;
     private readonly ILogger Log;
     private IProgressInfo Progress;
 
-    public JarRepository(PathData paths, ILogger logger)
+    public JarRepositoryService(PathData paths, ILogger logger)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Log = logger ?? new VoidLogger();
@@ -72,7 +72,7 @@ public sealed class JarRepository
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(jarPath));
 
             Progress = progressInfo;
-            Progress?.SetNormalized(0.01);
+            Progress?.Start();
 
             if (!File.Exists(jarPath))
             {
@@ -80,6 +80,8 @@ public sealed class JarRepository
                 return false;
             }
 
+            // Clear:
+            Log.Info("Clearing export directory...");
             if (!await IOUtils.TryDeleteDirectoryAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to clear output directory ""{outputDirectory}""", outputDirectory);
@@ -179,7 +181,7 @@ public sealed class JarRepository
         try
         {
             Progress = progressInfo;
-            Progress?.SetNormalized(0.01);
+            Progress?.Start();
 
             if (!File.Exists(jarPath))
             {

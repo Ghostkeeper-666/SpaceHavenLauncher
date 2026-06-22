@@ -1,10 +1,11 @@
 ﻿using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using CommunityToolkit.Mvvm.ComponentModel;
-using System.Collections.ObjectModel;
 using SH.Launcher.ViewModels.Enums;
+using System;
+using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;
 
@@ -101,25 +102,25 @@ public partial class LeftScreen : ObservableObject
     public void Reset()
     {
         for (int step = 0; step < Steps; ++step)
-            Set((ELeftScreenStep)step, false, 0.0);
+            Set((ELeftScreenStep)step, false, 0.0, false);
     }
 
-    public async void OnBackupOriginalProgressAsync(object _, ProgressEventArgs progress) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.BackupOriginal, false, progress.Progress.NormalizedValue));
-    public async void OnCreateTemplateProgressAsync(object _, ProgressEventArgs progress) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.CreateTemplate, false, progress.Progress.NormalizedValue));
-    public async void OnValidateCacheProgressAsync(object _, ProgressEventArgs progress) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.ValidateCache, false, progress.Progress.NormalizedValue));
-    public async void OnLoadModsProgressAsync(object _, ProgressEventArgs progress) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.LoadMods, false, progress.Progress.NormalizedValue));
+    public async void OnBackupOriginalProgressAsync(object _, ProgressEventArgs e) =>
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.BackupOriginal, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+    public async void OnCreateTemplateProgressAsync(object _, ProgressEventArgs e) =>
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.CreateTemplate, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+    public async void OnValidateCacheProgressAsync(object _, ProgressEventArgs e) =>
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.ValidateCache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+    public async void OnLoadModsProgressAsync(object _, ProgressEventArgs e) =>
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public void SetError(ELeftScreenStep step)
     {
-        Set(step, true, 0.0);
+        Set(step, true, 0.0, false);
         LeftButtonsState = EControlState.Error;
     }
 
-    private void Set(ELeftScreenStep step, bool error, double progress)
+    private void Set(ELeftScreenStep step, bool error, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
     {
         int line = (int)step;
 
@@ -136,7 +137,7 @@ public partial class LeftScreen : ObservableObject
 
         if (progress <= 0.0)
         {
-            TextColor[line] = TextBrush_Standby;
+            TextColor[line] = hasStarted ? TextBrush_Running : TextBrush_Standby;
             for (int bar = 0; bar < ProgressBarStepCount; ++bar)
             {
                 ProgressBarBorder[line][bar] = BorderBrush_Standby;
@@ -167,7 +168,7 @@ public partial class LeftScreen : ObservableObject
             }
             return;
         }
-    }
+    });
 
 
 

@@ -1,13 +1,10 @@
-﻿using SH.Content.Modding;
-using SH.Content.Modding.Build;
+﻿using SH.Content.Modding.Build;
 using SH.Framework.Logging;
-using SH.Launcher.Models;
+using SH.Launcher.Core.Models;
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Services;
+namespace SH.Launcher.Core.Services;
 
 public sealed class BuildService
 {

@@ -1,6 +1,6 @@
 ﻿using SH.Framework.Logging;
 
-namespace SH.Launcher.Models;
+namespace SH.Launcher.Core.Models;
 
 public enum ELogVerbosity : int
 {

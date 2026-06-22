@@ -11,10 +11,10 @@ using SH.Content.Xml;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Repositories;
+using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
-using SH.Launcher.Models;
-using SH.Launcher.Repositories;
-using SH.Launcher.Services;
 using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using System;
@@ -33,7 +33,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 {
     public NavigationConsoleViewModel() { }
 
-    private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.ASSEMBLY_NAME}/Assets/Images/Backgrounds/NavigationConsole.jpg");
+    private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/NavigationConsole.jpg");
 
     public SharedState State => SharedState.State;
     public ILogger Log => State.Log;
@@ -105,6 +105,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         cache?.ProgressChanged += LeftScreen.OnValidateCacheProgressAsync;
         loadMods?.ProgressChanged += LeftScreen.OnLoadModsProgressAsync;
 
+        // Since we have 5 progress "bars", we don't need to be notified more than 5 times
+        backup.Max = 5;
+        template.Max = 5;
+        cache.Max = 5;
+        loadMods.Max = 5;
+
         launch.Reset(); // resets all children
 
         try
@@ -118,7 +124,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             if (forceReset)
             {
-                Log.Info($"Resetting {Paths.AppName} files...");
+                Log.Info($"Resetting {SpaceHavenLauncher.Name} files...");
                 await IOUtils.TryDeleteDirectoryAsync(Paths.Data.TemplateDir, Log, ct);
                 await IOUtils.TryDeleteDirectoryAsync(Paths.Data.BuildDir, Log, ct);
                 await IOUtils.TryDeleteDirectoryAsync(Paths.Data.CacheDir, Log, ct);
@@ -190,12 +196,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             loadMods.Complete();
 
             // Done.
-            Log.Success($"{Paths.AppName} initialization is complete", Paths.WorkDir);
+            Log.Success($"{SpaceHavenLauncher.Name} initialization is complete", Paths.WorkDir);
             LeftScreen.LeftButtonsState = EControlState.Ready;
         }
         catch (OperationCanceledException)
         {
-            Log.Error($"{Paths.AppName} initialization was cancelled");
+            Log.Error($"{SpaceHavenLauncher.Name} initialization was cancelled");
             LeftScreen.LeftButtonsState = EControlState.Error;
         }
         catch (Exception ex)
@@ -212,10 +218,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
 
 
-    private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo loadModsProgress)
+    private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
+            progress?.Start();
+
             // Clear mod items:
             State.Mods.Clear();
             State.ModPages.Clear();
@@ -231,7 +239,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             // Load mods, then sort them:
             ModRepositoryService modRepoSvc = new(Paths.Data, Log);
             ModValuesRepositoryService valuesRepoSvc = new(Paths.Data, Log);
-            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, loadModsProgress);
+            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, progress);
             if (mods == null)
                 return false;
             mods = await valuesRepoSvc.TryLoadModSorting(mods, ct);
@@ -274,6 +282,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             State.UpdateModDependencies();
 
             // Done.
+            progress?.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -319,19 +328,18 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         ProgressInfo progress = new("Progress");
         ProgressInfo runGame = new("Launch");
 
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
+        
+        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
-        // Use this trick to show inactive text on central screen monitor:
-
-#warning This trick doesn't work anymore with ProgressInfo optimization => implement a "HasStarted" in Progress Info and set it to "true" on first change after Creation or Reset
-
-        runGame.SetNormalized(0.01);
-        progress.SetNormalized(0.01);
         CentralScreen.ShowLaunchOriginalOnMonitor();
+
+        progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
+        progress.Start();
+        runGame.Start();
 
         await Semaphore.WaitAsync();
         try
@@ -463,10 +471,11 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
-        // Use this trick to show inactive text on central screen monitor:
         CentralScreen.ShowLaunchModifiedOnMonitor();
-        runGame.SetNormalized(0.01);
-        progress.SetNormalized(0.01);
+
+        progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
+        progress.Start();
+        runGame.Start();
 
         await Semaphore.WaitAsync();
         try
@@ -510,7 +519,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             BuildSettings settings = new(ct)
             {
-                AppVersion = SpaceHavenLauncher.GetAppVersion(),
+                AppVersion = SpaceHavenLauncher.Version,
                 SpaceHavenVersion = Paths.SpaceHavenVersion,
                 ForceSpritesheetSize2048 = AppSettings.ForceSpritesheetSize2048,
                 Initialization = initialization,
@@ -637,9 +646,14 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         extractOriginalLibrary.ProgressChanged += RightScreen.OnExportOriginalLibraryProgressAsync;
         exportOriginalTextures.ProgressChanged += RightScreen.OnExportOriginalTexturesProgressAsync;
-
         extractModifiedLibrary.ProgressChanged += RightScreen.OnExportModifiedLibraryProgressAsync;
         exportModifiedTextures.ProgressChanged += RightScreen.OnExportModifiedTexturesProgressAsync;
+
+        // Since we have 5 progress "bars", we don't need to be notified more than 5 times
+        extractOriginalLibrary.Max = 5;
+        exportOriginalTextures.Max = 5;
+        extractModifiedLibrary.Max = 5;
+        exportModifiedTextures.Max = 5;
 
         extractOriginalLibrary.Reset();
         exportOriginalTextures.Reset();
@@ -649,8 +663,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         string workDir = Paths.Data.WorkDir;
         string exportDir = Paths.Data.ExportDir;
-        string exportOriginalDir = Paths.Data.ExportOriginalDir;
-        string exportModifiedDir = Paths.Data.ExportModifiedDir;
+
+        string exportOriginalFilesDir = Paths.Data.ExportOriginalFilesDir;
+        string exportOriginalTexturesDir = Paths.Data.ExportOriginalTexturesDir;
+
+        string exportModifiedFilesDir = Paths.Data.ExportModifiedFilesDir;
+        string exportModifiedTexturesDir = Paths.Data.ExportModifiedTexturesDir;
 
         await Semaphore.WaitAsync();
         try
@@ -679,54 +697,45 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 }
                 else if (!File.Exists(originalJarPath) || !Directory.Exists(originalFilesDir))
                 {
-                    Log.Warn($"Unable to locate ORIGINAL files => {Paths.AppName} was not properly initialized", workDir);
+                    Log.Warn($"Unable to locate ORIGINAL files => {SpaceHavenLauncher.Name} was not properly initialized", workDir);
                     exportOriginalSuccess = false;
                 }
                 else
                 {
-                    // Reset target directory:
-                    if (!await IOUtils.TryDeleteDirectoryAsync(exportOriginalDir, Log, ct) || !await IOUtils.TryDeleteDirectoryAsync(exportOriginalDir, Log, ct))
+                    // Export ORIGINAL Library:
+                    Log.Info($@"Extracting ORIGINAL library...", exportOriginalFilesDir);
+                    JarRepositoryService repo = new(Paths.Data, Log);
+                    if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalFilesDir, ct, extractOriginalFiles))
                     {
-                        Log.Error($@"Unable to reset export directory", exportDir);
+                        Log.Error($@"Unable to extract ORIGINAL library", exportDir);
                         RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
+                        exportOriginalSuccess = false;
+                    }
+                    else Log.Success($@"ORIGINAL files were successfully exported to: ""{exportOriginalFilesDir}""", exportOriginalFilesDir);
+
+                    // Annotate ORIGINAL Libraries:
+                    Log.Info($"Writing XML annotation...");
+                    XmlAnnotationService xmlAnnotationService = new(Log);
+                    if (!await xmlAnnotationService.TryRunAsync(exportOriginalFilesDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateOriginalXML))
+                    {
+                        Log.Error($@"Unable to annotate ORIGINAL library", exportDir);
+                        RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
+                        exportOriginalSuccess = false;
+                    }
+
+                    // Export ORIGINAL Textures:
+                    Log.Info($@"Exporting ORIGINAL textures...", exportOriginalTexturesDir);
+                    if (!AppSettings.ExportTextures)
+                    {
+                        Log.Warn($@"Skipping export of ORIGINAL textures, accordingly to System Core settings", "tab://SystemCore");
+                    }
+                    else if (!await TryExportTextures(originalFilesDir, exportOriginalTexturesDir, parallelOptions, exportOriginalSpriteSheets, exportOriginalSprites))
+                    {
+                        Log.Error($@"Unable to export ORIGINAL library", exportDir);
                         RightScreen.SetError(ERightScreenStep.ExportOriginalTextures);
                         exportOriginalSuccess = false;
                     }
-                    else
-                    {
-                        // Export ORIGINAL Library:
-                        Log.Info($@"Extracting ORIGINAL library...", exportOriginalDir);
-                        JarRepository repo = new(Paths.Data, Log);
-                        if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalDir, ct, extractOriginalFiles))
-                        {
-                            Log.Error($@"Unable to extract ORIGINAL library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
-                            exportOriginalSuccess = false;
-                        }
-
-                        // Annotate ORIGINAL Libraries:
-                        Log.Info($"Writing XML annotation...");
-                        XmlAnnotationService xmlAnnotationService = new(Log);
-                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportOriginalDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateOriginalXML))
-                        {
-                            Log.Error($@"Unable to annotate ORIGINAL library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
-                            exportOriginalSuccess = false;
-                        }
-
-                        // Export ORIGINAL Textures:
-                        Log.Info($@"Exporting ORIGINAL textures...", exportOriginalDir);
-                        if (!AppSettings.ExportTextures)
-                        {
-                            Log.Warn($@"Skipping export of ORIGINAL textures, accordingly to System Core settings", "tab://SystemCore");
-                        }
-                        else if (!await TryExportTextures(originalFilesDir, exportOriginalDir, parallelOptions, exportOriginalSpriteSheets, exportOriginalSprites))
-                        {
-                            Log.Error($@"Unable to export ORIGINAL library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportOriginalTextures);
-                            exportOriginalSuccess = false;
-                        }
-                    }
+                    else Log.Success($@"ORIGINAL textures were successfully exported to: ""{exportOriginalTexturesDir}""", exportOriginalTexturesDir);
                 }
             }
 
@@ -747,59 +756,44 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 }
                 else
                 {
-                    // Reset target directory:
-                    if (!await IOUtils.TryDeleteDirectoryAsync(exportModifiedDir, Log, ct) || !await IOUtils.TryDeleteDirectoryAsync(exportModifiedDir, Log, ct))
+                    // Export MODIFIED Library:
+                    Log.Info($@"Exporting MODIFIED library...", exportModifiedFilesDir);
+                    JarRepositoryService repo = new(Paths.Data, Log);
+                    if (!await repo.TryExportLibraryAsync(modifiedJarPath, exportModifiedFilesDir, ct, extractModifiedFiles))
                     {
-                        Log.Error($@"Unable to reset export directory", exportDir);
+                        Log.Error($@"Unable to export MODIFIED library", exportDir);
                         RightScreen.SetError(ERightScreenStep.ExportModifiedLibrary);
-                        RightScreen.SetError(ERightScreenStep.ExportModifiedTextures);
-                        exportOriginalSuccess = false;
+                        exportModifiedSuccess = false;
                     }
-                    else
+                    else Log.Success($@"MODIFIED files were successfully exported to: ""{exportModifiedFilesDir}""", exportModifiedFilesDir);
+
+                    // Annotate MODIFIED Libraries:
+                    Log.Info($"Writing XML annotation...");
+                    XmlAnnotationService xmlAnnotationService = new(Log);
+                    if (!await xmlAnnotationService.TryRunAsync(exportModifiedFilesDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateModifiedXML))
                     {
-                        // Export MODIFIED Library:
-                        Log.Info($@"Extracting MODIFIED library...", Paths.Data.ExportModifiedDir);
-                        JarRepository repo = new(Paths.Data, Log);
-                        if (!await repo.TryExportLibraryAsync(modifiedJarPath, Paths.Data.ExportModifiedDir, ct, extractModifiedFiles))
-                        {
-                            Log.Error($@"Unable to extract MODIFIED library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportModifiedLibrary);
-                            exportModifiedSuccess = false;
-                        }
-
-                        // Annotate MODIFIED Libraries:
-                        Log.Info($"Writing XML annotation...");
-                        XmlAnnotationService xmlAnnotationService = new(Log);
-                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportModifiedDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateModifiedXML))
-                        {
-                            Log.Error($@"Unable to annotate MODIFIED library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
-                            exportModifiedSuccess = false;
-                        }
-
-                        // Export MODIFIED Textures:
-                        Log.Info($@"Exporting MODIFIED textures...", Paths.Data.ExportModifiedDir);
-                        if (!AppSettings.ExportTextures)
-                        {
-                            Log.Warn($@"Skipping export of MODIFIED textures, accordingly to System Core settings", "tab://SystemCore");
-                        }
-                        else if (!await TryExportTextures(modifiedFilesDir, Paths.Data.ExportModifiedDir, parallelOptions, exportModifiedSpriteSheets, exportModifiedSprites))
-                        {
-                            Log.Error($@"Unable to export MODIFIED library", exportDir);
-                            RightScreen.SetError(ERightScreenStep.ExportModifiedTextures);
-                            exportModifiedSuccess = false;
-                        }
+                        Log.Error($@"Unable to annotate MODIFIED library", exportDir);
+                        RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
+                        exportModifiedSuccess = false;
                     }
+
+                    // Export MODIFIED Textures:
+                    Log.Info($@"Exporting MODIFIED textures...", exportModifiedTexturesDir);
+                    if (!AppSettings.ExportTextures)
+                    {
+                        Log.Warn($@"Skipping export of MODIFIED textures, accordingly to System Core settings", "tab://SystemCore");
+                    }
+                    else if (!await TryExportTextures(modifiedFilesDir, exportModifiedTexturesDir, parallelOptions, exportModifiedSpriteSheets, exportModifiedSprites))
+                    {
+                        Log.Error($@"Unable to export MODIFIED library", exportDir);
+                        RightScreen.SetError(ERightScreenStep.ExportModifiedTextures);
+                        exportModifiedSuccess = false;
+                    }
+                    else Log.Success($@"MODIFIED textures were successfully exported to: ""{exportModifiedTexturesDir}""", exportModifiedTexturesDir);
                 }
             }
 
             // Done.
-            if (exportOriginalSuccess)
-                Log.Success($@"ORIGINAL files were successfully exported to: ""{exportOriginalDir}""", exportOriginalDir);
-
-            if (exportModifiedSuccess)
-                Log.Success($@"MODIFIED files were successfully exported to: ""{exportModifiedDir}""", exportModifiedDir);
-
             RightScreen.RightButtonsState =
                 exportOriginalSuccess && exportModifiedSuccess ?
                 EControlState.Ready : EControlState.Error;
@@ -853,9 +847,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             string texturesXmlPath = Path.Combine(libraryDirectory, SpaceHavenConstants.TEXTURES);
             string animationsXmlPath = Path.Combine(libraryDirectory, SpaceHavenConstants.ANIMATIONS);
 
+            progressSpriteSheets.Start();
+
             // Textures
             TexturesXmlRepository texturesXmlRepository = new(Log);
             Log.Info($"Reading textures...");
+            progressloadTexturesXml.Start();
             clock.Restart();
             if (!await texturesXmlRepository.TryReadAsync(texturesXmlPath, parallelOptions.CancellationToken, progressloadTexturesXml))
                 throw new Exception("Unable to read all textures XML information");
@@ -865,6 +862,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             // Animations
             AnimationsXmlRepository animationsXmlRepository = new(Log);
             Log.Info($@"Reading animations...");
+            progressLoadAnimationsXml.Start();
             clock.Restart();
             if (!await animationsXmlRepository.TryReadAsync(animationsXmlPath, parallelOptions.CancellationToken, progressLoadAnimationsXml))
                 throw new Exception("Unable to read all animations XML information");
@@ -873,6 +871,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Load Art
             Log.Info($"Loading game art...");
+            progressLoadGameArt.Start();
             ArtRepository artRepository = new(texturesXmlRepository, animationsXmlRepository, Log);
             clock.Restart();
             if (!await artRepository.TryLoadAsync(libraryDirectory, parallelOptions.CancellationToken, progressLoadGameArt))
@@ -882,6 +881,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Export CIM to PNG:
             Log.Info($"Exporting sprite sheets...");
+            progressExportSpriteSheets.Start();
             clock.Restart();
             if (!await artRepository.TryExportSpriteSheetsToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressExportSpriteSheets))
                 throw new Exception("Unable to export all sprite sheets to PNG");
@@ -892,6 +892,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Export individual sprites to PNG:
             Log.Info($"Exporting sprites...");
+            progressSprites.Start();
             clock.Restart();
             if (!await artRepository.TryExportSpritesToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressSprites))
                 throw new Exception("Unable to export all sprites to PNG");
