@@ -35,10 +35,7 @@ public sealed class TexturesXmlRepository
             List<XElement> textures = root?.Element("textures")?.Elements("t")?.ToList() ?? [];
             List<XElement> regions = root?.Element("regions")?.Elements("re")?.ToList() ?? [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / (textures.Count + regions.Count);
+            double delta = 1.0 / (textures.Count + regions.Count);
 
             foreach (XElement t in textures)
             {
@@ -57,8 +54,7 @@ public sealed class TexturesXmlRepository
                 }
                 finally
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress.IncrementNormalized(delta);
                 }
             }
 
@@ -89,8 +85,7 @@ public sealed class TexturesXmlRepository
                 }
                 finally
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
             }
 

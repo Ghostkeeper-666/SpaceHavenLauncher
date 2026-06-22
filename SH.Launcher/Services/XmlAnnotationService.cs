@@ -1,6 +1,7 @@
 ﻿using SH.Content.Enums;
 using SH.Content.Modding.Annotation;
 using SH.Framework.Logging;
+using SH.Framework.Progress;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +17,12 @@ public sealed class XmlAnnotationService
         Log = logger ?? new VoidLogger();
     }
 
-    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct)
+    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress)
     {
         try
         {
             XmlAnnotator xmlAnnotator = new(Log);
-            if (!await xmlAnnotator.TryRunAsync(baseDir, language, ct))
+            if (!await xmlAnnotator.TryRunAsync(baseDir, language, ct, progress))
                 return false;
             return true;
         }

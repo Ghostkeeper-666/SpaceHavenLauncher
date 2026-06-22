@@ -72,8 +72,6 @@ public sealed class AppSettingsRepository
             data.LogVerbosity =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.LogVerbosity))?.Value ?? string.Empty, out ELogVerbosity logVerbosity) ? logVerbosity : ELogVerbosity.Minimal;
             
-Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
-
             data.ModPageSplitterHeight =
                 int.TryParse(root.Element(nameof(AppSettingsData.ModPageSplitterHeight))?.Value ?? string.Empty, out int modPageSplitterHeight) ? modPageSplitterHeight : data.ModPageSplitterHeight;
 
@@ -86,11 +84,14 @@ Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
             data.ForceSpritesheetSize2048 =
                 bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpritesheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) && forceSpritesheetSize2048;
 
-            data.XmlAnnotationLanguage =
-                Enum.TryParse(root.Element(nameof(AppSettingsData.XmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : ELanguage.EN;
+            data.ExportXmlAnnotationLanguage =
+                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : ELanguage.EN;
 
             data.ExportTextures = 
                 bool.TryParse(root.Element(nameof(AppSettingsData.ExportTextures))?.Value ?? string.Empty, out bool exportTextures) && exportTextures;
+
+            data.ExportOption =
+                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportOption))?.Value ?? string.Empty, out EExportOption exportOption) ? exportOption : EExportOption.Both;
 
             // Done.
             Log.Success($"Application settings loaded", Paths.ApplicationSettingsPath);
@@ -120,15 +121,13 @@ Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
             root.Add(new XElement(nameof(AppSettingsData.MonitorIndex), data.MonitorIndex));
             root.Add(new XElement(nameof(AppSettingsData.IsLeftPaneCollapsed), data.IsLeftPaneCollapsed));
             root.Add(new XElement(nameof(AppSettingsData.LogVerbosity), data.LogVerbosity));
-
-Log.Error($"Loaded Log Verbosity = {data.LogVerbosity}");
-
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
             root.Add(new XElement(nameof(AppSettingsData.ForceSpritesheetSize2048), data.ForceSpritesheetSize2048));
-            root.Add(new XElement(nameof(AppSettingsData.XmlAnnotationLanguage), data.XmlAnnotationLanguage));
+            root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));
             root.Add(new XElement(nameof(AppSettingsData.ExportTextures), data.ExportTextures));
+            root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));
 
             // Save to file:
             if (!await IOUtils.TrySaveXDocumentAsync(Paths.ApplicationSettingsPath, doc, Log, ct))

@@ -48,8 +48,9 @@ public partial class AppSettingsViewModel : ObservableObject
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
             ForceSpritesheetSize2048 = data.ForceSpritesheetSize2048;
-            XmlAnnotationLanguage = data.XmlAnnotationLanguage;
+            ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
             ExportTextures = data.ExportTextures;
+            ExportOption = data.ExportOption;
 
             return this;
         }
@@ -92,13 +93,16 @@ public partial class AppSettingsViewModel : ObservableObject
                 case nameof(ForceSpritesheetSize2048):
                     Data?.ForceSpritesheetSize2048 = ForceSpritesheetSize2048;
                     break;
-                case nameof(XmlAnnotationLanguage):
-                    Data?.XmlAnnotationLanguage = XmlAnnotationLanguage;
+                case nameof(ExportXmlAnnotationLanguage):
+                    Data?.ExportXmlAnnotationLanguage = ExportXmlAnnotationLanguage;
                     break;
                 case nameof(ExportTextures):
                     Data?.ExportTextures = ExportTextures;
                     break;
-                    
+                case nameof(ExportOption):
+                    Data?.ExportOption = ExportOption;
+                    break;
+
                 default:
                     return;
             }
@@ -146,8 +150,11 @@ public partial class AppSettingsViewModel : ObservableObject
 
     // EXPORT:
     [ObservableProperty]
-    private ELanguage _XmlAnnotationLanguage;
+    private ELanguage _ExportXmlAnnotationLanguage;
 
     [ObservableProperty]
     private bool _ExportTextures;
+
+    [ObservableProperty]
+    private EExportOption _ExportOption;
 }

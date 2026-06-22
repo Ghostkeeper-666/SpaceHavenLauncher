@@ -39,10 +39,7 @@ public sealed class TextsXmlRepository
             XElement root = doc?.Element("t") ?? throw new Exception("Invalid XML root");
             List<XElement> texts = root?.Elements("t")?.ToList() ?? [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / texts.Count;
+            double delta = 1.0 / texts.Count;
 
             foreach (XElement t in texts)
             {
@@ -62,8 +59,7 @@ public sealed class TextsXmlRepository
                 }
                 finally
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
             }
 

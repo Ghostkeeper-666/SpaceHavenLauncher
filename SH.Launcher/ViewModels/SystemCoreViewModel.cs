@@ -24,8 +24,12 @@ public partial class SystemCoreViewModel : ViewModelBase
         State.ForcedBackground = BackgroundImage;
 
     [ObservableProperty]
-    private ELogVerbosity[] _LogVerbosityValues = Enum.GetValues<ELogVerbosity>().OrderByDescending(v => v).ToArray();
+    private ELogVerbosity[] _LogVerbosityValues = Enum.GetValues<ELogVerbosity>().ToArray();
 
     [ObservableProperty]
-    private ELanguage[] _XmlAnnotationLanguages = Enum.GetValues<ELanguage>().OrderByDescending(v => v).ToArray();
+    private ELanguage[] _ExportXmlAnnotationLanguages = Enum.GetValues<ELanguage>().OrderByDescending(v => v).ToArray();
+
+    [ObservableProperty]
+    private EExportOption[] _ExportOptions = Enum.GetValues<EExportOption>().ToArray();
+
 }

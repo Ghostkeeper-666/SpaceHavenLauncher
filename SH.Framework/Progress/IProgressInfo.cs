@@ -6,20 +6,21 @@ public interface IProgressInfo : IDisposable
 {
     public event EventHandler<ProgressEventArgs> ProgressChanged;
 
-    public double Max { get; set; }
-    public double Min { get; set; }
+    public int Max { get; set; }
+    public int Min { get; set; }
     public string Name { get; }
     public double NormalizedValue { get; }
     public double Range { get; }
     public double RemainingNormalizedValue { get; }
     public double RemainingValue { get; }
     public double TotalWeight { get; }
-    public double Value { get; }
+    public int Value { get; }
 
-    public void Add(IProgressInfo child, double weight = 1);
+    public IProgressInfo CreateChild(string childName, double weight = 1.0);
+    public IProgressInfo AddChild(IProgressInfo child, double weight = 1);
     public void Complete();
     public void Increment();
-    public void Increment(double incrementValue);
+    public void Increment(int incrementValue);
     public void IncrementNormalized(double normalizedIncrementValue);
     public void Remove(IProgressInfo child);
     public void RemoveAll();

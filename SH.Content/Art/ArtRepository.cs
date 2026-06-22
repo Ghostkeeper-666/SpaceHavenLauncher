@@ -65,10 +65,8 @@ public sealed class ArtRepository
 
             List<string> files = Directory.GetFiles(baseInputDir, "*.cim", SearchOption.TopDirectoryOnly)?.OrderBy(path => Path.GetFileNameWithoutExtension(path).PadLeft(3, '0'))?.ToList() ?? [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / files.Count;
+            double delta = 1.0 / files.Count;
+
             SemaphoreSlim semaphore = new(1, 1);
             await Parallel.ForEachAsync(files, parallelOptions, async (cimFilePath, ct) =>
             {
@@ -81,8 +79,7 @@ public sealed class ArtRepository
                     await semaphore.WaitAsync(ct);
                     try
                     {
-                        // Generate a progress update only 100 times:
-                        if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                        progress?.IncrementNormalized(delta);
                     }
                     finally { semaphore.Release(); }
                 }
@@ -205,10 +202,8 @@ public sealed class ArtRepository
 
             List<SpriteSheet> spriteSheets = SpriteSheets.Values.OrderByDescending(ss => ss.Area).ToList();
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / spriteSheets.Count;
+            double delta = 1.0 / spriteSheets.Count;
+
             SemaphoreSlim semaphore = new(1, 1);
             await Parallel.ForEachAsync(spriteSheets, parallelOptions, async (spriteSheet, ct) =>
             {
@@ -220,8 +215,7 @@ public sealed class ArtRepository
                 await semaphore.WaitAsync(ct);
                 try
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
                 finally { semaphore.Release(); }
             });
@@ -257,10 +251,7 @@ public sealed class ArtRepository
                 if(!await IOUtils.TryCreateDirectoryAsync(dir, Log, parallelOptions.CancellationToken))
                     return false;
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / sprites.Count;
+            double delta = 1.0 / sprites.Count;
 
             // Write individual sprites:
             SemaphoreSlim semaphore = new(1, 1);
@@ -274,8 +265,7 @@ public sealed class ArtRepository
                 await semaphore.WaitAsync(ct);
                 try
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
                 finally { semaphore.Release(); }
             });
@@ -300,10 +290,7 @@ public sealed class ArtRepository
             List<AnimationXml> current;
             List<AnimationXml> errors = [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / (remaining.Count);
+            double delta = 1.0 / (remaining.Count);
 
             do
             {
@@ -325,8 +312,7 @@ public sealed class ArtRepository
                     AnimationsById.Add(a.Id, a);
                 }
 
-                // Generate a progress update only 100 times:
-                if (pi < (int)(p += current.Count * delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                progress?.IncrementNormalized(delta);
             }
             while (current.Count > 0);
 

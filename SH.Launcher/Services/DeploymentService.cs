@@ -41,7 +41,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.00001);
+            progress?.SetNormalized(0.01);
 
             bool spaceHavenJarIsOriginal = File.Exists(Paths.SpaceHavenJarPath) && !await IsModifiedJar(Paths.SpaceHavenJarPath);
 
@@ -93,7 +93,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.00001);
+            progress?.SetNormalized(0.01);
 
             // Try to reuse existing template:
             if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&
@@ -126,7 +126,7 @@ public sealed class DeploymentService
     {
         try
         {
-            progress?.SetNormalized(0.00001);
+            progress?.SetNormalized(0.01);
 
             // Try to reuse existing modified:
             if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&
@@ -200,7 +200,6 @@ public sealed class DeploymentService
             ct.ThrowIfCancellationRequested();
 
             // For progress calculation only:
-            int intProgress = 0;
             long compressed = 0;
             long uncompressed = 0;
             double totalCompressed = 0;
@@ -271,14 +270,9 @@ public sealed class DeploymentService
                 {
                     if (progress != null && !ein.IsDirectory)
                     {
-                        // Update progress, but not more than 100 times:
                         compressed += ein.CompressedSize;
                         uncompressed += ein.Size;
-                        double compressedProgress = compressed / totalCompressed;
-                        double uncompressedProgress = uncompressed / totalUncompressed;
-                        int newProgress = (int)(50.0 * (compressedProgress + uncompressedProgress));
-                        if (newProgress > intProgress)
-                            progress.SetNormalized((intProgress = newProgress) / 100.0);
+                        progress.SetNormalized((compressed + uncompressed) / (totalCompressed + totalUncompressed));
                     }
                 }
             }

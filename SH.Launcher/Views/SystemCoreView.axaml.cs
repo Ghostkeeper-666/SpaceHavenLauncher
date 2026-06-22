@@ -162,4 +162,22 @@ public partial class SystemCoreView : UserControl
 
     private async void Open_WorkDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.WorkDir, Log));
+    private void Open_ExportDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ExportDir, Log));
+
+    private void Open_SpaceHavenDir(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenDir, Log));
+    private void Open_SpaceHavenJarDir(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenJarDir, Log));
+
+    private void Open_SteamDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SteamDir, Log));
+    private void Open_SteamModsDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SteamModsDir, Log));
+    private void Open_ClassicModsDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ClassicModsDir, Log));
+
+    private void Open_ModValuesDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ModValuesDir, Log));
+
 }

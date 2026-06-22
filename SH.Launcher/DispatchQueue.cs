@@ -39,7 +39,7 @@ public sealed class DispatchQueue : IAsyncDisposable
         try
         {
             await foreach (Func<Task> task in Queue.Reader.ReadAllAsync(CTS.Token))
-                await Dispatcher.UIThread.InvokeAsync(async () => await task(), DispatcherPriority.Default, CTS.Token);
+                await Dispatcher.UIThread.InvokeAsync(async () => await task(), DispatcherPriority.Normal, CTS.Token);
         }
         catch (OperationCanceledException) { }
     }

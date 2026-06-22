@@ -247,46 +247,46 @@ public sealed class Builder : IAsyncDisposable
             Clock.Restart();
 
             ResetXmlBuild = new ProgressInfo("Reset XML Build");
-            XmlBuild.Add(ResetXmlBuild, 2000);
+            XmlBuild.AddChild(ResetXmlBuild, 2000);
 
             CopyTemplateFiles = new ProgressInfo("Copy Template Files");
-            XmlBuild.Add(CopyTemplateFiles, 2000);
+            XmlBuild.AddChild(CopyTemplateFiles, 2000);
 
             LoadTemplateXml = new ProgressInfo("Load Template Xml");
-            XmlBuild.Add(LoadTemplateXml, 2000);
+            XmlBuild.AddChild(LoadTemplateXml, 2000);
 
             MergeAudio = new ProgressInfo("Merge Audio");
-            XmlBuild.Add(MergeAudio, 35);
+            XmlBuild.AddChild(MergeAudio, 35);
 
             PackTextures = new ProgressInfo("Pack Textures");
-            XmlBuild.Add(PackTextures, 2270);
+            XmlBuild.AddChild(PackTextures, 2270);
 
             AssignCimFileID = new ProgressInfo("Assign CIM file ID");
-            XmlBuild.Add(AssignCimFileID, 1);
+            XmlBuild.AddChild(AssignCimFileID, 1);
 
             WriteCimFiles = new ProgressInfo("Write CIM files");
-            XmlBuild.Add(WriteCimFiles, 270);
+            XmlBuild.AddChild(WriteCimFiles, 270);
 
             AssignTextureID = new ProgressInfo("Assign Texture ID");
-            XmlBuild.Add(AssignTextureID, 430);
+            XmlBuild.AddChild(AssignTextureID, 430);
 
             MapAnimationToTexture = new ProgressInfo("Map Animation to Texture");
-            XmlBuild.Add(MapAnimationToTexture, 45);
+            XmlBuild.AddChild(MapAnimationToTexture, 45);
 
             MergeXmlFiles = new ProgressInfo("Merge XML files");
-            XmlBuild.Add(MergeXmlFiles, 6900);
+            XmlBuild.AddChild(MergeXmlFiles, 6900);
 
             PatchXmlFiles = new ProgressInfo("Patch XML files");
-            XmlBuild.Add(PatchXmlFiles, 13450);
+            XmlBuild.AddChild(PatchXmlFiles, 13450);
 
             BuildJarFile = new ProgressInfo("Create JAR file");
-            XmlBuild.Add(BuildJarFile, 260);
+            XmlBuild.AddChild(BuildJarFile, 260);
 
             ResetJavaBuild = new ProgressInfo("Reset JAVA Build");
-            JavaBuild.Add(ResetJavaBuild, 2000);
+            JavaBuild.AddChild(ResetJavaBuild, 2000);
 
             PrepareJavaFiles = new ProgressInfo("Prepare JAVA Files");
-            JavaBuild.Add(PrepareJavaFiles, 2000);
+            JavaBuild.AddChild(PrepareJavaFiles, 2000);
 
             // Done.
             return true;

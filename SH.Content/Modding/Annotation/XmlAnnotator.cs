@@ -2,8 +2,10 @@
 using SH.Content.Xml;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
+using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -47,15 +49,17 @@ public sealed class XmlAnnotator
         Log = log ?? new VoidLogger();
     }
 
-    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct)
+    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress)
     {
         try
         {
             Language = language;
             CT = ct;
 
+            progress.Max = 500;
+
             // Load XML:
-            if (!await LoadAllAsync(baseDir))
+            if (!await LoadAllAsync(baseDir, progress, 160))
                 return false;
 
             // Mad text ID to text content:
@@ -75,6 +79,7 @@ public sealed class XmlAnnotator
 
             // Haven <Element> section:
             AnnotateHavenElements();
+            progress.Increment(20);
 
             // Haven <Tech> section:
             AnnotateHavenTech();
@@ -89,13 +94,14 @@ public sealed class XmlAnnotator
             AnnotateHavenCondition();
 
             // Annotate generic attributes
-            AnnotateHavenGenericAttributes();
+            AnnotateHavenGenericAttributes(progress, 220);
 
             // Save XML:
             if (!await SaveAllAsync(baseDir))
                 return false;
 
             // Done.
+            progress?.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -111,7 +117,7 @@ public sealed class XmlAnnotator
     private string GetPrettyName(string name) =>
         name.IsNullOrWhiteSpace() ? "?" : name;
 
-    private async Task<bool> LoadAllAsync(string baseDir)
+    private async Task<bool> LoadAllAsync(string baseDir, IProgressInfo progress, int progressMax)
     {
         string inputHavenXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.HAVEN);
         string inputTextsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTS);
@@ -122,18 +128,27 @@ public sealed class XmlAnnotator
         HavenXml = new(EXmlFileType.Haven, inputHavenXmlPath);
         if (!await HavenXml.TryLoadAsync(Log, CT))
             return false;
+        progress.Increment(5 * progressMax / 10);
+
         TextsXml = new(EXmlFileType.Texts, inputTextsXmlPath);
         if (!await TextsXml.TryLoadAsync(Log, CT))
             return false;
+        progress.Increment(2 * progressMax / 10);
+
         AudioXml = new(EXmlFileType.Audio, inputAudioXmlPath);
         if (!await AudioXml.TryLoadAsync(Log, CT))
             return false;
+        progress.Increment(1 * progressMax / 10);
+
         TexturesXml = new(EXmlFileType.Textures, inputTexturesXmlPath);
         if (!await TexturesXml.TryLoadAsync(Log, CT))
             return false;
+        progress.Increment(1 * progressMax / 10);
+
         AnimationsXml = new(EXmlFileType.Animations, inputAnimationsXmlPath);
         if (!await AnimationsXml.TryLoadAsync(Log, CT))
             return false;
+        progress.Increment(1 * progressMax / 10);
 
         return true;
     }
@@ -166,6 +181,8 @@ public sealed class XmlAnnotator
         string en = ELanguage.EN.ToString();
         foreach (XElement t in TextsXml.Root.Elements("t"))
         {
+            CT.ThrowIfCancellationRequested();
+
             string id = t.Attribute("id")?.Value;
             if (id.IsNullOrWhiteSpace())
                 continue;
@@ -182,6 +199,8 @@ public sealed class XmlAnnotator
     {
         foreach (XElement a in AudioXml.Root.Elements("a"))
         {
+            CT.ThrowIfCancellationRequested();
+
             Audio audio = new()
             {
                 XML = a,
@@ -205,6 +224,8 @@ public sealed class XmlAnnotator
     {
         foreach (XElement node in HavenXml.Root.Descendants())
         {
+            CT.ThrowIfCancellationRequested();
+
             XAttribute tid = node.Attribute("tid");
             if ((tid?.Value).IsNullOrWhiteSpace())
                 continue;
@@ -233,6 +254,8 @@ public sealed class XmlAnnotator
         XElement rootItem = HavenXml.Root.Element("Item");
         foreach (XElement i in rootItem?.Elements("item") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             if (i.Element("duplicate") != null)
                 continue; // skip duplicates for now!
 
@@ -260,6 +283,8 @@ public sealed class XmlAnnotator
 
         foreach (XElement i in rootItem?.Elements("item") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             if (i.Element("duplicate") == null)
                 continue; // only duplicates now!
 
@@ -280,6 +305,8 @@ public sealed class XmlAnnotator
 
         foreach (Item item in Items.Values.Where(item => !item.DuplicateMID.IsNullOrWhiteSpace()).ToArray())
         {
+            CT.ThrowIfCancellationRequested();
+
             // Get Duplicate:
             if (!Items.TryGetValue(item.DuplicateMID, out Item referenced))
             {
@@ -336,6 +363,8 @@ public sealed class XmlAnnotator
         XElement rootProduct = HavenXml.Root.Element("Product");
         foreach (XElement p in rootProduct?.Elements("product")?.Where(p => p != null && p.Attribute("type")?.Value == EProductType.Elementary.ToString()) ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Product product = new()
             {
                 Type = EProductType.Elementary,
@@ -367,6 +396,8 @@ public sealed class XmlAnnotator
         // Process products now:
         foreach (XElement p in rootProduct?.Elements("product")?.Where(p => p != null && p.Attribute("type")?.Value == EProductType.Process.ToString()) ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Product product = new()
             {
                 Type = EProductType.Process,
@@ -466,6 +497,8 @@ public sealed class XmlAnnotator
         // List of processes:
         foreach (Product product in Products.Values.Where(p => p.Type == EProductType.Process))
         {
+            CT.ThrowIfCancellationRequested();
+
             XElement[] children = product.XML.Element("list")?.Element("processes")?.Elements("l")?.ToArray() ?? Array.Empty<XElement>();
             if (children.Length <= 0)
                 continue;
@@ -521,6 +554,8 @@ public sealed class XmlAnnotator
         XElement rootElement = HavenXml.Root.Element("Element");
         foreach (XElement me in rootElement?.Elements("me") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Element element = new() { XML = me };
 
             // Get mid:
@@ -582,6 +617,8 @@ public sealed class XmlAnnotator
         // Complete all direct links:
         foreach (Element e1 in Elements.Values)
         {
+            CT.ThrowIfCancellationRequested();
+
             if (e1.LinksTo.Count <= 0)
                 continue;
 
@@ -605,6 +642,8 @@ public sealed class XmlAnnotator
         // Map all direct + indirect links:
         foreach (Element e in Elements.Values)
         {
+            CT.ThrowIfCancellationRequested();
+
             if (e.LinksTo.Count > 0)
                 e.MapAllLinks();
             if (e.LinkedBy.Count > 0)
@@ -614,6 +653,8 @@ public sealed class XmlAnnotator
         // Try to locate name from linked nodes:
         foreach (Element e1 in Elements.Values.Where(e => e.Name == null && e.LinkedBy.Count <= 0))
         {
+            CT.ThrowIfCancellationRequested();
+
             e1.Name = e1.LinksTo.Values.FirstOrDefault(e2 => e2.Name != null)?.Name;
             if (e1.Name != null)
                 continue;
@@ -623,6 +664,8 @@ public sealed class XmlAnnotator
         // Add XML comments to Element:
         foreach (Element e1 in Elements.Values)
         {
+            CT.ThrowIfCancellationRequested();
+
             // I'm missing an "OrderedHash<string>" here...
             OrderedDictionary<string, int> namesDict = [];
             if (e1.Name != null)
@@ -675,6 +718,8 @@ public sealed class XmlAnnotator
         XElement rootTech = HavenXml.Root.Element("Tech");
         foreach (XElement t in rootTech.Elements("tech") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Tech tech = new() { XML = t };
 
             // Get id:
@@ -749,6 +794,8 @@ public sealed class XmlAnnotator
         XElement techTreeLinkNode = HavenXml.Root.Element("TechTree")?.Element("tree")?.Element("links");
         foreach (XElement l in techTreeLinkNode?.Elements("l") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             string fromId = l.Attribute("fromId")?.Value;
             string toId = l.Attribute("toId")?.Value;
             Techs.TryGetValue(fromId, out Tech from);
@@ -766,6 +813,8 @@ public sealed class XmlAnnotator
         XElement root = HavenXml.Root.Element("Robot");
         foreach (XElement r in root.Elements("robot") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Robot robot = new() { XML = r };
 
             // Get id:
@@ -798,6 +847,8 @@ public sealed class XmlAnnotator
         XElement root = HavenXml.Root.Element("CharacterCondition");
         foreach (XElement c in root.Elements("condition") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Condition condition = new() { XML = c };
 
             // Get id:
@@ -836,6 +887,8 @@ public sealed class XmlAnnotator
         XElement root = HavenXml.Root.Element("Craft");
         foreach (XElement c in root.Elements("craft") ?? [])
         {
+            CT.ThrowIfCancellationRequested();
+
             Craft craft = new() { XML = c };
 
             // Get id:
@@ -869,10 +922,17 @@ public sealed class XmlAnnotator
 
 
 
-    private void AnnotateHavenGenericAttributes()
+    private void AnnotateHavenGenericAttributes(IProgressInfo progress, long progressMax)
     {
-        foreach (XElement node in HavenXml.Root.Descendants())
+        List<XElement> nodes = HavenXml.Root.Descendants().ToList();
+        int prevProgress = 0;
+        int currProgress = 0;
+        long count = 0;
+
+        foreach (XElement node in nodes)
         {
+            CT.ThrowIfCancellationRequested();
+
             if (Audios.TryGetValue(node.Attribute("auid")?.Value ?? string.Empty, out Audio a))
                 node.SetAttributeValue(ANNOTATE_TEXT, GetPrettyName(a?.Name));
 
@@ -902,6 +962,13 @@ public sealed class XmlAnnotator
 
             else if (Products.TryGetValue(node.Attribute("itemId")?.Value ?? string.Empty, out Product p2))
                 node.SetAttributeValue(ANNOTATE_TEXT, GetPrettyName(p2?.Name));
+
+            currProgress = (int)(++count * progressMax / nodes.Count);
+            if (currProgress > prevProgress)
+            {
+                progress.Increment(currProgress - prevProgress);
+                prevProgress = currProgress;
+            }
         }
     }
 

@@ -49,7 +49,7 @@ public partial class SharedState : ObservableObject
 
 
     // LOG:
-    public Logger Log { get; } = new Logger();
+    public ILogger Log { get; } = new Logger();
 
     [ObservableProperty]
     private ObservableCollection<LogMessage> _LogHistory = [];

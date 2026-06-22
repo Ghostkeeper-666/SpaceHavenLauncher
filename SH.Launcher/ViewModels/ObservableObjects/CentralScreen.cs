@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Launcher.ViewModels.Enums;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 

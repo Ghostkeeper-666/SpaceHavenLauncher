@@ -72,7 +72,7 @@ public sealed class JarRepository
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(jarPath));
 
             Progress = progressInfo;
-            Progress?.SetNormalized(0.00001);
+            Progress?.SetNormalized(0.01);
 
             if (!File.Exists(jarPath))
             {
@@ -94,7 +94,6 @@ public sealed class JarRepository
             using ZipFile zin = new(jarPath);
 
             // Progress pre-calculation:
-            int progress = 0;
             long sumCompressedSize = 0;
             long sumUncompressedSize = 0;
             long totalCompressedSize = 0;
@@ -149,13 +148,10 @@ public sealed class JarRepository
                 using FileStream outStream = File.Create(targetPath);
                 await zipStream.CopyToAsync(outStream);
 
-                // Update progress, but not more than 100 times:
                 ++fileCount;
                 sumCompressedSize += entry.CompressedSize;
                 sumUncompressedSize += entry.Size;
-                int currProgress = (int)(100.0 * (sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
-                if (currProgress > progress)
-                    Progress?.SetNormalized((progress = currProgress) / 100.0);
+                Progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
             }
 
             // Done.
@@ -183,7 +179,7 @@ public sealed class JarRepository
         try
         {
             Progress = progressInfo;
-            Progress?.SetNormalized(0.00001);
+            Progress?.SetNormalized(0.01);
 
             if (!File.Exists(jarPath))
             {
@@ -208,7 +204,6 @@ public sealed class JarRepository
             ct.ThrowIfCancellationRequested();
 
             // Progress pre-calculation:
-            int progress = 0;
             long sumCompressedSize = 0;
             long sumUncompressedSize = 0;
             long totalCompressedSize = 0;
@@ -255,13 +250,10 @@ public sealed class JarRepository
                 using FileStream outStream = File.Create(path);
                 await zipStream.CopyToAsync(outStream);
 
-                // Update progress, but not more than 100 times:
                 ++fileCount;
                 sumCompressedSize += entry.CompressedSize;
                 sumUncompressedSize += entry.Size;
-                int currProgress = (int)(100.0 * (sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
-                if (currProgress > progress)
-                    Progress?.SetNormalized((progress = currProgress) / 100.0);
+                Progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
             }
 
             // Done.

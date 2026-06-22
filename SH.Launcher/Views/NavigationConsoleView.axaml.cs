@@ -11,6 +11,7 @@ using SH.Framework.Logging;
 using SH.Launcher.Extensions;
 using SH.Launcher.Models;
 using SH.Launcher.ViewModels;
+using SH.Launcher.ViewModels.Enums;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

@@ -35,10 +35,7 @@ public sealed class AudioXmlRepository
             XElement root = doc?.Element("audio") ?? throw new Exception("Invalid XML root");
             List<XElement> audios = root?.Elements("a")?.ToList() ?? [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / audios.Count;
+            double delta = 1.0 / audios.Count;
 
             foreach (XElement a in audios)
             {
@@ -62,8 +59,7 @@ public sealed class AudioXmlRepository
                 }
                 finally
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
             }
 

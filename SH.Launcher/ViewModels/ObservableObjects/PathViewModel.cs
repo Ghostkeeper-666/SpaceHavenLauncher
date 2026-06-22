@@ -39,14 +39,20 @@ public partial class PathViewModel : ObservableObject
         AppVersion = SpaceHavenLauncher.GetAppVersion();
         SpaceHavenName = SpaceHavenConstants.SpaceHavenName;
         SpaceHavenVersion = Data.SpaceHavenVersion;
+
+        // Calculated directories:
         AppDir = data.AppDir;
         WorkDir = data.WorkDir;
+        ExportDir = data.ExportDir;
+
+        // Configurable directories:
         SteamDir = data.SteamDir;
         SteamModsDir = data.SteamModsDir;
         SpaceHavenDir = data.SpaceHavenDir;
         ClassicModsDir = data.ClassicModsDir;
         SpaceHavenJarDir = data.SpaceHavenJarDir;
         ModValuesDir = data.ModValuesDir;
+
         return this;
     }
 
@@ -54,11 +60,9 @@ public partial class PathViewModel : ObservableObject
     {
         try
         {
+            // Configurable dirs only!
             switch (propertyName)
             {
-                case nameof(AppDir):
-                    Data?.AppDir = AppDir;
-                    return;
                 case nameof(SteamDir):
                     Data?.SteamDir = SteamDir;
                     return;
@@ -73,9 +77,6 @@ public partial class PathViewModel : ObservableObject
                     return;
                 case nameof(SpaceHavenJarDir):
                     Data?.SpaceHavenJarDir = SpaceHavenJarDir;
-                    return;
-                case nameof(WorkDir):
-                    Data?.WorkDir = WorkDir;
                     return;
                 case nameof(ModValuesDir):
                     Data?.ModValuesDir = ModValuesDir;
@@ -121,6 +122,9 @@ public partial class PathViewModel : ObservableObject
 
     [ObservableProperty]
     private string _WorkDir;
+
+    [ObservableProperty]
+    private string _ExportDir;
 
     [ObservableProperty]
     private string _ModValuesDir;

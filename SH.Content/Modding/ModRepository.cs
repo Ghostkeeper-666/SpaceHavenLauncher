@@ -60,7 +60,7 @@ public sealed class ModRepository
                 // Breathe:
                 await Task.Yield();
 
-                progress.SetNormalized(count++ / (double)(1 + modDirectories.Count));
+                progress?.SetNormalized(count++ / (1.0 + modDirectories.Count));
 
                 // Load mod:
                 ModData mod = await TryLoadMod(modDirectory, ct);
@@ -100,6 +100,7 @@ public sealed class ModRepository
             }
 
             // Done.
+            progress?.Complete();
             return mods;
         }
         catch (OperationCanceledException) { throw; }

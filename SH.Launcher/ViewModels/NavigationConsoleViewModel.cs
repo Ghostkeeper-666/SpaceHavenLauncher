@@ -15,6 +15,7 @@ using SH.Launcher.Extensions;
 using SH.Launcher.Models;
 using SH.Launcher.Repositories;
 using SH.Launcher.Services;
+using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using System;
 using System.Collections.Generic;
@@ -325,8 +326,11 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
 
         // Use this trick to show inactive text on central screen monitor:
-        runGame.SetNormalized(0.001);
-        progress.SetNormalized(0.001);
+
+#warning This trick doesn't work anymore with ProgressInfo optimization => implement a "HasStarted" in Progress Info and set it to "true" on first change after Creation or Reset
+
+        runGame.SetNormalized(0.01);
+        progress.SetNormalized(0.01);
         CentralScreen.ShowLaunchOriginalOnMonitor();
 
         await Semaphore.WaitAsync();
@@ -446,10 +450,10 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         ProgressInfo xmlBuild = new("XML Mods");
         ProgressInfo deploy = new("Deploy");
         ProgressInfo progress = new("Progress");
-        progress.Add(initialization, 10);
-        progress.Add(javaBuild, 5);
-        progress.Add(xmlBuild, 80);
-        progress.Add(deploy, 5);
+        progress.AddChild(initialization, 10);
+        progress.AddChild(javaBuild, 5);
+        progress.AddChild(xmlBuild, 80);
+        progress.AddChild(deploy, 5);
         ProgressInfo runGame = new(Paths.SpaceHavenName);
 
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
@@ -461,8 +465,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         // Use this trick to show inactive text on central screen monitor:
         CentralScreen.ShowLaunchModifiedOnMonitor();
-        runGame.SetNormalized(0.001);
-        progress.SetNormalized(0.001);
+        runGame.SetNormalized(0.01);
+        progress.SetNormalized(0.01);
 
         await Semaphore.WaitAsync();
         try
@@ -615,18 +619,31 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
 
         // Progress:
-        ProgressInfo extractOriginalLibrary = new("Extract original library");
-        ProgressInfo exportOriginalTextures = new("Export original textures");
-        ProgressInfo extractModifiedLibrary = new("Extract modified library");
-        ProgressInfo exportModifiedTextures = new("Export modified textures");
+        IProgressInfo extractOriginalLibrary = new ProgressInfo(nameof(extractOriginalLibrary));
+        IProgressInfo extractOriginalFiles = extractOriginalLibrary.CreateChild(nameof(extractOriginalFiles), 40);
+        IProgressInfo annotateOriginalXML = extractOriginalLibrary.CreateChild(nameof(annotateOriginalXML), 60);
+
+        IProgressInfo exportOriginalTextures = new ProgressInfo(nameof(exportOriginalTextures));
+        IProgressInfo exportOriginalSpriteSheets = exportOriginalTextures.CreateChild(nameof(exportOriginalSpriteSheets), 80);
+        IProgressInfo exportOriginalSprites = exportOriginalTextures.CreateChild(nameof(exportOriginalSprites), 20);
+
+        IProgressInfo extractModifiedLibrary = new ProgressInfo(nameof(extractModifiedLibrary));
+        IProgressInfo extractModifiedFiles = extractModifiedLibrary.CreateChild(nameof(extractModifiedFiles), 40);
+        IProgressInfo annotateModifiedXML = extractModifiedLibrary.CreateChild(nameof(annotateModifiedXML), 60);
+
+        IProgressInfo exportModifiedTextures = new ProgressInfo(nameof(exportModifiedTextures));
+        IProgressInfo exportModifiedSpriteSheets = exportModifiedTextures.CreateChild(nameof(exportModifiedSpriteSheets), 80);
+        IProgressInfo exportModifiedSprites = exportModifiedTextures.CreateChild(nameof(exportModifiedSprites), 20);
 
         extractOriginalLibrary.ProgressChanged += RightScreen.OnExportOriginalLibraryProgressAsync;
         exportOriginalTextures.ProgressChanged += RightScreen.OnExportOriginalTexturesProgressAsync;
+
         extractModifiedLibrary.ProgressChanged += RightScreen.OnExportModifiedLibraryProgressAsync;
         exportModifiedTextures.ProgressChanged += RightScreen.OnExportModifiedTexturesProgressAsync;
 
         extractOriginalLibrary.Reset();
         exportOriginalTextures.Reset();
+
         extractModifiedLibrary.Reset();
         exportModifiedTextures.Reset();
 
@@ -655,7 +672,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 string originalJarPath = Paths.Data.BackupJarPath;
                 string originalFilesDir = Paths.Data.TemplateStageDir;
-                if (!File.Exists(originalJarPath) || !Directory.Exists(originalFilesDir))
+
+                if ((AppSettings.ExportOption & EExportOption.Original) != EExportOption.Original)
+                {
+                    Log.Warn($@"Skipping export of ORIGINAL files, accordingly to System Core settings", "tab://SystemCore");
+                }
+                else if (!File.Exists(originalJarPath) || !Directory.Exists(originalFilesDir))
                 {
                     Log.Warn($"Unable to locate ORIGINAL files => {Paths.AppName} was not properly initialized", workDir);
                     exportOriginalSuccess = false;
@@ -675,18 +697,17 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         // Export ORIGINAL Library:
                         Log.Info($@"Extracting ORIGINAL library...", exportOriginalDir);
                         JarRepository repo = new(Paths.Data, Log);
-                        if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalDir, ct, extractOriginalLibrary))
+                        if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalDir, ct, extractOriginalFiles))
                         {
                             Log.Error($@"Unable to extract ORIGINAL library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
                             exportOriginalSuccess = false;
                         }
-                        else extractOriginalLibrary.Complete();
 
                         // Annotate ORIGINAL Libraries:
                         Log.Info($"Writing XML annotation...");
                         XmlAnnotationService xmlAnnotationService = new(Log);
-                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportOriginalDir, AppSettings.XmlAnnotationLanguage, default))
+                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportOriginalDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateOriginalXML))
                         {
                             Log.Error($@"Unable to annotate ORIGINAL library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
@@ -697,15 +718,14 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         Log.Info($@"Exporting ORIGINAL textures...", exportOriginalDir);
                         if (!AppSettings.ExportTextures)
                         {
-                            Log.Warn($@"Skipping export of ORIGINAL textures because it is disabled in System Core settings.", "tab://SystemCore");
+                            Log.Warn($@"Skipping export of ORIGINAL textures, accordingly to System Core settings", "tab://SystemCore");
                         }
-                        else if (!await TryExportTextures(originalFilesDir, exportOriginalDir, parallelOptions, exportOriginalTextures))
+                        else if (!await TryExportTextures(originalFilesDir, exportOriginalDir, parallelOptions, exportOriginalSpriteSheets, exportOriginalSprites))
                         {
                             Log.Error($@"Unable to export ORIGINAL library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportOriginalTextures);
                             exportOriginalSuccess = false;
                         }
-                        else exportOriginalTextures.Complete();
                     }
                 }
             }
@@ -715,9 +735,14 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 string modifiedJarPath = Paths.Data.CacheJarPath;
                 string modifiedFilesDir = Paths.Data.BuildStageDir;
-                if (!File.Exists(modifiedJarPath) || !Directory.Exists(modifiedFilesDir))
+
+                if ((AppSettings.ExportOption & EExportOption.Modified) != EExportOption.Modified)
                 {
-                    Log.Warn($"Unable to locate MODIFIED files => try to successfully run a MODIFIED game first", workDir);
+                    Log.Warn($@"Skipping export of MODIFIED files, accordingly to System Core settings", "tab://SystemCore");
+                }
+                else if (!File.Exists(modifiedJarPath) || !Directory.Exists(modifiedFilesDir))
+                {
+                    Log.Warn($"Unable to locate MODIFIED files => The MODIFIED game must be built first", workDir);
                     exportModifiedSuccess = false;
                 }
                 else
@@ -735,18 +760,17 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         // Export MODIFIED Library:
                         Log.Info($@"Extracting MODIFIED library...", Paths.Data.ExportModifiedDir);
                         JarRepository repo = new(Paths.Data, Log);
-                        if (!await repo.TryExportLibraryAsync(modifiedJarPath, Paths.Data.ExportModifiedDir, ct, extractModifiedLibrary))
+                        if (!await repo.TryExportLibraryAsync(modifiedJarPath, Paths.Data.ExportModifiedDir, ct, extractModifiedFiles))
                         {
                             Log.Error($@"Unable to extract MODIFIED library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportModifiedLibrary);
                             exportModifiedSuccess = false;
                         }
-                        else extractModifiedLibrary.Complete();
 
                         // Annotate MODIFIED Libraries:
                         Log.Info($"Writing XML annotation...");
                         XmlAnnotationService xmlAnnotationService = new(Log);
-                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportModifiedDir, AppSettings.XmlAnnotationLanguage, default))
+                        if (!await xmlAnnotationService.TryRunAsync(Paths.Data.ExportModifiedDir, AppSettings.ExportXmlAnnotationLanguage, ct, annotateModifiedXML))
                         {
                             Log.Error($@"Unable to annotate MODIFIED library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportOriginalLibrary);
@@ -757,28 +781,24 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                         Log.Info($@"Exporting MODIFIED textures...", Paths.Data.ExportModifiedDir);
                         if (!AppSettings.ExportTextures)
                         {
-                            Log.Warn($@"Skipping export of MODIFIED textures because it is disabled in System Core settings.", "tab://SystemCore");
+                            Log.Warn($@"Skipping export of MODIFIED textures, accordingly to System Core settings", "tab://SystemCore");
                         }
-                        else if (!await TryExportTextures(modifiedFilesDir, Paths.Data.ExportModifiedDir, parallelOptions, exportModifiedTextures))
+                        else if (!await TryExportTextures(modifiedFilesDir, Paths.Data.ExportModifiedDir, parallelOptions, exportModifiedSpriteSheets, exportModifiedSprites))
                         {
                             Log.Error($@"Unable to export MODIFIED library", exportDir);
                             RightScreen.SetError(ERightScreenStep.ExportModifiedTextures);
                             exportModifiedSuccess = false;
                         }
-                        else exportModifiedTextures.Complete();
                     }
                 }
             }
 
             // Done.
             if (exportOriginalSuccess)
-                Log.Success("ORIGINAL files were successfully exported", exportOriginalDir);
+                Log.Success($@"ORIGINAL files were successfully exported to: ""{exportOriginalDir}""", exportOriginalDir);
 
             if (exportModifiedSuccess)
-                Log.Success("MODIFIED files were successfully exported", exportModifiedDir);
-
-            if (exportOriginalSuccess || exportModifiedSuccess)
-                State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(exportDir, Log));
+                Log.Success($@"MODIFIED files were successfully exported to: ""{exportModifiedDir}""", exportModifiedDir);
 
             RightScreen.RightButtonsState =
                 exportOriginalSuccess && exportModifiedSuccess ?
@@ -798,6 +818,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         {
             State.ExportCTS = null;
             Semaphore.Release();
+
+            extractOriginalLibrary?.ProgressChanged -= RightScreen.OnExportOriginalLibraryProgressAsync;
+            exportOriginalTextures?.ProgressChanged -= RightScreen.OnExportOriginalTexturesProgressAsync;
+            extractModifiedLibrary?.ProgressChanged -= RightScreen.OnExportModifiedLibraryProgressAsync;
+            exportModifiedTextures?.ProgressChanged -= RightScreen.OnExportModifiedTexturesProgressAsync;
+
             extractOriginalLibrary?.Dispose();
             exportOriginalTextures?.Dispose();
             extractModifiedLibrary?.Dispose();
@@ -810,23 +836,17 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     /// <summary>
     /// TODO: Create class 'SpaceHavenContentRepository' and pack this method there...
     /// </summary>
-    private async Task<bool> TryExportTextures(string modifiedFilesDir, string exportDir, ParallelOptions parallelOptions, IProgressInfo progress)
+    private async Task<bool> TryExportTextures(string modifiedFilesDir, string exportDir, ParallelOptions parallelOptions, IProgressInfo progressSpriteSheets, IProgressInfo progressSprites)
     {
         // Progress:
-        ProgressInfo loadATexturesXml = new("Load textures XML");
-        progress?.Add(loadATexturesXml, 59);
-        ProgressInfo loadAnimationsXml = new("Load animations XML");
-        progress?.Add(loadAnimationsXml, 393);
-        ProgressInfo loadGameArt = new("Load Game Art");
-        progress?.Add(loadGameArt, 192);
-        ProgressInfo exportSpriteSheets = new("Export Sprite Sheets");
-        progress?.Add(exportSpriteSheets, 8545);
-        ProgressInfo exportSprites = new("Export Sprites");
-        progress?.Add(exportSprites, 16925);
+        IProgressInfo progressloadTexturesXml = progressSpriteSheets?.CreateChild(nameof(progressloadTexturesXml), 200);
+        IProgressInfo progressLoadAnimationsXml = progressSpriteSheets?.CreateChild(nameof(progressLoadAnimationsXml), 400);
+        IProgressInfo progressLoadGameArt = progressSpriteSheets?.CreateChild(nameof(progressLoadGameArt), 400);
+        IProgressInfo progressExportSpriteSheets = progressSpriteSheets?.CreateChild(nameof(progressExportSpriteSheets), 7000);
 
         try
         {
-            Stopwatch clock = new();
+            Stopwatch clock = Stopwatch.StartNew();
 
             // Paths
             string libraryDirectory = Path.Combine(modifiedFilesDir, SpaceHavenConstants.LIBRARY);
@@ -837,47 +857,48 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             TexturesXmlRepository texturesXmlRepository = new(Log);
             Log.Info($"Reading textures...");
             clock.Restart();
-            if (!await texturesXmlRepository.TryReadAsync(texturesXmlPath, parallelOptions.CancellationToken, loadATexturesXml))
+            if (!await texturesXmlRepository.TryReadAsync(texturesXmlPath, parallelOptions.CancellationToken, progressloadTexturesXml))
                 throw new Exception("Unable to read all textures XML information");
-            Log.Debug($"{loadATexturesXml} = {clock.Elapsed.TotalMilliseconds} ms");
-            loadATexturesXml.Complete();
+            Log.Debug($"{progressloadTexturesXml} = {clock.Elapsed.TotalMilliseconds} ms");
+            progressloadTexturesXml.Complete();
 
             // Animations
             AnimationsXmlRepository animationsXmlRepository = new(Log);
             Log.Info($@"Reading animations...");
             clock.Restart();
-            if (!await animationsXmlRepository.TryReadAsync(animationsXmlPath, parallelOptions.CancellationToken, loadAnimationsXml))
+            if (!await animationsXmlRepository.TryReadAsync(animationsXmlPath, parallelOptions.CancellationToken, progressLoadAnimationsXml))
                 throw new Exception("Unable to read all animations XML information");
-            Log.Debug($"{loadAnimationsXml} = {clock.Elapsed.TotalMilliseconds} ms");
-            loadAnimationsXml.Complete();
+            Log.Debug($"{progressLoadAnimationsXml} = {clock.Elapsed.TotalMilliseconds} ms");
+            progressLoadAnimationsXml.Complete();
 
             // Load Art
             Log.Info($"Loading game art...");
             ArtRepository artRepository = new(texturesXmlRepository, animationsXmlRepository, Log);
             clock.Restart();
-            if (!await artRepository.TryLoadAsync(libraryDirectory, parallelOptions.CancellationToken, loadGameArt))
+            if (!await artRepository.TryLoadAsync(libraryDirectory, parallelOptions.CancellationToken, progressLoadGameArt))
                 throw new Exception("Unable to load all game art");
-            Log.Debug($"{loadGameArt} = {clock.Elapsed.TotalMilliseconds} ms");
-            loadGameArt.Complete();
+            Log.Debug($"{progressLoadGameArt} = {clock.Elapsed.TotalMilliseconds} ms");
+            progressLoadGameArt.Complete();
 
             // Export CIM to PNG:
             Log.Info($"Exporting sprite sheets...");
             clock.Restart();
-            if (!await artRepository.TryExportSpriteSheetsToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, exportSpriteSheets))
+            if (!await artRepository.TryExportSpriteSheetsToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressExportSpriteSheets))
                 throw new Exception("Unable to export all sprite sheets to PNG");
-            Log.Debug($"{exportSpriteSheets} = {clock.Elapsed.TotalMilliseconds} ms");
-            exportSpriteSheets.Complete();
+            Log.Debug($"{progressExportSpriteSheets} = {clock.Elapsed.TotalMilliseconds} ms");
+            progressExportSpriteSheets.Complete();
+
+            progressSpriteSheets?.Complete();
 
             // Export individual sprites to PNG:
             Log.Info($"Exporting sprites...");
             clock.Restart();
-            if (!await artRepository.TryExportSpritesToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, exportSprites))
+            if (!await artRepository.TryExportSpritesToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressSprites))
                 throw new Exception("Unable to export all sprites to PNG");
-            Log.Debug($"{exportSprites} = {clock.Elapsed.TotalMilliseconds} ms");
-            exportSprites.Complete();
+            Log.Debug($"{progressSprites} = {clock.Elapsed.TotalMilliseconds} ms");
+            progressSprites.Complete();
 
             // Done.
-            progress?.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -885,15 +906,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         {
             Log.Error(ex);
             return false;
-        }
-        finally
-        {
-            progress?.RemoveAll();
-            loadATexturesXml?.Dispose();
-            loadAnimationsXml?.Dispose();
-            loadGameArt?.Dispose();
-            exportSpriteSheets?.Dispose();
-            exportSprites?.Dispose();
         }
     }
 

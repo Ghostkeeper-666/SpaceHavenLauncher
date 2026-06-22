@@ -16,8 +16,9 @@ public sealed class AppSettingsData
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
         ForceSpritesheetSize2048 = false,
-        XmlAnnotationLanguage = ELanguage.EN,
+        ExportXmlAnnotationLanguage = ELanguage.EN,
         ExportTextures = true,
+        ExportOption = EExportOption.Both,
     };
 
     public AppSettingsData() { }
@@ -29,6 +30,7 @@ public sealed class AppSettingsData
     public bool IsBackgroundEnabled { get; set; }
     public double BackgroundDarkness { get; set; }
     public bool ForceSpritesheetSize2048 { get; set; }
-    public ELanguage XmlAnnotationLanguage { get; set; }
+    public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }
+    public EExportOption ExportOption { get; set; }
 }

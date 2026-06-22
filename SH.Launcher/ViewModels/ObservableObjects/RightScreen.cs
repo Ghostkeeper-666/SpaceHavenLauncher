@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Launcher.ViewModels.Enums;
 using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;

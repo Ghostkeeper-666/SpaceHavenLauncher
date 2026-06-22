@@ -37,14 +37,12 @@ public sealed class AnimationsXmlRepository
             XElement root = doc?.Element("AllAnimations") ?? throw new Exception("Invalid XML root");
             List<XElement> animations = root?.Element("animations")?.Elements("ba")?.ToList() ?? [];
 
-            // Generate a progress update only 100 times:
-            int pi = 0;
-            double p = 0.0;
-            double delta = 100.0 / animations.Count;
+            double delta = 1.0 / animations.Count;
 
             foreach (XElement ba in animations)
             {
                 ct.ThrowIfCancellationRequested();
+
                 try
                 {
                     AnimationXml animation = new()
@@ -88,10 +86,12 @@ public sealed class AnimationsXmlRepository
                 }
                 finally
                 {
-                    // Generate a progress update only 100 times:
-                    if (pi < (int)(p += delta)) progress?.SetNormalized((pi = (int)p) / 100.0);
+                    progress?.IncrementNormalized(delta);
                 }
             }
+
+            // Done.
+            progress.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
