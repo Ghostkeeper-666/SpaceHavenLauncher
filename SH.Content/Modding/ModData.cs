@@ -1,5 +1,9 @@
-﻿using SH.Framework.IO;
+﻿using SH.Framework.Extensions;
+using SH.Framework.IO;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SH.Content.Modding;
 
@@ -36,14 +40,20 @@ public sealed class ModData
 
     public string Directory { get; set; }
 
-    public string XmlLibraryDirectory { get; set; }
-    public string XmlPatchesDirectory { get; set; }
-    public string AudioDirectory { get; set; }
-    public string TexturesDirectory { get; set; }
+    public string XmlLibraryDirectory => Path.Combine(Directory, ModdingConstants.LIBRARY);
+    public string XmlPatchesDirectory => Path.Combine(Directory, ModdingConstants.PATCHES);
+    public string AudioDirectory => Path.Combine(Directory, ModdingConstants.AUDIO);
+    public string TexturesDirectory => Path.Combine(Directory, ModdingConstants.TEXTURES);
 
     public string InfoXmlPath { get; set; }
     public string MarkdownDescriptionPath { get; set; }
     public string BackgroundImagePath { get; set; }
+
+    public bool HasAudio => AudioFilePaths.Count > 0;
+    public bool HasTextures => TextureFilePaths.Count > 0;
+    public bool HasLibraryXml => XmlLibraryFilePaths.Count > 0;
+    public bool HasPatchXml => XmlPatchFilePaths.Count > 0;
+    public bool HasJava => JavaFilePaths.Count > 0;
 
     public List<string> AudioFilePaths { get; } = [];
     public List<string> TextureFilePaths { get; } = [];
@@ -51,9 +61,16 @@ public sealed class ModData
     public List<string> XmlPatchFilePaths { get; } = [];
     public List<string> JavaFilePaths { get; } = [];
     public List<string> OtherFilePaths { get; } = [];
+    
     public List<string> AllPaths { get; } = [];
 
-
+    // BE CAREFUL: Paths are relative to their respective relevant base directory!
+    public List<string> AudioRelativeFilePaths => AudioFilePaths.Select(path => path.RemovePrefix(AudioDirectory).TrimStart('\\', '/')).ToList();
+    public List<string> TextureRelativeFilePaths => TextureFilePaths.Select(path => path.RemovePrefix(TexturesDirectory).TrimStart('\\', '/')).ToList();
+    public List<string> XmlLibraryRelativeFilePaths => XmlLibraryFilePaths.Select(path => path.RemovePrefix(XmlLibraryDirectory).TrimStart('\\', '/')).ToList();
+    public List<string> XmlPatchRelativeFilePaths => XmlPatchFilePaths.Select(path => path.RemovePrefix(XmlPatchesDirectory).TrimStart('\\', '/')).ToList();
+    public List<string> JavaRelativeFilePaths => JavaFilePaths.Select(path => path.RemovePrefix(Directory).TrimStart('\\', '/')).ToList();
+    public List<string> OtherRelativeFilePaths => OtherFilePaths.Select(path => path.RemovePrefix(Directory).TrimStart('\\', '/')).ToList();
 
     public override int GetHashCode() => Name.GetHashCode();
     public override string ToString() => $"{Name} {Version}";

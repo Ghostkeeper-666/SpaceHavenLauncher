@@ -12,9 +12,13 @@ public static class ModdingConstants
     public static readonly string BUILD = "build";
     public static readonly string STAGE = "stage";
 
+    public static readonly string PATCHES = "patches";
+    public static readonly string LIBRARY = "library";
+    public static readonly string AUDIO = "audio";
+    public static readonly string TEXTURES = "textures";
+
     public static readonly string INFO_XML = "info.xml";
     public static readonly string DESCRIPTION_MD = "description.md";
-
 
     public static readonly string ASPECTJ = "aspectj-1.9.19.jar";
     public static readonly string ASPECTJWEAVER = "aspectjweaver-1.9.19.jar";

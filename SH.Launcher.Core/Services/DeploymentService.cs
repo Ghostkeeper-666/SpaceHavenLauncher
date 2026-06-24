@@ -7,7 +7,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
-using SH.Launcher.Core.Repositories;
 using System;
 using System.IO;
 using System.Linq;
@@ -221,7 +220,7 @@ public sealed class DeploymentService
                 ct.ThrowIfCancellationRequested();
                 try
                 {
-                    string name = ein.Name.AsStandardPath() ?? string.Empty;
+                    string name = ein.Name.AsStdPath() ?? string.Empty;
                     if (name.IsNullOrWhiteSpace())
                         continue;
 

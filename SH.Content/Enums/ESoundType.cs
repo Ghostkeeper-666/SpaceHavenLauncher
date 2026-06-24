@@ -1,6 +1,6 @@
 ﻿namespace SH.Content.Enums;
 
-public enum EAudioScope
+public enum ESoundType
 {
     None,
     UI,

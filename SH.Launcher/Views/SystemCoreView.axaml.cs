@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Repositories;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Services;
 using SH.Launcher.ViewModels;
@@ -166,9 +165,9 @@ public partial class SystemCoreView : UserControl
     private void Open_ExportDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ExportDir, Log));
 
-    private void Open_SpaceHavenDir(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+    private void Open_SpaceHavenDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenDir, Log));
-    private void Open_SpaceHavenJarDir(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+    private void Open_SpaceHavenJarDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenJarDir, Log));
 
     private void Open_SteamDir(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>

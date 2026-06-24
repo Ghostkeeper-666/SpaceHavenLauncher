@@ -31,7 +31,7 @@ public sealed class ModRepository
         OrderedDictionary<string, ModData> mods = new();
         try
         {
-            progress?.SetNormalized(0.00001);
+            progress?.Start();
 
             // Locate mods:
             int modErrors = 0;
@@ -115,82 +115,61 @@ public sealed class ModRepository
         }
     }
 
-    private async Task<ModData> TryLoadMod(string modDirectory, CancellationToken ct)
+    private async Task<ModData> TryLoadMod(string modDir, CancellationToken ct)
     {
         ModData mod = new();
         try
         {
             bool success = true;
 
-            modDirectory = modDirectory.AsOSPath();
-
-            if (!Directory.Exists(modDirectory))
+            mod.Directory = modDir.AsOSPath();
+            if (!Directory.Exists(mod.Directory))
                 return null;
 
             // Info.xml file:
-            string infoXmlPath = Path.Combine(modDirectory, ModdingConstants.INFO_XML);
+            string infoXmlPath = Path.Combine(mod.Directory, ModdingConstants.INFO_XML);
             mod.InfoXmlPath =
-                Directory.GetFiles(modDirectory, "*.*", SearchOption.TopDirectoryOnly)
+                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
                 .FirstOrDefault(path => path.Equals(infoXmlPath, StringComparison.OrdinalIgnoreCase));
 
             // Background image:
             string[] possibleBackgroundImagePaths =
             [
-                Path.Combine(modDirectory, "background.jpg"),
-                Path.Combine(modDirectory, "background.png"),
-                Path.Combine(modDirectory, "bg.jpg"),
-                Path.Combine(modDirectory, "bg.png"),
+                Path.Combine(mod.Directory, "background.jpg"),
+                Path.Combine(mod.Directory, "background.png"),
+                Path.Combine(mod.Directory, "bg.jpg"),
+                Path.Combine(mod.Directory, "bg.png"),
             ];
             mod.BackgroundImagePath =
-                Directory.GetFiles(modDirectory, "*.*", SearchOption.TopDirectoryOnly)
+                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
                 .FirstOrDefault(path => possibleBackgroundImagePaths
                 .Any(possiblePath => path.Equals(possiblePath, StringComparison.OrdinalIgnoreCase)));
 
             // XML library files:
-            mod.XmlLibraryDirectory = Path.Combine(modDirectory, SpaceHavenConstants.LIBRARY);
-            if (mod.XmlLibraryDirectory.IsNullOrWhiteSpace() || !Directory.Exists(mod.XmlLibraryDirectory))
-                mod.XmlLibraryDirectory = null;
-            mod.XmlLibraryFilePaths.AddRange(
-                mod.XmlLibraryDirectory == null ? [] :
-                Directory.GetFiles(mod.XmlLibraryDirectory, "*.*", SearchOption.TopDirectoryOnly)
+            if(Directory.Exists(mod.XmlLibraryDirectory))
+            mod.XmlLibraryFilePaths.AddRange(Directory.GetFiles(mod.XmlLibraryDirectory, "*.*", SearchOption.AllDirectories)
                 .Where(path => !Path.GetFileName(path).StartsWith(ModdingConstants.GENERATED_TEXTURES_XML, StringComparison.OrdinalIgnoreCase)));
 
             // XML Patch files:
-            mod.XmlPatchesDirectory = Path.Combine(modDirectory, "patches");
-            if (mod.XmlPatchesDirectory.IsNullOrWhiteSpace() || !Directory.Exists(mod.XmlPatchesDirectory))
-                mod.XmlPatchesDirectory = null;
-            mod.XmlPatchFilePaths.AddRange(
-                mod.XmlPatchesDirectory == null ? [] :
-                Directory.GetFiles(mod.XmlPatchesDirectory, "*.*", SearchOption.TopDirectoryOnly));
+            if (Directory.Exists(mod.XmlPatchesDirectory))
+                mod.XmlPatchFilePaths.AddRange(Directory.GetFiles(mod.XmlPatchesDirectory, "*.*", SearchOption.AllDirectories));
 
             // Audio files:
-            mod.AudioDirectory = Path.Combine(modDirectory, "audio");
-            if (mod.AudioDirectory.IsNullOrWhiteSpace() || !Directory.Exists(mod.AudioDirectory))
-                mod.AudioDirectory = null;
-            mod.AudioFilePaths.AddRange(
-                mod.AudioDirectory == null ? [] :
-                Directory.GetFiles(mod.AudioDirectory, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f =>
-                    f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
-                    f.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)));
+            if (Directory.Exists(mod.AudioDirectory))
+                mod.AudioFilePaths.AddRange(Directory.GetFiles(mod.AudioDirectory, "*.*", SearchOption.AllDirectories)
+                    .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)));
 
             // Texture files:
-            mod.TexturesDirectory = Path.Combine(modDirectory, "textures");
-            if (mod.TexturesDirectory.IsNullOrWhiteSpace() || !Directory.Exists(mod.TexturesDirectory))
-                mod.TexturesDirectory = null;
-            mod.TextureFilePaths.AddRange(
-                mod.TexturesDirectory == null ? [] :
-                Directory.GetFiles(mod.TexturesDirectory, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
+            if(Directory.Exists(mod.TexturesDirectory))
+                mod.TextureFilePaths.AddRange(Directory.GetFiles(mod.TexturesDirectory, "*.*", SearchOption.AllDirectories)
+                    .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
 
             // JAR files:
-            mod.JavaFilePaths.AddRange(
-                Directory.GetFiles(modDirectory, "*.*", SearchOption.TopDirectoryOnly)
+            mod.JavaFilePaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.AllDirectories)
                 .Where(f => f.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)));
 
             // ALL files:
-            mod.AllPaths.AddRange(
-                Directory.GetFiles(modDirectory, "*.*", SearchOption.AllDirectories));
+            mod.AllPaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.AllDirectories));
 
             // Other files:
             mod.OtherFilePaths.AddRange(
@@ -207,7 +186,6 @@ public sealed class ModRepository
             ));
 
 
-
             // ----------------------------------------------------------------------
             // INFO.XML
             XDocument doc = await IOUtils.TryLoadXDocumentAsync(mod.InfoXmlPath, Log, ct);
@@ -222,7 +200,6 @@ public sealed class ModRepository
                 Log.Error($@"Invalid root node: <mod> is expected, file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
                 return null;
             }
-            mod.Directory = modDirectory;
 
             // UNIQUE NAME
             mod.Name = root.Element("name")?.Value?.Trim();
@@ -456,7 +433,7 @@ public sealed class ModRepository
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"[{modDirectory}] {ex.Message}");
+                    Log.Error($"[{modDir}] {ex.Message}");
                     success = false;
                 }
             }
@@ -479,9 +456,9 @@ public sealed class ModRepository
                 });
 
             // Read markdown mod description:
-            string mardkdownDescriptionPath = Path.Combine(modDirectory, ModdingConstants.DESCRIPTION_MD);
+            string mardkdownDescriptionPath = Path.Combine(mod.Directory, ModdingConstants.DESCRIPTION_MD);
             mod.MarkdownDescriptionPath =
-                Directory.GetFiles(modDirectory, "*.*", SearchOption.TopDirectoryOnly)
+                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
                 .FirstOrDefault(path => path.Equals(mardkdownDescriptionPath, StringComparison.OrdinalIgnoreCase));
             if (mod.MarkdownDescriptionPath != null)
                 mod.MarkdownDescription = await IOUtils.TryReadAllTextAsync(mod.MarkdownDescriptionPath, Log, ct);

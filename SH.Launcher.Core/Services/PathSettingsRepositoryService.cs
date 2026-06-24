@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace SH.Launcher.Core.Repositories;
+namespace SH.Launcher.Core.Services;
 
 #warning TODO: Create a new path finding system which combines diverse possible paths!
 public sealed class PathSettingsRepositoryService

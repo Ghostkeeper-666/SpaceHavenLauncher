@@ -43,4 +43,12 @@ If the audio encoding is **OGG**:
 - Attribute **ogg** points to the target location in the **spacehaven.jar** file
 - Attribute **oggl** is the exact audio length in seconds
 
+**Space Haven Launcher** also supports:
+- Attribute **filename** tells the relative location of the audio file within the mod's audio subdirectory
+
+If this attribute is not set, the audio file must either:
+- be located directly in the mod's audio folder
+- OR be located in a relative subdirectory of mod's audio folder, which matches the **mp3** or **ogg** attributes
+- OR be an existing audio file from other mod or from original game
+
 **That's all !**

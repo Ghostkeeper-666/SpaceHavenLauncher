@@ -55,7 +55,7 @@ internal sealed class SpriteSheetBuildData
     }
 
     public SpriteAtlasBuildData Atlas { get; }
-    public int GlobalId { get; set; }
+    public int GlobalId { get; set; } = int.MinValue;
     public int LocalId { get; }
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -88,6 +88,7 @@ internal sealed class SpriteSheetBuildData
             using SKCanvas canvas = new(bitmap);
             foreach (SpriteBuildData sprite in Sprites)
                 canvas.DrawBitmap(sprite.Image, sprite.SpriteSheetX, sprite.SpriteSheetY);
+
             Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
             return true;
         }

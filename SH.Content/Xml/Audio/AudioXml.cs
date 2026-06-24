@@ -10,6 +10,6 @@ public sealed class AudioXml
     public EAudioFormat Format { get; set; } // from mp3,ogg
     public string Path { get; set; } // from mp3,ogg
     public float Length { get; set; } // from mp3l,oggl
-    public EAudioScope Scope { get; set; } // st
+    public ESoundType Scope { get; set; } // st
     public int Volume { get; set; } // vo
 }

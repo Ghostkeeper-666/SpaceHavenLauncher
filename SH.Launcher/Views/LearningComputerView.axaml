@@ -243,7 +243,7 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
 
 
 
-    <!-- Copy Log Button -->
+    <!-- Copy Text Button -->
     <Border
     x:Name="CopyTextButton"
     Grid.Row="0"
@@ -264,10 +264,6 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
     PointerPressed="CopyLogStartAsync"
     PointerReleased="CopyLogEndAsync"
     IsHitTestVisible="True"
-
-    ToolTip.ShowDelay="10"
-    ToolTip.BetweenShowDelay="10"
-    ToolTip.ShowOnDisabled="True"
     ToolTip.Tip="Copy all this text" >
       <PathIcon
       x:Name="CopyTextIcon"

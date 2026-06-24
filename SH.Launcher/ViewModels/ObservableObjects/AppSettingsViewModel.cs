@@ -2,7 +2,7 @@
 using SH.Content.Enums;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
-using SH.Launcher.Core.Repositories;
+using SH.Launcher.Core.Services;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;

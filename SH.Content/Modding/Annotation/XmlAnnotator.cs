@@ -125,27 +125,27 @@ public sealed class XmlAnnotator
         string inputTexturesXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTURES);
         string inputAnimationsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.ANIMATIONS);
 
-        HavenXml = new(EXmlFileType.Haven, inputHavenXmlPath);
+        HavenXml = new(EXmlFileType.Haven, baseDir, inputHavenXmlPath);
         if (!await HavenXml.TryLoadAsync(Log, CT))
             return false;
         progress.Increment(5 * progressMax / 10);
 
-        TextsXml = new(EXmlFileType.Texts, inputTextsXmlPath);
+        TextsXml = new(EXmlFileType.Texts, baseDir, inputTextsXmlPath);
         if (!await TextsXml.TryLoadAsync(Log, CT))
             return false;
         progress.Increment(2 * progressMax / 10);
 
-        AudioXml = new(EXmlFileType.Audio, inputAudioXmlPath);
+        AudioXml = new(EXmlFileType.Audio, baseDir, inputAudioXmlPath);
         if (!await AudioXml.TryLoadAsync(Log, CT))
             return false;
         progress.Increment(1 * progressMax / 10);
 
-        TexturesXml = new(EXmlFileType.Textures, inputTexturesXmlPath);
+        TexturesXml = new(EXmlFileType.Textures, baseDir, inputTexturesXmlPath);
         if (!await TexturesXml.TryLoadAsync(Log, CT))
             return false;
         progress.Increment(1 * progressMax / 10);
 
-        AnimationsXml = new(EXmlFileType.Animations, inputAnimationsXmlPath);
+        AnimationsXml = new(EXmlFileType.Animations, baseDir, inputAnimationsXmlPath);
         if (!await AnimationsXml.TryLoadAsync(Log, CT))
             return false;
         progress.Increment(1 * progressMax / 10);

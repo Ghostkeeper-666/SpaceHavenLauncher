@@ -1,4 +1,5 @@
-﻿using SH.Framework.Extensions;
+﻿using RectpackSharp;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SkiaSharp;
@@ -31,7 +32,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
         SpriteSheetY = regionY;
 
         // Read pixel data from spritesheet:
-        Sheet = sheet;
+        SpriteSheet = sheet;
         PixelData = new byte[4 * Width * Height];
         for (int y = 0; y < Height; ++y)
             Buffer.BlockCopy(sheet.PixelData, (SpriteSheetY + y) * 4 * sheet.Width + SpriteSheetX * 4, PixelData, y * 4 * Width, 4 * Width);
@@ -41,17 +42,17 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
         Marshal.Copy(PixelData, 0, Image.GetPixels(), PixelData.Length);
     }
 
-    public SpriteBuildData(string localName, int localId, string filePath)
+    public SpriteBuildData(string localName, int localId, string absoluteFilePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(absoluteFilePath);
 
         LocalName = localName;
         LocalId = localId;
-        FilePath = filePath;
+        AbsoluteFilePath = absoluteFilePath;
 
         // Read image pixel data from file:
-        Image = SKBitmap.Decode(filePath);
+        Image = SKBitmap.Decode(absoluteFilePath);
         PixelData = new byte[Image.ByteCount];
         Marshal.Copy(Image.GetPixels(), PixelData, 0, PixelData.Length);
 
@@ -59,7 +60,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
         CroppedHeight = Height = Image.Height;
     }
 
-    public SpriteSheetBuildData Sheet { get; set; }
+    public SpriteSheetBuildData SpriteSheet { get; set; }
 
     public string GlobalName { get; set; }
     public string LocalName { get; set; }
@@ -76,11 +77,14 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
     public int CroppedWidth { get; private set; }
     public int CroppedHeight { get; private set; }
 
-    public string FileName => Path.GetFileNameWithoutExtension(FilePath);
-    public string FilePath { get; }
+    public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath);
+    public string AbsoluteFilePath { get; }
 
     public byte[] PixelData { get; }
     public SKBitmap Image { get; private set; }
+
+    internal bool PackingRectangleHasBorder => PackingRectangle.Width != Width || PackingRectangle.Height != Height;
+    internal PackingRectangle PackingRectangle { get; set; }
 
     public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
     {

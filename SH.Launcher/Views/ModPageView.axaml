@@ -122,11 +122,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-
-          ToolTip.Tip="{Binding Mod.XmlLibraryFiles}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.XmlLibraryFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -147,10 +143,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-          ToolTip.Tip="{Binding Mod.XmlPatchFiles}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.XmlPatchFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -171,10 +164,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-          ToolTip.Tip="{Binding Mod.AudioFiles}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.AudioFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -195,10 +185,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-          ToolTip.Tip="{Binding Mod.TextureFiles}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.TextureFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -219,10 +206,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-          ToolTip.Tip="{Binding Mod.JarFiles}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.JarFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -277,10 +261,7 @@ x:DataType="vm:ModPageViewModel"
         Content="{Binding Mod.Directory}"
         Cursor="Hand"
 
-        ToolTip.Tip="Click to open this location"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="Click to open this location" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
               <Setter Property="Foreground" Value="SkyBlue" />
@@ -348,11 +329,7 @@ x:DataType="vm:ModPageViewModel"
         HorizontalAlignment="Stretch"
         Text="{Binding Mod.IdTitle}"
 
-            ToolTip.Tip="{Binding Mod.ModIdErrorText}"
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
-                >
+            ToolTip.Tip="{Binding Mod.ModIdErrorText}" >
           <TextBlock.Foreground>
             <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
               <Binding Path="Mod.HasModIdError" />
@@ -371,10 +348,7 @@ x:DataType="vm:ModPageViewModel"
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
 
-        ToolTip.Tip="{Binding Mod.IdHelp}"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="{Binding Mod.IdHelp}" >
 
           <NumericUpDown
           Grid.Column="0"
@@ -394,10 +368,7 @@ x:DataType="vm:ModPageViewModel"
           HorizontalContentAlignment="Left"
           Value="{Binding Mod.FinalId}"
 
-          ToolTip.Tip="{Binding Mod.IdHelp}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.IdHelp}" >
             <NumericUpDown.BorderBrush>
               <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
                 <Binding Path="Mod.HasModIdError" />
@@ -424,10 +395,7 @@ x:DataType="vm:ModPageViewModel"
           Content="RESET ID"
           Cursor="Hand"
 
-          ToolTip.Tip="{Binding Mod.IdHelp}"
-          ToolTip.ShowDelay="10"
-          ToolTip.BetweenShowDelay="10"
-          ToolTip.ShowOnDisabled="True" >
+          ToolTip.Tip="{Binding Mod.IdHelp}" >
             <Button.BorderBrush>
               <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
                 <Binding Path="Mod.HasModIdError" />
@@ -454,10 +422,7 @@ x:DataType="vm:ModPageViewModel"
         HorizontalAlignment="Stretch"
         Text="DEPENDENCIES"
 
-        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}" >
           <TextBlock.Foreground>
             <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
               <Binding Path="Mod.HasModDependenciesError" />
@@ -479,10 +444,7 @@ x:DataType="vm:ModPageViewModel"
         VerticalAlignment="Top"
         Text="{Binding Mod.AllModDependenciesText}"
 
-        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="{Binding Mod.ModDependenciesSummaryText}" >
           <TextBlock.Foreground>
             <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
               <Binding Path="Mod.HasModDependenciesError" />
@@ -510,10 +472,7 @@ x:DataType="vm:ModPageViewModel"
         HorizontalAlignment="Stretch"
         Text="MOD CONFLICTS"
 
-        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}" >
           <TextBlock.Foreground>
             <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
               <Binding Path="Mod.HasModConflictsError" />
@@ -535,10 +494,7 @@ x:DataType="vm:ModPageViewModel"
         VerticalAlignment="Top"
         Text="{Binding Mod.AllModConflictsText}"
 
-        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}"
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True" >
+        ToolTip.Tip="{Binding Mod.ModConflictsErrorText}" >
           <TextBlock.Foreground>
             <MultiBinding Converter="{StaticResource ErrorFlagToBrushConverter}" >
               <Binding Path="Mod.HasModConflictsError" />
@@ -834,10 +790,6 @@ x:DataType="vm:ModPageViewModel"
         VerticalAlignment="Center"
         PointerPressed="ResetSearch"
         IsHitTestVisible="True"
-
-        ToolTip.ShowDelay="10"
-        ToolTip.BetweenShowDelay="10"
-        ToolTip.ShowOnDisabled="True"
         ToolTip.Tip="Clear Search Text" >
           <PathIcon
           Data="{StaticResource ResetSearch}"

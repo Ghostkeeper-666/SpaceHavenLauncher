@@ -66,11 +66,11 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         foreach (VarData modVariable in data.Variables)
             Variables.Add(new ModVariableViewModel(this, modVariable));
 
-        XmlLibraryFiles = data.XmlLibraryFilePaths.Count <= 0 ? string.Empty : $"XML library files:\n\n{data.XmlLibraryFilePaths.Select(path => $"- {path.Substring(data.XmlLibraryDirectory.Length + 1)}").JoinToString("\n")}";
-        XmlPatchFiles = data.XmlPatchFilePaths.Count <= 0 ? string.Empty : $"XML patch files:\n\n{data.XmlPatchFilePaths.Select(path => $"- {path.Substring(data.XmlPatchesDirectory.Length + 1)}").JoinToString("\n")}";
-        AudioFiles = data.AudioFilePaths.Count <= 0 ? string.Empty : $"Audio files:\n\n{data.AudioFilePaths.Select(path => $"- {path.Substring(data.AudioDirectory.Length + 1)}").JoinToString("\n")}";
-        TextureFiles = data.TextureFilePaths.Count <= 0 ? string.Empty : $"Texture files:\n\n{data.TextureFilePaths.Select(path => $"- {path.Substring(data.TexturesDirectory.Length + 1)}").JoinToString("\n")}";
-        JarFiles = data.JavaFilePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JavaFilePaths.Select(path => $"- {path.Substring(data.Directory.Length + 1)}").JoinToString("\n")}";
+        XmlLibraryFiles = data.XmlLibraryFilePaths.Count <= 0 ? string.Empty : $"XML library files:\n\n{data.XmlLibraryRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        XmlPatchFiles = data.XmlPatchFilePaths.Count <= 0 ? string.Empty : $"XML patch files:\n\n{data.XmlPatchRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        AudioFiles = data.AudioFilePaths.Count <= 0 ? string.Empty : $"Audio files:\n\n{data.AudioRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        TextureFiles = data.TextureFilePaths.Count <= 0 ? string.Empty : $"Texture files:\n\n{data.TextureRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        JarFiles = data.JavaFilePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JavaRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
 
         XmlLibraryFilesWidth = new(XmlLibraryFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
         XmlPatchFilesWidth = new(XmlPatchFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);

@@ -93,7 +93,7 @@ RequestedThemeVariant="Dark" >
       <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
     </Style>
 
-
+    
 
     <!-- Button pointerover -->
     <Style Selector="Button:pointerover" >
@@ -107,6 +107,18 @@ RequestedThemeVariant="Dark" >
       <Setter Property="BorderBrush" Value="Teal" />
       <Setter Property="Background" Value="Teal" />
       <Setter Property="Foreground" Value="Black" />
+    </Style>
+
+    
+
+    <!-- Tooltip -->
+    <Style Selector="ToolTip">
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="MaxWidth" Value="600"/>
+      <Setter Property="Padding" Value="8"/>
+      <Setter Property="ShowDelay" Value="10"/>
+      <Setter Property="BetweenShowDelay" Value="10"/>
+      <Setter Property="ShowOnDisabled" Value="True"/>
     </Style>
 
   </Application.Styles>

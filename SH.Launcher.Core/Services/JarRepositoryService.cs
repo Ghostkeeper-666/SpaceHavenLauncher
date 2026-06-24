@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using SH.Content;
 
-namespace SH.Launcher.Core.Repositories;
+namespace SH.Launcher.Core.Services;
 
 public sealed class JarRepositoryService
 {
@@ -105,7 +105,7 @@ public sealed class JarRepositoryService
             {
                 if (entry.IsDirectory)
                     continue;
-                string entryPath = entry.Name.AsStandardPath();
+                string entryPath = entry.Name.AsStdPath();
                 if (!ModdingConstants.PathsForModding.Any(path => entryPath.StartsWith(path, StringComparison.OrdinalIgnoreCase) || entryPath.EndsWith(path, StringComparison.OrdinalIgnoreCase)))
                     continue;
                 entries.Add(entryPath);
@@ -116,7 +116,7 @@ public sealed class JarRepositoryService
 
             foreach (ZipEntry entry in zin)
             {
-                string entryPath = entry.Name.AsStandardPath();
+                string entryPath = entry.Name.AsStdPath();
                 if (!entries.Contains(entryPath))
                     continue;
 

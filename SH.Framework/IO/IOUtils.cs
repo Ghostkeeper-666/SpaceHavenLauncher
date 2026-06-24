@@ -14,6 +14,36 @@ namespace SH.Framework.IO;
 
 public static class IOUtils
 {
+    public static string CombinePath(string basePath, string relativePath)
+    {
+        try { return Path.Combine(basePath ?? string.Empty, relativePath ?? string.Empty); }
+        catch { return relativePath ?? basePath; }
+    }
+
+    public static string CombinePathAsOS(string basePath, string relativePath)
+    {
+        try { return Path.Combine(basePath.AsOSPath(), relativePath.AsOSPath()).AsOSPath(); }
+        catch { return relativePath ?? basePath; }
+    }
+
+    public static string CombinePathAsStd(string basePath, string relativePath)
+    {
+        try { return Path.Combine(basePath.AsStdPath(), relativePath.AsStdPath()).AsStdPath(); }
+        catch { return relativePath ?? basePath; }
+    }
+
+    public static bool FileExists(string path)
+    {
+        try { return File.Exists(path ?? string.Empty); }
+        catch { return false; }
+    }
+
+    public static bool DirectoryExists(string path)
+    {
+        try { return Directory.Exists(path ?? string.Empty); }
+        catch { return false; }
+    }
+
     public static void ThrowIfFileNotExists(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -36,7 +66,7 @@ public static class IOUtils
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string AsStandardPath(this string path) =>
+    public static string AsStdPath(this string path) =>
         string.IsNullOrWhiteSpace(path) ? string.Empty :
         path.Replace('\\', '/').Trim().TrimEnd('/');
 

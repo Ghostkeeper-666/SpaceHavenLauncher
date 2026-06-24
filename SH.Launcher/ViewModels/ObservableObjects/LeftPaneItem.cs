@@ -5,10 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
-using SH.Launcher.Core.Repositories;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using SH.Launcher.Core.Services;
 
 namespace SH.Launcher.ViewModels;
 

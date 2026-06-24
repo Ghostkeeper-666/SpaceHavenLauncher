@@ -140,9 +140,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="ToggleCollapse"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.VerticalOffset="40"
             ToolTip.Tip="TOGGLE the left panel visibility" >
 
@@ -217,9 +214,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="ResetSearch"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.VerticalOffset="40"
             ToolTip.Tip="Clear Search" >
 
@@ -264,9 +258,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="EnabledListedModsAsync"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.Tip="ENABLE the mods which are visible in the list below &#10;&#10;You can also enable just a part of the mods by restricting the mod list using the search box"
             ToolTip.VerticalOffset="40" >
 
@@ -305,9 +296,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="DisabledListedModsAsync"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.Tip="DISABLE the mods which are visible in the list below &#10;&#10;You can also disable just a part of the mods by restricting the mod list using the search box"
             ToolTip.VerticalOffset="40" >
 
@@ -345,9 +333,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="MoveModUp"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.Tip="MOVE UP the selected mod &#10;&#10;Mods are applied from top to bottom &#10;&#10;You can not move the mod while searching"
             ToolTip.VerticalOffset="40" >
 
@@ -383,9 +368,6 @@ HorizontalAlignment="Stretch"
             PointerPressed="MoveModDown"
             IsHitTestVisible="True"
 
-            ToolTip.ShowDelay="10"
-            ToolTip.BetweenShowDelay="10"
-            ToolTip.ShowOnDisabled="True"
             ToolTip.Tip="MOVE DOWN the selected mod &#10;&#10;Mods are applied from top to bottom &#10;&#10;You can not move the mod while searching"
             ToolTip.VerticalOffset="40" >
 
@@ -460,9 +442,6 @@ HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 Background="Transparent"
 
-                ToolTip.ShowDelay="10"
-                ToolTip.BetweenShowDelay="10"
-                ToolTip.ShowOnDisabled="True"
                 ToolTip.HorizontalOffset="40"
                 ToolTip.VerticalOffset="0"
                 ToolTip.Tip="{Binding Label}" >
@@ -521,9 +500,6 @@ HorizontalAlignment="Stretch"
                     Opacity="0.80"
                     Source="{Binding Image}"
 
-                    ToolTip.ShowDelay="10"
-                    ToolTip.BetweenShowDelay="10"
-                    ToolTip.ShowOnDisabled="True"
                     ToolTip.HorizontalOffset="40"
                     ToolTip.VerticalOffset="0"
                     ToolTip.Tip="{Binding Label}" />
@@ -549,9 +525,6 @@ HorizontalAlignment="Stretch"
                   Command="{Binding TextClickedCommand}"
                   Content="{Binding Label}"
 
-                  ToolTip.ShowDelay="10"
-                  ToolTip.BetweenShowDelay="10"
-                  ToolTip.ShowOnDisabled="True"
                   ToolTip.HorizontalOffset="40"
                   ToolTip.VerticalOffset="0"
                   ToolTip.Tip="{Binding Label}" >
@@ -683,9 +656,6 @@ HorizontalAlignment="Stretch"
 
     ToolTip.HorizontalOffset="40"
     ToolTip.VerticalOffset="-40"
-    ToolTip.ShowDelay="0"
-    ToolTip.BetweenShowDelay="0"
-    ToolTip.ShowOnDisabled="False"
     ToolTip.Tip="{Binding AppSettings.BackgroundTransparencyText}"
         />
 

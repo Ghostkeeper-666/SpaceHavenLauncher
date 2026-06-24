@@ -17,49 +17,49 @@ public sealed class BuildPathData
 
     #region Derived Properties
 
-    public string TemplateDir => Path.Combine(WorkDir, ModdingConstants.TEMPLATE);
-    public string TemplateStageDir => Path.Combine(TemplateDir, ModdingConstants.STAGE);
+    public string TemplateDirectory => Path.Combine(WorkDir, ModdingConstants.TEMPLATE);
+    public string TemplateStageDirectory => Path.Combine(TemplateDirectory, ModdingConstants.STAGE);
 
-    public string TemplateJarPath => Path.Combine(TemplateDir, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
-    public string TemplateJarHashPath => Path.Combine(TemplateDir, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-
-
-    public string BuildDir => Path.Combine(WorkDir, ModdingConstants.BUILD);
-
-    public string BuildJarHashPath => Path.Combine(BuildDir, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string BuildXmlHashPath => Path.Combine(BuildDir, ModdingConstants.XML_BUILD_HASH_TXT);
-    public string BuildJavaHashPath => Path.Combine(BuildDir, ModdingConstants.JAVA_BUILD_HASH_TXT);
-
-    public string BuildLogPath => Path.Combine(BuildDir, ModdingConstants.LOG_TXT);
-    public string BuildLogsDir => Path.Combine(BuildDir, "logs");
-    public string BuildTexturesDir => Path.Combine(BuildDir, "textures");
-    public string BuildAudioDir => Path.Combine(BuildDir, "audio");
-    public string BuildMergeDir => Path.Combine(BuildDir, "merge");
-    public string BuildPatchDir => Path.Combine(BuildDir, "patch");
-    public string BuildStageDir => Path.Combine(BuildDir, ModdingConstants.STAGE);
-    public string BuildModsJsonPath => Path.Combine(BuildDir, ModdingConstants.MODS_JSON);
-
-    public string BuildStageVersionPath => Path.Combine(BuildStageDir, SpaceHavenConstants.VERSION_TXT);
-
-    public string BuildStageLibraryDir => Path.Combine(BuildStageDir, SpaceHavenConstants.LIBRARY);
-    public string BuildStageLibraryFilesDir => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.FILES);
-    public string BuildStageHavenXmlPath => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.HAVEN);
-    public string BuildStageTextsXmlPath => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.TEXTS);
-    public string BuildStageAudioXmlPath => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.AUDIO);
-    public string BuildStageTexturesXmlPath => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.TEXTURES);
-    public string BuildStageAnimationsXmlPath => Path.Combine(BuildStageLibraryDir, SpaceHavenConstants.ANIMATIONS);
-    public string BuildStageSpaceHavenSettingsXmlPath => Path.Combine(BuildStageLibraryFilesDir, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+    public string TemplateJarPath => Path.Combine(TemplateDirectory, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
+    public string TemplateJarHashPath => Path.Combine(TemplateDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
 
 
+    public string BuildDirectory => Path.Combine(WorkDir, ModdingConstants.BUILD);
 
-    public string CacheDir => Path.Combine(WorkDir, "cache");
-    public string CacheJarPath => Path.Combine(CacheDir, ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
-    public string CacheJarHashPath => Path.Combine(CacheDir, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string CacheModifiedJarHashPath => Path.Combine(CacheDir, ModdingConstants.MODIFIED_JAR_HASH_TXT);
-    public string CacheXmlHashPath => Path.Combine(CacheDir, ModdingConstants.XML_BUILD_HASH_TXT);
-    public string CacheJavaHashPath => Path.Combine(CacheDir, ModdingConstants.JAVA_BUILD_HASH_TXT);
-    public string CacheConfigJsonPath => Path.Combine(CacheDir, SpaceHavenConstants.CONFIG_JSON);
-    public string CacheModsJsonPath => Path.Combine(CacheDir, ModdingConstants.MODS_JSON);
+    public string BuildJarHashPath => Path.Combine(BuildDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string BuildXmlHashPath => Path.Combine(BuildDirectory, ModdingConstants.XML_BUILD_HASH_TXT);
+    public string BuildJavaHashPath => Path.Combine(BuildDirectory, ModdingConstants.JAVA_BUILD_HASH_TXT);
+
+    public string BuildLogPath => Path.Combine(BuildDirectory, ModdingConstants.LOG_TXT);
+    public string BuildLogsDirectory => Path.Combine(BuildDirectory, "logs");
+    public string BuildTexturesDirectory => Path.Combine(BuildDirectory, "textures");
+    public string BuildAudioDirectory => Path.Combine(BuildDirectory, "audio");
+    public string BuildMergeDirectory => Path.Combine(BuildDirectory, "merge");
+    public string BuildPatchDirectory => Path.Combine(BuildDirectory, "patch");
+    public string BuildStageDirectory => Path.Combine(BuildDirectory, ModdingConstants.STAGE);
+    public string BuildModsJsonPath => Path.Combine(BuildDirectory, ModdingConstants.MODS_JSON);
+
+    public string BuildStageVersionPath => Path.Combine(BuildStageDirectory, SpaceHavenConstants.VERSION_TXT);
+
+    public string BuildStageLibraryDirectory => Path.Combine(BuildStageDirectory, SpaceHavenConstants.LIBRARY);
+    public string BuildStageLibraryFilesDirectory => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.FILES);
+    public string BuildStageHavenXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.HAVEN);
+    public string BuildStageTextsXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.TEXTS);
+    public string BuildStageAudioXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.AUDIO);
+    public string BuildStageTexturesXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.TEXTURES);
+    public string BuildStageAnimationsXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.ANIMATIONS);
+    public string BuildStageSpaceHavenSettingsXmlPath => Path.Combine(BuildStageLibraryFilesDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+
+
+
+    public string CacheDirectory => Path.Combine(WorkDir, "cache");
+    public string CacheJarPath => Path.Combine(CacheDirectory, ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
+    public string CacheJarHashPath => Path.Combine(CacheDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string CacheModifiedJarHashPath => Path.Combine(CacheDirectory, ModdingConstants.MODIFIED_JAR_HASH_TXT);
+    public string CacheXmlHashPath => Path.Combine(CacheDirectory, ModdingConstants.XML_BUILD_HASH_TXT);
+    public string CacheJavaHashPath => Path.Combine(CacheDirectory, ModdingConstants.JAVA_BUILD_HASH_TXT);
+    public string CacheConfigJsonPath => Path.Combine(CacheDirectory, SpaceHavenConstants.CONFIG_JSON);
+    public string CacheModsJsonPath => Path.Combine(CacheDirectory, ModdingConstants.MODS_JSON);
 
     #endregion Derived Properties
 

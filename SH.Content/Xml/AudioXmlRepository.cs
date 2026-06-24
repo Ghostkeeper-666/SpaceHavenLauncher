@@ -51,7 +51,7 @@ public sealed class AudioXmlRepository
                         Format =
                             a.Attribute("mp3") != null ? EAudioFormat.mp3 : a.Attribute("ogg") != null ? EAudioFormat.ogg : throw new Exception("Invalid audio format"),
                         Length = Convert.ToSingle(a.Attribute("mp3l")?.Value ?? a.Attribute("oggl")?.Value ?? "0"),
-                        Scope = Enum.Parse<EAudioScope>(a.Attribute("st")?.Value ?? "None"),
+                        Scope = Enum.Parse<ESoundType>(a.Attribute("st")?.Value ?? "None"),
                         Volume = Convert.ToInt32(a.Attribute("vo").Value),
                     };
                     ByName[audio.Name] = audio;

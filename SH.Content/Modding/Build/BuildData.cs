@@ -188,15 +188,15 @@ internal sealed class BuildData : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Loading XML files...", Paths.BuildStageDir);
+            Log.Info($@"Loading XML files...", Paths.BuildStageDirectory);
 
             // Instantiate:
-            XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageHavenXmlPath);
-            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageTextsXmlPath);
-            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageAudioXmlPath);
-            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Audio, Paths.BuildStageTexturesXmlPath);
-            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Audio, Paths.BuildStageAnimationsXmlPath);
-            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.Audio, Paths.BuildStageSpaceHavenSettingsXmlPath);
+            XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDirectory, Paths.BuildStageHavenXmlPath);
+            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDirectory, Paths.BuildStageTextsXmlPath);
+            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAudioXmlPath);
+            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
+            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
+            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
 
             // Read:
             foreach (XmlFile xmlFile in XmlFile.Values)
@@ -218,7 +218,7 @@ internal sealed class BuildData : IAsyncDisposable
         catch (Exception ex)
         {
             Log.Error(ex);
-            Log.Error($@"Unable to read XML files", Paths.BuildStageDir);
+            Log.Error($@"Unable to read XML files", Paths.BuildStageDirectory);
             return false;
         }
     }

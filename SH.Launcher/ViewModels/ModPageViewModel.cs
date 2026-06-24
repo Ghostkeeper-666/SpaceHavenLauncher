@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Repositories;
+using SH.Launcher.Core.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

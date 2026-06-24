@@ -37,5 +37,54 @@ public static class StringX
     }
 
 
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse<TEnum>(this string str, out TEnum value) where TEnum : struct, Enum =>
+        Enum.TryParse(str ?? string.Empty, true, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParseFromNumericValue<TEnum>(this string str, out TEnum value) where TEnum : struct, Enum
+    {
+        value = default;
+        if(!str.TryParse(out int number))
+            return false;
+        value = (TEnum)Enum.ToObject(typeof(TEnum), number);
+        if(!Enum.IsDefined(value))
+            return false;
+        return true;
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out bool value) =>
+        bool.TryParse(str ?? string.Empty, out value);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out short value) =>
+        short.TryParse(str ?? string.Empty, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out ushort value) =>
+        ushort.TryParse(str ?? string.Empty, out value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out int value) =>
+        int.TryParse(str ?? string.Empty, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out uint value) =>
+        uint.TryParse(str ?? string.Empty, out value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out long value) =>
+        long.TryParse(str ?? string.Empty, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out ulong value) =>
+        ulong.TryParse(str ?? string.Empty, out value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out float value) =>
+        float.TryParse(str ?? string.Empty, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out double value) =>
+        double.TryParse(str ?? string.Empty, out value);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParse(this string str, out decimal value) =>
+        decimal.TryParse(str ?? string.Empty, out value);
 }

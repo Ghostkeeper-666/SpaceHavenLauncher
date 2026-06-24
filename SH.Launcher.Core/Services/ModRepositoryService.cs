@@ -9,7 +9,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Launcher.Core.Repositories;
+namespace SH.Launcher.Core.Services;
 
 public sealed class ModRepositoryService
 {

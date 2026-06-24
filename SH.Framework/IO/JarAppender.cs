@@ -104,7 +104,7 @@ public sealed class JarAppender
             SemaphoreSlim semaphore = new(1, 1);
 
             // Read files, calculate CRC32, write data:
-            baseDir = $"{baseDir.AsStandardPath()}/";
+            baseDir = $"{baseDir.AsStdPath()}/";
 
             // Add own cancellation token source to parallel options:
             using CancellationTokenSource ownCTS = new();
@@ -132,7 +132,7 @@ public sealed class JarAppender
 
                     uint crc32 = Crc32.Compute(data);
 
-                    string path = fi.FullName.AsStandardPath();
+                    string path = fi.FullName.AsStdPath();
                     if (!path.StartsWith(baseDir))
                     {
                         logger?.Error($@"File is not within base directory: ""{fi.FullName}""");

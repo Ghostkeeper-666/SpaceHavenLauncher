@@ -24,7 +24,7 @@ public sealed class BuildService
             Log.Info($"Starting {this}...", Paths.BuildDir);
 
             // Build!
-            Builder builder = new(paths, settings, Log);
+            ModBuilder builder = new(paths, settings, Log);
             if (!await builder.TryBuildAsync())
                 return false;
 

@@ -8,7 +8,6 @@ Here we use the following technical terms:
 - **SpriteAtlas**: a whole set of **Sprite Sheets** - from the game's original **Sprite Sheets**, or from a given mod
 - **Animation**: a construct which joins one or more **Sprites** by attaching them to a **Bone Skeleton** for one or more frames
 
-
 # Quick Summary: How to add Textures ?
 
 In the mod:
@@ -36,6 +35,18 @@ In the mod:
 - it does NOT generate any files in mod directories
 - it generates all intermediate files in its own **build** directory
 
+# NEAREST vs. LINEAR texture filtering
+
+In order to apply one or another, Space Haven Launcher supports:
+- Attribute **filter** in **assetPos** entries referencing a sprite texture via **filename**
+- This attribute can be set to: "Nearest" or "Linear" (case insensitive)
+- Or to their respective numeric values: "0" or "1"
+- When not set, Space haven Launcher defaults to "Nearest" filter
+
+How to use these filters?
+- If you need a sprite texture to have sharp and pixelated art style, e.g. for a new facility, use "Nearest"
+- If you need a smooth but slighly blurred texture, e.g. for a turret shot or for a background image, use "Linear"
+- Just try it and compare the results
 
 # How does Space Haven Launcher merge textures ?
 

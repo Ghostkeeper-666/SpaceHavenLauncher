@@ -838,10 +838,6 @@ x:DataType="vm:NavigationConsoleViewModel" >
     VerticalAlignment="Top"
     PointerPressed="OnToggleLogView"
     IsHitTestVisible="True"
-
-    ToolTip.ShowDelay="10"
-    ToolTip.BetweenShowDelay="10"
-    ToolTip.ShowOnDisabled="True"
     ToolTip.Tip="Toggle Log View" >
       <PathIcon
       Data="{Binding ToggleLogViewButtonIcon}"
@@ -879,10 +875,6 @@ x:DataType="vm:NavigationConsoleViewModel" >
     PointerPressed="CopyLogStartAsync"
     PointerReleased="CopyLogEndAsync"
     IsHitTestVisible="True"
-
-    ToolTip.ShowDelay="10"
-    ToolTip.BetweenShowDelay="10"
-    ToolTip.ShowOnDisabled="True"
     ToolTip.Tip="Copy Log" >
       <PathIcon
       x:Name="CopyLogIcon"
@@ -921,10 +913,6 @@ x:DataType="vm:NavigationConsoleViewModel" >
     PointerPressed="ClearLogStartAsync"
     PointerReleased="ClearLogEndAsync"
     IsHitTestVisible="True"
-
-    ToolTip.ShowDelay="10"
-    ToolTip.BetweenShowDelay="10"
-    ToolTip.ShowOnDisabled="True"
     ToolTip.Tip="Clear Log" >
       <PathIcon
       x:Name="ClearLogIcon"

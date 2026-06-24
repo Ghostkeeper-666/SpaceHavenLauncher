@@ -72,15 +72,19 @@ public sealed class XmlFile
 
 
 
-    public XmlFile(EXmlFileType type, string path)
+    public XmlFile(EXmlFileType type, string baseDir, string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         Type = type;
         Path = path;
+        BaseDir = baseDir?.TrimEnd('/', '\\');
     }
 
     public EXmlFileType Type { get; }
     public string Path { get; set; }
+    public string BaseDir { get; set; }
+    public string RelativePath => Path.RemovePrefix(BaseDir).TrimStart('/' ,'\\');
+
     public string FileName => System.IO.Path.GetFileName(Path);
 
     public XDocument Xml { get; internal set; }

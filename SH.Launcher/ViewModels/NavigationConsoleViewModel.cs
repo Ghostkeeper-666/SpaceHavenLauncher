@@ -12,7 +12,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
-using SH.Launcher.Core.Repositories;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels.Enums;

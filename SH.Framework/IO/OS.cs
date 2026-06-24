@@ -277,7 +277,7 @@ public static class OS
             if (link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return OpenHttpAsync(link, log);
 
-            string absolute = Path.Combine(baseDir, link).AsStandardPath().TrimEnd('/').AsOSPath();
+            string absolute = Path.Combine(baseDir, link).AsStdPath().TrimEnd('/').AsOSPath();
 
             if (Directory.Exists(absolute))
                 return OpenDirectoryAsync(absolute, log);

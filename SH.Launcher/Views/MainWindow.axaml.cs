@@ -9,7 +9,6 @@ using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
-using SH.Launcher.Core.Repositories;
 using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SH.Launcher.Core.Services;
 
 namespace SH.Launcher.Views;
 
@@ -341,8 +341,8 @@ public partial class MainWindow : Window
         LeftPaneItem selected = State.SelectedLeftPaneItem;
         if (selected?.Type != EPageType.Mod)
             return;
-        State.LeftPaneItems.MoveUp(selected, 3);
-        State.FilteredLeftPaneItems.MoveUp(selected, 3);
+        State.LeftPaneItems.MoveUp(selected, (int)Enum.GetValues<EPageType>().Max());
+        State.FilteredLeftPaneItems.MoveUp(selected, (int)Enum.GetValues<EPageType>().Max());
         State.SelectedLeftPaneItem = selected;
         await vm.MoveModUpAsync(selected.Mod);
     }

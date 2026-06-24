@@ -1,4 +1,5 @@
-﻿using SH.Content.Xml;
+﻿using SH.Content.Enums;
+using SH.Content.Xml;
 using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -27,7 +28,10 @@ internal sealed class ModBuildData : IAsyncDisposable
         ErrorFileLogger = new FileLogger(ErrorLogPath);
         ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
         Log = new LoggerCollection(logger, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
-        SpriteAtlas = new(mod.Name);
+        int atlasCount = (int)Enum.GetValues<ETextureFilter>().Max() + 1;
+        SpriteAtlases = new SpriteAtlasBuildData[atlasCount];
+        for (int i = 0; i < SpriteAtlases.Length; ++i)
+            SpriteAtlases[i] = new(mod.Name);
     }
 
     private readonly BuildSettings Settings;
@@ -44,12 +48,22 @@ internal sealed class ModBuildData : IAsyncDisposable
     public string XmlLibraryDirectory => Data.XmlLibraryDirectory;
     public string XmlPatchesDirectory => Data.XmlPatchesDirectory;
 
+    // Mod Absolute Paths:
     public IReadOnlyList<string> AudioFilePaths => Data.AudioFilePaths;
     public IReadOnlyList<string> TextureFilePaths => Data.TextureFilePaths;
     public IReadOnlyList<string> XmlLibraryFilePaths => Data.XmlLibraryFilePaths;
     public IReadOnlyList<string> XmlPatchFilePaths => Data.XmlPatchFilePaths;
     public IReadOnlyList<string> JavaFilePaths => Data.JavaFilePaths;
     public IReadOnlyList<string> OtherFilePaths => Data.OtherFilePaths;
+
+    // Mod Relative Paths:
+    public IReadOnlyList<string> AudioRelativeFilePaths => Data.AudioRelativeFilePaths;
+    public IReadOnlyList<string> TextureRelativeFilePaths => Data.TextureRelativeFilePaths;
+    public IReadOnlyList<string> XmlLibraryRelativeFilePaths => Data.XmlLibraryRelativeFilePaths;
+    public IReadOnlyList<string> XmlPatchRelativeFilePaths => Data.XmlPatchRelativeFilePaths;
+    public IReadOnlyList<string> JavaRelativeFilePaths => Data.JavaRelativeFilePaths;
+    public IReadOnlyList<string> OtherRelativeFilePaths => Data.OtherRelativeFilePaths;
+
 
     public string BuildName => $"[{BuildSeqNum}] {Data.Name}";
     public int BuildSeqNum { get; }
@@ -60,25 +74,27 @@ internal sealed class ModBuildData : IAsyncDisposable
     private FileLogger ErrorFileLogger { get; }
     public BuildPathData Paths => Build.Paths;
     public BuildData Build { get; }
-    public SpriteAtlasBuildData SpriteAtlas { get; }
-    public SortedDictionary<string, AudioBuildData> Audio { get; } = [];
     public SortedDictionary<string, VarBuildData> Variables { get; } = [];
+
+    public SortedDictionary<string, AudioBuildData> Audio { get; } = [];
+    public SpriteAtlasBuildData[] SpriteAtlases { get; }
 
     public bool IsXmlMod => HasAudio || HasTextures || HasLibraryXml || HasPatchXml;
     public bool IsJavaMod => HasJava;
 
-    public bool HasAudio => Data.AudioFilePaths.Count > 0;
-    public bool HasTextures => Data.TextureFilePaths.Count > 0;
-    public bool HasLibraryXml => Data.XmlLibraryFilePaths.Count > 0;
-    public bool HasPatchXml => Data.XmlPatchFilePaths.Count > 0;
-    public bool HasJava => Data.JavaFilePaths.Count > 0;
+    public bool HasAudio => Data.HasAudio;
+    public bool HasTextures => Data.HasTextures;
+    public bool HasLibraryXml => Data.HasLibraryXml;
+    public bool HasPatchXml => Data.HasPatchXml;
+    public bool HasJava => Data.HasJava;
 
-    public string FullLogPath => Path.Combine(Paths.BuildLogsDir, $"{BuildName} (full log).txt");
-    public string ErrorLogPath => Path.Combine(Paths.BuildLogsDir, $"{BuildName} (error log).txt");
-    public string AudioDir => Path.Combine(Paths.BuildAudioDir, BuildName);
-    public string TexturesDir => Path.Combine(Paths.BuildTexturesDir, BuildName);
-    public string MergeDir => Path.Combine(Paths.BuildMergeDir, BuildName);
-    public string PatchDir => Path.Combine(Paths.BuildPatchDir, BuildName);
+    // Mod Build Paths:
+    public string FullLogPath => Path.Combine(Paths.BuildLogsDirectory, $"{BuildName} (full log).txt");
+    public string ErrorLogPath => Path.Combine(Paths.BuildLogsDirectory, $"{BuildName} (error log).txt");
+    public string BuildAudioDirectory => Path.Combine(Paths.BuildAudioDirectory, BuildName);
+    public string BuildTexturesDirectory => Path.Combine(Paths.BuildTexturesDirectory, BuildName);
+    public string BuildMergeDirectory => Path.Combine(Paths.BuildMergeDirectory, BuildName);
+    public string BuildPatchDirectory => Path.Combine(Paths.BuildPatchDirectory, BuildName);
 
     public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> XmlFiles { get; } = new()
     {
@@ -92,20 +108,20 @@ internal sealed class ModBuildData : IAsyncDisposable
     };
 
     // Merge:
-    public string MergedHavenXmlPath => Path.Combine(MergeDir, $"{SpaceHavenConstants.HAVEN}.xml");
-    public string MergedTextsXmlPath => Path.Combine(MergeDir, $"{SpaceHavenConstants.TEXTS}.xml");
-    public string MergedAudioXmlPath => Path.Combine(MergeDir, $"{SpaceHavenConstants.AUDIO}.xml");
-    public string MergedTexturesXmlPath => Path.Combine(MergeDir, $"{SpaceHavenConstants.TEXTURES}.xml");
-    public string MergedAnimationsXmlPath => Path.Combine(MergeDir, $"{SpaceHavenConstants.ANIMATIONS}.xml");
-    public string MergedSpaceHavenSettingsXmlPath => Path.Combine(MergeDir, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+    public string MergedHavenXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.HAVEN}.xml");
+    public string MergedTextsXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.TEXTS}.xml");
+    public string MergedAudioXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.AUDIO}.xml");
+    public string MergedTexturesXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.TEXTURES}.xml");
+    public string MergedAnimationsXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.ANIMATIONS}.xml");
+    public string MergedSpaceHavenSettingsXmlPath => Path.Combine(BuildMergeDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
 
     // Patch:
-    public string PatchedHavenXmlPath => Path.Combine(PatchDir, $"{SpaceHavenConstants.HAVEN}.xml");
-    public string PatchedTextsXmlPath => Path.Combine(PatchDir, $"{SpaceHavenConstants.TEXTS}.xml");
-    public string PatchedAudioXmlPath => Path.Combine(PatchDir, $"{SpaceHavenConstants.AUDIO}.xml");
-    public string PatchedTexturesXmlPath => Path.Combine(PatchDir, $"{SpaceHavenConstants.TEXTURES}.xml");
-    public string PatchedAnimationsXmlPath => Path.Combine(PatchDir, $"{SpaceHavenConstants.ANIMATIONS}.xml");
-    public string PatchedSpaceHavenSettingsXmlPath => Path.Combine(PatchDir, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+    public string PatchedHavenXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.HAVEN}.xml");
+    public string PatchedTextsXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.TEXTS}.xml");
+    public string PatchedAudioXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.AUDIO}.xml");
+    public string PatchedTexturesXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.TEXTURES}.xml");
+    public string PatchedAnimationsXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.ANIMATIONS}.xml");
+    public string PatchedSpaceHavenSettingsXmlPath => Path.Combine(BuildPatchDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
 
     public string XmlHash { get; private set; } = string.Empty;
     public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new SortedDictionary<string, string>();
@@ -142,14 +158,15 @@ internal sealed class ModBuildData : IAsyncDisposable
 
                 CT.ThrowIfCancellationRequested();
 
-                // XML files:
-                // - full file content hash
+                // XML files: compute hash of full file content
                 List<string> xmlFilesPath = [];
                 xmlFilesPath.AddRange(XmlLibraryFilePaths);
                 xmlFilesPath.AddRange(XmlPatchFilePaths);
                 xmlFilesPath.Sort();
                 foreach (string path in xmlFilesPath)
                 {
+                    if(!File.Exists(path))
+                        continue;
                     string relativePath = path.Substring(Directory.Length + 1);
                     xmlHashes[$@"XmlFile:{relativePath}"""] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT);
                 }
@@ -159,14 +176,16 @@ internal sealed class ModBuildData : IAsyncDisposable
                 // Remaining files: Calculate approximate hash from:
                 // - file size
                 // - last modified time
-                // - a few bytes from file content
-                byte[] buffer = new byte[4096];
+                // - a few bytes from content
+                byte[] buffer = new byte[65536]; // this buffer size should be enough to detect changes in most small-sized images
                 List<string> resourceFilePaths = [];
                 resourceFilePaths.AddRange(AudioFilePaths);
                 resourceFilePaths.AddRange(TextureFilePaths);
                 resourceFilePaths.Sort();
                 foreach (string path in resourceFilePaths)
                 {
+                    if(!File.Exists(path))
+                        continue;
                     FileInfo fi = new(path);
                     Array.Clear(buffer, 0, buffer.Length);
                     BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), fi.Length);
@@ -255,25 +274,39 @@ internal sealed class ModBuildData : IAsyncDisposable
 
                 CT.ThrowIfCancellationRequested();
 
-                XmlFile file = dict[path] = new XmlFile(xmlFileType, path);
-                if (!await TryLoadWithEvaluatedVariablesAsync(file, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
+                XmlFile xmlFile = dict[path] = new XmlFile(xmlFileType, Data.XmlLibraryDirectory, path);
+                if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
                 {
                     Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
                     return false;
                 }
+
+                string evaluatedPath = Path.Combine(BuildMergeDirectory, "mod", xmlFile.RelativePath);
+                if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
+                {
+                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
+                    return false;
+                }
             }
 
-            // Patch:
+            // Patches:
             SortedDictionary<string, XmlFile> patchDict = new();
             XmlFiles[EXmlFileType.Patch] = patchDict;
             foreach (string path in Data.XmlPatchFilePaths.OrderBy(path => path))
             {
                 CT.ThrowIfCancellationRequested();
 
-                XmlFile file = patchDict[path] = new XmlFile(EXmlFileType.Patch, path);
-                if (!await TryLoadWithEvaluatedVariablesAsync(file, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
+                XmlFile xmlFile = patchDict[path] = new XmlFile(EXmlFileType.Patch, Data.XmlPatchesDirectory, path);
+                if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
                 {
                     Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
+                    return false;
+                }
+
+                string evaluatedPath = Path.Combine(BuildPatchDirectory, "mod", xmlFile.RelativePath);
+                if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
+                {
+                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
                     return false;
                 }
             }
@@ -402,7 +435,7 @@ internal sealed class ModBuildData : IAsyncDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (SpriteBuildData sprite in SpriteAtlas.Sprites ?? [])
+        foreach (SpriteBuildData sprite in SpriteAtlases.SelectMany(spriteAtlas => spriteAtlas.Sprites ?? []))
             try { await sprite.DisposeAsync(); } catch { }
         try { await FullFileLogger.DisposeAsync(); } catch { }
         try { await ErrorFileLogger.DisposeAsync(); } catch { }
