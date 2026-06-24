@@ -108,7 +108,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
             State.Paths = new PathViewModel(pathData);
             Paths.PropertyChanged += Paths_PropertyChanged;
-            Title = $"{SpaceHavenLauncher.Name}  {SpaceHavenLauncher.Version}";
+            Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
             return success;
         }
         catch (OperationCanceledException) { throw; }
@@ -125,7 +125,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             case nameof(PathViewModel.SpaceHavenName):
             case nameof(PathViewModel.SpaceHavenVersion):
-                Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version}";
+                Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
                 if (Paths.SpaceHavenVersion != null)
                     Title += $"  -  {Paths.SpaceHavenName} {Paths.SpaceHavenVersion}";
                 return;

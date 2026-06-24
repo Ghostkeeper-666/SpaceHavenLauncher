@@ -7,7 +7,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>SH.Launcher</RootNamespace>
     <AssemblyName>SpaceHavenLauncher</AssemblyName>
-    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <AssemblyVersion>0.0.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
 		<Version>$(AssemblyVersion)</Version>
 		<Copyright>Ghostkeeper666</Copyright>

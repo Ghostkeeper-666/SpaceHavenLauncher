@@ -9,6 +9,11 @@ public sealed class VersionInfo : IComparable<VersionInfo>, IComparable
     private readonly string Value;
     private readonly List<string> Items = new();
 
+    public string Major => Items.Count > 0 ? Items[0] ?? "0" : "0";
+    public string Minor => Items.Count > 1 ? Items[1] ?? "0" : "0";
+    public string Build => Items.Count > 2 ? Items[2] ?? "0" : "0";
+    public string Release => Items.Count > 3 ? Items[3] ?? "0" : "0";
+
     public VersionInfo(string str)
     {
         str = str?.Trim()?.TrimStart('v')?.Trim('.', ' ');
