@@ -75,6 +75,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             ThrowIfFileNotExists(path);
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentOutOfRangeException.ThrowIfLessThan(startPos, 0, nameof(startPos));
@@ -104,6 +105,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             if (path.IsNullOrWhiteSpace() || !File.Exists(path))
             {
                 logger?.Error($@"XML document could not be found: ""{path}""", Path.GetDirectoryName(path));
@@ -118,7 +120,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return null;
         }
@@ -127,6 +129,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
                 return false;
@@ -159,7 +162,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return false;
         }
@@ -171,6 +174,7 @@ public static class IOUtils
     {
         try
         {
+            directory = directory.AsOSPath();
             DirectoryInfo dir = Directory.CreateDirectory(directory);
             error = null;
             return dir.Exists;
@@ -183,10 +187,11 @@ public static class IOUtils
     }
     public static bool TryCreateDirectory(string directory, ILogger logger)
     {
+        directory = directory.AsOSPath();
         if (TryCreateDirectory(directory, out string error))
             return true;
         string parent = null;
-        try { parent = Path.GetDirectoryName(directory); } catch { }
+        try { parent = Path.GetDirectoryName(directory).AsOSPath(); } catch { }
         logger?.Error(error, parent);
         return false;
     }
@@ -199,6 +204,7 @@ public static class IOUtils
     {
         try
         {
+            directory = directory.AsOSPath();
             if (!Directory.Exists(directory))
             {
                 error = null;
@@ -221,6 +227,7 @@ public static class IOUtils
     }
     public static bool TryDeleteDirectory(string directory, ILogger logger)
     {
+        directory = directory.AsOSPath();
         if (TryDeleteDirectory(directory, out string error))
             return true;
         string parent = null;
@@ -237,6 +244,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             error = null;
             if (!File.Exists(path))
                 return true;
@@ -251,10 +259,11 @@ public static class IOUtils
     }
     public static bool TryDeleteFile(string path, ILogger logger)
     {
+        path = path.AsOSPath();
         if (TryDeleteFile(path, out string error))
             return true;
         string parent = null;
-        try { parent = Path.GetDirectoryName(path); } catch { }
+        try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
         logger?.Error(error, parent);
         return false;
     }
@@ -267,6 +276,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(dir, out error))
                 return false;
@@ -284,6 +294,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), logger, ct))
                 return false;
@@ -294,7 +305,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return false;
         }
@@ -304,6 +315,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             if (path.IsNullOrWhiteSpace() || !File.Exists(path))
             {
                 error = $@"Unable to read text file, invalid path: ""{path}""";
@@ -323,10 +335,11 @@ public static class IOUtils
     }
     public static bool TryReadAllText(string path, out string text, ILogger logger = null)
     {
+        path = path.AsOSPath();
         if (TryReadAllText(path, out text, out string error))
             return true;
         string parent = null;
-        try { parent = Path.GetDirectoryName(path); } catch { }
+        try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
         logger?.Error(error, parent);
         return false;
     }
@@ -334,6 +347,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             if (path.IsNullOrWhiteSpace() || !File.Exists(path))
                 return null;
             return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
@@ -342,7 +356,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return null;
         }
@@ -352,6 +366,7 @@ public static class IOUtils
     {
         try
         {
+            absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(Path.GetDirectoryName(absolutePath), out error))
                 return false;
@@ -369,6 +384,7 @@ public static class IOUtils
     {
         try
         {
+            absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
                 return false;
@@ -390,6 +406,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(dir, out error))
                 return false;
@@ -407,6 +424,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), logger, ct))
                 return false;
@@ -417,7 +435,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return false;
         }
@@ -427,6 +445,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             if (path.IsNullOrWhiteSpace() || !File.Exists(path))
             {
                 error = $@"Unable to read file, invalid path: ""{path}""";
@@ -446,10 +465,11 @@ public static class IOUtils
     }
     public static bool TryReadAllBytes(string path, out byte[] bytes, ILogger logger = null)
     {
+        path = path.AsOSPath();
         if (TryReadAllBytes(path, out bytes, out string error))
             return true;
         string parent = null;
-        try { parent = Path.GetDirectoryName(path); } catch { }
+        try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
         logger?.Error(error, parent);
         return false;
     }
@@ -457,6 +477,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             if (path.IsNullOrWhiteSpace() || !File.Exists(path))
                 return null;
             return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
@@ -465,7 +486,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(path); } catch { }
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return null;
         }
@@ -475,6 +496,7 @@ public static class IOUtils
     {
         try
         {
+            absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(Path.GetDirectoryName(absolutePath), out error))
                 return false;
@@ -492,6 +514,7 @@ public static class IOUtils
     {
         try
         {
+            absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
                 return false;
@@ -514,6 +537,7 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
             ArgumentException.ThrowIfNullOrEmpty(searchText);
             using StreamReader reader = new(path);
@@ -535,6 +559,8 @@ public static class IOUtils
     {
         try
         {
+            source = source.AsOSPath();
+            target = target.AsOSPath();
             string targetDir = Path.GetDirectoryName(target);
             if (!TryCreateDirectory(targetDir, out error))
                 return false;
@@ -552,7 +578,7 @@ public static class IOUtils
         if (TryCopyFile(source, target, overwrite, out string error))
             return true;
         string parent = null;
-        try { parent = Path.GetDirectoryName(source); } catch { }
+        try { parent = Path.GetDirectoryName(source).AsOSPath(); } catch { }
         logger?.Error(error, parent);
         return false;
     }
@@ -560,6 +586,8 @@ public static class IOUtils
     {
         try
         {
+            sourcePath = sourcePath.AsOSPath();
+            targetPath = targetPath.AsOSPath();
             if (ct.IsCancellationRequested)
                 return false;
             string targetDir = Path.GetDirectoryName(targetPath);
@@ -576,7 +604,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(sourcePath); } catch { }
+            try { parent = Path.GetDirectoryName(sourcePath).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return false;
         }
@@ -589,7 +617,7 @@ public static class IOUtils
         try
         {
             // Source Dir:
-            source = Path.TrimEndingDirectorySeparator(source?.Trim() ?? string.Empty);
+            source = source.AsOSPath();
             if (source.IsNullOrWhiteSpace() || !Directory.Exists(source))
             {
                 logger?.Error($@"Source directory not found: ""{source}""");
@@ -598,7 +626,7 @@ public static class IOUtils
             DirectoryInfo sourceDirInfo = new(source);
 
             // Target Dir:
-            target = Path.TrimEndingDirectorySeparator(target?.Trim() ?? string.Empty);
+            target = target.AsOSPath();
             if (target.IsNullOrWhiteSpace())
             {
                 logger?.Error($@"Target directory is not defined");
@@ -637,7 +665,7 @@ public static class IOUtils
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(source); } catch { }
+            try { parent = Path.GetDirectoryName(source).AsOSPath(); } catch { }
             logger?.Error(ex, parent);
             return false;
         }
@@ -647,6 +675,8 @@ public static class IOUtils
     {
         try
         {
+            path = path.AsOSPath();
+
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(ms);
 

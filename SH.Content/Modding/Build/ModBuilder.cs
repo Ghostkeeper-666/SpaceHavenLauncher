@@ -345,8 +345,9 @@ public sealed class ModBuilder : IAsyncDisposable
             foreach (ModBuildData mod in Build.Mods)
             {
                 ModInfo modInfo = new();
+                modInfo.SchemaVersion = "1";
                 modInfo.Name = mod.Name;
-                modInfo.Version = mod.Version;
+                modInfo.Version = mod.Version.ToString();
                 modInfo.Directory = mod.Directory.AsStdPath();
                 modInfo.ID = mod.ID;
                 modInfo.Textures.AddRange(mod.TextureFilePaths.Select(path => path.AsStdPath()));
@@ -1347,10 +1348,11 @@ public sealed class ModBuilder : IAsyncDisposable
             Clock.Restart();
 
             // Create modified config.json:
-            ConfigJsonFile config = ConfigJsonFile.GetOriginal();
+            ConfigJsonFile config = await ConfigJsonFile.GetTemplateAsync(Paths.TemplateConfigJsonPath, Log, CT);
             if (Build.HasXmlMods)
             {
                 config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR);
+                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
                 config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
             }
 
@@ -1360,12 +1362,24 @@ public sealed class ModBuilder : IAsyncDisposable
                 List<ModBuildData> mods = Build.Mods.Where(mod => mod.HasJava).ToList();
                 PrepareJavaFiles.Max = mods.Count;
 
-                // Adjust vmArgs:
+                // Clear javaagent entries:
+                string[] javaAgentEntries = config.VMArgs.Where(entry => entry.StartsWith("-javaagent", StringComparison.OrdinalIgnoreCase)).ToArray();
+                foreach (string javaAgentEntry in javaAgentEntries)
+                    config.VMArgs.Remove(javaAgentEntry);
+
+                // Insert javaagent entry:
                 config.VMArgs.Insert(config.VMArgs.Count - 1, $"-javaagent:{Path.Combine(Paths.SpaceHavenJarDir, ModdingConstants.ASPECTJWEAVER).AsStdPath()}");
 
-                // Add JARs to classPath:
+                // Clear AOP entries:
+                string[] aspectjEntries = config.ClassPath.Where(entry => entry.Contains("aspectj", StringComparison.OrdinalIgnoreCase)).ToArray();
+                foreach (string aspectjEntry in aspectjEntries)
+                    config.ClassPath.Remove(aspectjEntry);
+
+                // Add AOP entries:
                 config.ClassPath.Insert(0, ModdingConstants.ASPECTJWEAVER);
                 config.ClassPath.Insert(1, ModdingConstants.ASPECTJ);
+
+                // Add mod JARs to classPath:
                 foreach (ModBuildData mod in mods)
                 {
                     CT.ThrowIfCancellationRequested();
@@ -1374,8 +1388,11 @@ public sealed class ModBuilder : IAsyncDisposable
                         ILogger modLog = mod.Log;
                         foreach (string path in mod.JavaFilePaths.Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)).OrderBy(path => path))
                         {
-                            modLog.Debug($"Adding JAR file to classPath: {path}", mod.Directory);
-                            config.ClassPath.Insert(config.ClassPath.Count - 1, path.AsStdPath());
+                            string stdPath = path.AsStdPath();
+                            modLog.Debug($"Adding JAR file to classPath: {stdPath}", mod.Directory);
+                            // Check for duplicate:
+                            if (!config.ClassPath.Any(str => str.Equals(stdPath, StringComparison.OrdinalIgnoreCase)))
+                                config.ClassPath.Insert(config.ClassPath.Count - 1, stdPath);
                         }
                     }
                     finally

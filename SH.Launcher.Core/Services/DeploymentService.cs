@@ -51,7 +51,8 @@ public sealed class DeploymentService
                 progress?.SetNormalized(0.50);
 
                 // Check if it is the same as what we have in 'original' directory:
-                if (File.Exists(Paths.BackupJarPath) &&
+                if (File.Exists(Paths.BackupConfigJsonPath) &&
+                    File.Exists(Paths.BackupJarPath) &&
                     File.Exists(Paths.BackupJarHashPath) &&
                     jarHash == File.ReadAllText(Paths.BackupJarHashPath))
                 {
@@ -61,10 +62,17 @@ public sealed class DeploymentService
                 else
                 {
                     // Copy the new original spacehaven.jar file to 'original' folder:
+                    if (!await IOUtils.TryCopyFileAsync(Paths.SpaceHavenConfigJsonPath, Paths.BackupConfigJsonPath, true, Log, ct))
+                        return false;
+
+                    // Copy the new original spacehaven.jar file to 'original' folder:
                     if (!await IOUtils.TryCopyFileAsync(Paths.SpaceHavenJarPath, Paths.BackupJarPath, true, Log, ct))
                         return false;
 
+                    // Write updated hash file:
                     File.WriteAllText(Paths.BackupJarHashPath, jarHash);
+
+                    // Done.
                     return true;
                 }
             }
@@ -95,8 +103,8 @@ public sealed class DeploymentService
             progress?.Start();
 
             // Try to reuse existing template:
-            if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&
-                File.Exists(Paths.TemplateJarPath) && File.Exists(Paths.TemplateJarHashPath))
+            if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) && File.Exists(Paths.BackupConfigJsonPath) &&
+                File.Exists(Paths.TemplateJarPath) && File.Exists(Paths.TemplateJarHashPath) && File.Exists(Paths.TemplateConfigJsonPath))
             {
                 string originalJarHash = File.ReadAllText(Paths.BackupJarHashPath);
                 string templateJarHash = File.ReadAllText(Paths.TemplateJarHashPath);
@@ -168,6 +176,10 @@ public sealed class DeploymentService
             if (!await IOUtils.TryDeleteDirectoryAsync(Paths.TemplateDir, Log, ct))
                 return false;
             if (!await IOUtils.TryCreateDirectoryAsync(Paths.TemplateDir, Log, ct))
+                return false;
+
+            // Copy config.json file:
+            if (!await IOUtils.TryCopyFileAsync(Paths.BackupConfigJsonPath, Paths.TemplateConfigJsonPath, true, Log, ct))
                 return false;
 
             // Build jar template:
@@ -289,14 +301,14 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> DeployOriginalGameAsync(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> RestoreOriginalGameAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
-            Log.Info($"Deploying ORIGINAL game files...");
+            Log.Info($"Restoring ORIGINAL game files...");
 
-            // Write original config.json file to space haven directory:
-            if (!await IOUtils.TryWriteAllTextAsync(Paths.SpaceHavenConfigJsonPath, ConfigJsonFile.GetOriginal().ToJsonString(), Log, ct))
+            // Restore original config.json file to space haven directory:
+            if (!await IOUtils.TryCopyFileAsync(Paths.BackupConfigJsonPath, Paths.SpaceHavenConfigJsonPath, true, Log, ct))
                 return false;
 
             // Try to delete mods.json, but do not stop on error:
@@ -309,7 +321,7 @@ public sealed class DeploymentService
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to deploy original game files: {ex}");
+            Log.Error($"Unable to restore original game files: {ex}");
             return false;
         }
     }

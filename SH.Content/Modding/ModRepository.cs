@@ -242,75 +242,99 @@ public sealed class ModRepository
             ct.ThrowIfCancellationRequested();
 
 
+            // SKIP this for the time being...
             // >>> NEW: SPACE HAVEN LAUNCHER Compatibility
-            foreach (XElement e in root.Elements("spaceHavenLauncher") ?? root.Elements("spacehavenlauncher") ?? root.Elements("Launcher") ?? root.Elements("launcher") ?? [])
+            //{
+            //    List<XElement> appNodes = [];
+            //    appNodes.AddRange(root.Elements("spacehavenlauncher"));
+            //    appNodes.AddRange(root.Elements("spaceHavenLauncher"));
+            //    appNodes.AddRange(root.Elements("launcher"));
+            //    appNodes.AddRange(root.Elements("Launcher"));
+            //    foreach (XElement appNode in appNodes)
+            //    {
+            //        ct.ThrowIfCancellationRequested();
+
+            //        VersionInfo version =
+            //            new(appNode.Attribute("version")?.Value ?? appNode.Attribute("v")?.Value ?? appNode.Value);
+
+            //        EVersionOperator op =
+            //            VersionOperatorParser.ToOperator(
+            //                appNode.Attribute("operator")?.Value ??
+            //                appNode.Attribute("op")?.Value);
+
+            //        mod.AppCompatibility.Add(new("Space Haven Launcher", version, op));
+            //    }
+            //}
+
+
+            // >>> SPACE HAVEN Version Compatibility
+            List<XElement> spaceHavenNodes = [];
+            spaceHavenNodes.AddRange(root.Elements("spacehaven"));
+            spaceHavenNodes.AddRange(root.Elements("spaceHaven"));
+            spaceHavenNodes.AddRange(root.Elements("sh"));
+
+            List<XElement> gameVersionRootNodes = []; // DEPRECATED
+            gameVersionRootNodes.AddRange(root.Elements("gameversion"));
+            gameVersionRootNodes.AddRange(root.Elements("gameVersion"));
+            gameVersionRootNodes.AddRange(root.Elements("gameversions"));
+            gameVersionRootNodes.AddRange(root.Elements("gameVersions"));
+
+            if (spaceHavenNodes.Count > 0)
             {
-                ct.ThrowIfCancellationRequested();
+                foreach (XElement node in spaceHavenNodes)
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                VersionInfo version =
-                    new(e.Attribute("version")?.Value ?? e.Attribute("v")?.Value ?? e.Value);
+                    VersionInfo version =
+                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
 
-                EVersionOperator op =
-                    VersionOperatorParser.ToOperator(
-                        e.Attribute("operator")?.Value ??
-                        e.Attribute("op")?.Value);
+                    EVersionOperator op =
+                        VersionOperatorParser.ToOperator(
+                            node.Attribute("operator")?.Value ??
+                            node.Attribute("op")?.Value);
 
-                mod.AppCompatibility.Add(new("Space Haven Launcher", version, op));
+                    if (op == EVersionOperator.any)
+                        op = EVersionOperator.gte;
+
+                    mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, op));
+                }
             }
-
-            // >>> DEPRECATED: MINIMUM REQUIRED SPACE HAVEN VERSION
-            string[] gameVersions =
-                (root.Element("gameVersion") ?? root.Element("gameVersions"))?.Value?.ToLowerInvariant()?.Trim()?
-                .Split(ValueSeparators, StringSplitOptions.RemoveEmptyEntries) ?? [];
-            foreach (string gameVersion in gameVersions)
+            else if (gameVersionRootNodes.Count > 0) // DEPRECATED
             {
-                ct.ThrowIfCancellationRequested();
+                foreach (string node in gameVersionRootNodes.SelectMany(n => n?.Elements("v")?.Select(v => v?.Value?.TrimStart('v'))?.Where(str => !str.IsNullOrWhiteSpace()) ?? []))
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                VersionInfo version = new(gameVersion.Replace("*", string.Empty).Replace("+", string.Empty));
-                mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, EVersionOperator.gte));
-            }
-
-            // >>> NEW: SPACE HAVEN VERSION Compatibility
-            foreach (XElement e in root.Elements("spaceHaven") ?? root.Elements("spacehaven") ?? root.Elements("sh") ?? [])
-            {
-                ct.ThrowIfCancellationRequested();
-
-                VersionInfo version =
-                    new(e.Attribute("version")?.Value ?? e.Attribute("v")?.Value ?? e.Value);
-
-                EVersionOperator op =
-                    VersionOperatorParser.ToOperator(
-                        e.Attribute("operator")?.Value ??
-                        e.Attribute("op")?.Value);
-
-                if (op == EVersionOperator.any)
-                    op = EVersionOperator.gte;
-
-                mod.SpaceHavenCompatibility.Add(new("Space Haven", version, op));
+                    VersionInfo version = new(node.Replace("*", string.Empty).Replace("+", string.Empty));
+                    mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, EVersionOperator.gte)); // DEPRECATED
+                }
             }
 
             // >>> NEW: MOD CONFLICTS
             {
-                XElement[] conflicts = (root.Elements("modConflict") ?? root.Elements("modconflict"))?.ToArray() ?? [];
+                List<XElement> conflictNodes = [];
+                conflictNodes.AddRange(root.Elements("modconflict"));
+                conflictNodes.AddRange(root.Elements("modConflict"));
+
                 List<VersionCompatibility> modConflicts = [];
-                foreach (XElement e in conflicts)
+                foreach (XElement node in conflictNodes)
                 {
                     ct.ThrowIfCancellationRequested();
 
                     string modName =
-                        e.Attribute("name")?.Value?.Trim() ??
-                        e.Attribute("n")?.Value?.Trim();
+                        node.Attribute("name")?.Value?.Trim() ??
+                        node.Attribute("n")?.Value?.Trim();
                     modName =
                         modName?.Trim();
                     if (modName.IsNullOrWhiteSpace())
-                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={e.Line()} file=""{ModdingConstants.INFO_XML}""");
+                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
 
                     VersionInfo version =
-                        new(e.Attribute("version")?.Value ?? e.Attribute("v")?.Value ?? e.Value);
+                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
 
                     EVersionOperator op = VersionOperatorParser.ToOperator(
-                        e.Attribute("operator")?.Value ??
-                        e.Attribute("op")?.Value);
+                        node.Attribute("operator")?.Value ??
+                        node.Attribute("op")?.Value);
 
                     modConflicts.Add(new(modName, version, op));
                 }
@@ -319,26 +343,29 @@ public sealed class ModRepository
 
             // >>> NEW: MOD DEPENDENCIES
             {
-                XElement[] dependencies = (root.Elements("modDependency") ?? root.Elements("moddependency"))?.ToArray() ?? [];
+                List<XElement> dependencyNodes = [];
+                dependencyNodes.AddRange(root.Elements("moddependency"));
+                dependencyNodes.AddRange(root.Elements("modDependency"));
+
                 List<VersionCompatibility> modDependencies = [];
-                foreach (XElement e in dependencies)
+                foreach (XElement node in dependencyNodes)
                 {
                     ct.ThrowIfCancellationRequested();
 
                     string modName =
-                        e.Attribute("name")?.Value?.Trim() ??
-                        e.Attribute("n")?.Value?.Trim();
+                        node.Attribute("name")?.Value?.Trim() ??
+                        node.Attribute("n")?.Value?.Trim();
                     modName =
                         modName?.Trim();
                     if (modName.IsNullOrWhiteSpace())
-                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={e.Line()} file=""{ModdingConstants.INFO_XML}""");
+                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
 
                     VersionInfo version =
-                        new(e.Attribute("version")?.Value ?? e.Attribute("v")?.Value ?? e.Value);
+                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
 
                     EVersionOperator op = VersionOperatorParser.ToOperator(
-                        e.Attribute("operator")?.Value ??
-                        e.Attribute("op")?.Value);
+                        node.Attribute("operator")?.Value ??
+                        node.Attribute("op")?.Value);
 
                     modDependencies.Add(new(modName, version, op));
                 }
@@ -346,95 +373,103 @@ public sealed class ModRepository
             }
 
             // VARIABLES
-            XElement[] vars = (root.Element("config") ?? root.Element("vars") ?? root.Element("variables"))?.Elements("var")?.ToArray() ?? [];
+            List<XElement> rootVarNodes = [];
+            rootVarNodes.AddRange(root.Elements("config"));
+            rootVarNodes.AddRange(root.Elements("vars"));
+            rootVarNodes.AddRange(root.Elements("variables"));
+            
             VarData previousModVar = null;
             HashSet<string> duplicateVariables = [];
-            foreach (XElement v in vars ?? [])
+
+            foreach (XElement rootVarNode in rootVarNodes)
             {
-                ct.ThrowIfCancellationRequested();
-
-                try
+                foreach (XElement v in rootVarNode.Elements("var") ?? [])
                 {
-                    int line = v.Line();
+                    ct.ThrowIfCancellationRequested();
 
-                    string name = v.Attribute("name")?.Value?.Trim('{', '}', ' ');
-                    if (name.IsNullOrWhiteSpace())
+                    try
                     {
-                        Log.Error($"[{mod.Name}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
-                        return null;
+                        int line = v.Line();
+
+                        string name = v.Attribute("name")?.Value?.Trim('{', '}', ' ');
+                        if (name.IsNullOrWhiteSpace())
+                        {
+                            Log.Error($"[{mod.Name}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
+                            return null;
+                        }
+
+                        // Validate reserved variable name:
+                        if (ModAutoId.IdVariable.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            Log.Error($"[{mod.Name}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
+                            return null;
+                        }
+
+                        bool isSeparator = name.Equals("separator", StringComparison.OrdinalIgnoreCase);
+                        if (isSeparator)
+                            name = string.Empty;
+
+                        string description = isSeparator ? string.Empty :
+                            v.Value?.TrimStart(' ', '\t', '\r', '\n') ?? string.Empty;
+
+                        // TODO: Remove this cleanup code after the "My Mod" series descriptions are simplified:
+                        string[] splittedDescription = description.Split('[');
+                        if (splittedDescription.Length > 0 && splittedDescription.Last().Contains("default", StringComparison.OrdinalIgnoreCase) && splittedDescription.Last().Contains("suggested", StringComparison.OrdinalIgnoreCase))
+                            description = splittedDescription.SkipLast(1).JoinToString("[").Trim();
+
+                        string original = isSeparator ? string.Empty : (
+                            v.Attribute("original")?.Value ??
+                            v.Attribute("default")?.Value ??
+                            v.Attribute("value")?.Value
+                            )?.Trim('{', '}', ' ') ?? string.Empty;
+
+                        string suggested = isSeparator ? string.Empty : (
+                            v.Attribute("suggested")?.Value ??
+                            v.Attribute("value")?.Value ??
+                            original
+                            )?.Trim('{', '}', ' ') ?? string.Empty;
+
+                        string previous = string.Empty;
+
+                        string current = isSeparator ? string.Empty : suggested;
+
+                        VarData modVar = new()
+                        {
+                            IsSeparator = isSeparator,
+                            Name = name,
+                            Description = description,
+                            OriginalValue = original,
+                            SuggestedValue = suggested,
+                            CurrentValue = current,
+                            PreviousValue = previous,
+                            Line = line,
+                        };
+
+                        // TODO: validation of strong-typed variables?
+
+                        // Skip multiple separators:
+                        if (modVar.IsSeparator && (previousModVar?.IsSeparator ?? true))
+                            continue;
+
+                        // Duplicate variables
+                        if (!modVar.IsSeparator && mod.Variables.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            // 'warn as error', just once for each variable:
+                            if (!duplicateVariables.Contains(name))
+                                Log.Warn($"[{mod.Name}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", mod.InfoXmlPath);
+                            duplicateVariables.Add(name);
+                            continue;
+                        }
+
+                        // Add variable:
+                        mod.Variables.Add(modVar);
+                        previousModVar = modVar;
                     }
-
-                    // Validate reserved variable name:
-                    if (ModAutoId.IdVariable.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    catch (Exception ex)
                     {
-                        Log.Error($"[{mod.Name}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
-                        return null;
+                        Log.Error($"[{modDir}] {ex.Message}");
+                        success = false;
                     }
-
-                    bool isSeparator = name.Equals("separator", StringComparison.OrdinalIgnoreCase);
-                    if (isSeparator)
-                        name = string.Empty;
-
-                    string description = isSeparator ? string.Empty :
-                        v.Value?.TrimStart(' ', '\t', '\r', '\n') ?? string.Empty;
-
-                    // TODO: Remove this cleanup code after the "My Mod" series descriptions are simplified:
-                    string[] splittedDescription = description.Split('[');
-                    if (splittedDescription.Length > 0 && splittedDescription.Last().Contains("default", StringComparison.OrdinalIgnoreCase) && splittedDescription.Last().Contains("suggested", StringComparison.OrdinalIgnoreCase))
-                        description = splittedDescription.SkipLast(1).JoinToString("[").Trim();
-
-                    string original = isSeparator ? string.Empty : (
-                        v.Attribute("original")?.Value ??
-                        v.Attribute("default")?.Value ??
-                        v.Attribute("value")?.Value
-                        )?.Trim('{', '}', ' ') ?? string.Empty;
-
-                    string suggested = isSeparator ? string.Empty : (
-                        v.Attribute("suggested")?.Value ??
-                        v.Attribute("value")?.Value ??
-                        original
-                        )?.Trim('{', '}', ' ') ?? string.Empty;
-
-                    string previous = string.Empty;
-
-                    string current = isSeparator ? string.Empty : suggested;
-
-                    VarData modVar = new()
-                    {
-                        IsSeparator = isSeparator,
-                        Name = name,
-                        Description = description,
-                        OriginalValue = original,
-                        SuggestedValue = suggested,
-                        CurrentValue = current,
-                        PreviousValue = previous,
-                        Line = line,
-                    };
-
-                    // TODO: validation of strong-typed variables?
-
-                    // Skip multiple separators:
-                    if (modVar.IsSeparator && (previousModVar?.IsSeparator ?? true))
-                        continue;
-
-                    // Duplicate variables
-                    if (!modVar.IsSeparator && mod.Variables.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        // 'warn as error', just once for each variable:
-                        if (!duplicateVariables.Contains(name))
-                            Log.Warn($"[{mod.Name}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", mod.InfoXmlPath);
-                        duplicateVariables.Add(name);
-                        continue;
-                    }
-
-                    // Add variable:
-                    mod.Variables.Add(modVar);
-                    previousModVar = modVar;
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"[{modDir}] {ex.Message}");
-                    success = false;
                 }
             }
 
@@ -486,7 +521,4 @@ public sealed class ModRepository
         return sb.ToString();
     }
 }
-
-
-
 

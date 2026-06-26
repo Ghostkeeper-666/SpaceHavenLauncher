@@ -194,9 +194,9 @@ internal sealed class BuildData : IAsyncDisposable
             XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDirectory, Paths.BuildStageHavenXmlPath);
             XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDirectory, Paths.BuildStageTextsXmlPath);
             XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAudioXmlPath);
-            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
-            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
-            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
+            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
+            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
+            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
 
             // Read:
             foreach (XmlFile xmlFile in XmlFile.Values)

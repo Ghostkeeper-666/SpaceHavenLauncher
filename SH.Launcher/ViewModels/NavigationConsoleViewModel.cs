@@ -351,7 +351,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // DEPLOY
             DeploymentService svc = new(Paths.Data, Log);
-            if (!await svc.DeployOriginalGameAsync(State.LaunchCTS.Token, progress))
+            if (!await svc.RestoreOriginalGameAsync(State.LaunchCTS.Token, progress))
                 return;
 
             // Everything is ready!

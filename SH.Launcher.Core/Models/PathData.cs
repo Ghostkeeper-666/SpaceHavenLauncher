@@ -88,6 +88,7 @@ public sealed class PathData
     public string BackupDir => Path.Combine(WorkDir, ModdingConstants.BACKUP);
     public string BackupJarPath => Path.Combine(BackupDir, SpaceHavenConstants.SPACEHAVEN_JAR);
     public string BackupJarHashPath => Path.Combine(BackupDir, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string BackupConfigJsonPath => Path.Combine(BackupDir, SpaceHavenConstants.CONFIG_JSON);
 
 
 
@@ -98,12 +99,13 @@ public sealed class PathData
     public string TemplateAudioXmlPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.AUDIO);
     public string TemplateTexturesXmlPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTURES);
     public string TemplateAnimationsXmlPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.ANIMATIONS);
-    public string TemplateSpaceHavenSettingsXmlPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.ANIMATIONS);
+    public string TemplateSpaceHavenSettingsXmlPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
 
     public string TemplateLibraryDir => Path.Combine(TemplateStageDir, SpaceHavenConstants.LIBRARY);
     public string TemplateVersionPath => Path.Combine(TemplateStageDir, SpaceHavenConstants.VERSION_TXT);
     public string TemplateJarPath => Path.Combine(TemplateDir, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
     public string TemplateJarHashPath => Path.Combine(TemplateDir, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string TemplateConfigJsonPath => Path.Combine(TemplateDir, SpaceHavenConstants.CONFIG_JSON);
 
 
     public string BuildDir => Path.Combine(WorkDir, ModdingConstants.BUILD);
@@ -146,7 +148,7 @@ public sealed class PathData
     public string CacheModsJsonPath => Path.Combine(CacheDir, ModdingConstants.MODS_JSON);
 
     public string CacheFilesDir => Path.Combine(CacheDir, ModdingConstants.STAGE);
-    public string CacheVersionPath => Path.Combine(CacheDir, SpaceHavenConstants.LIBRARY);
+    public string CacheVersionPath => Path.Combine(CacheDir, SpaceHavenConstants.VERSION_TXT);
 
     public string CacheLibraryDir => Path.Combine(CacheFilesDir, SpaceHavenConstants.LIBRARY);
     public string CacheLibraryFilesDir => Path.Combine(CacheLibraryDir, SpaceHavenConstants.FILES);

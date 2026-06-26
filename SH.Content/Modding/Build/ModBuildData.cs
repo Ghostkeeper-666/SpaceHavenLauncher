@@ -39,7 +39,7 @@ internal sealed class ModBuildData : IAsyncDisposable
     private CancellationToken CT => Settings.CT;
 
     public string Name => Data.Name;
-    public string Version => Data.Name;
+    public VersionInfo Version => Data.Version;
     public string Directory => Data.Directory;
     public int ID => Data.ID;
 

@@ -22,6 +22,7 @@ public sealed class BuildPathData
 
     public string TemplateJarPath => Path.Combine(TemplateDirectory, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
     public string TemplateJarHashPath => Path.Combine(TemplateDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string TemplateConfigJsonPath => Path.Combine(TemplateDirectory, SpaceHavenConstants.CONFIG_JSON);
 
 
     public string BuildDirectory => Path.Combine(WorkDir, ModdingConstants.BUILD);

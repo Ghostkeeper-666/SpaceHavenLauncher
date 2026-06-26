@@ -29,33 +29,36 @@ public sealed class ModsJsonFile
 public sealed class ModInfo
 {
     [JsonPropertyOrder(0)]
-    public string Name { get; set; }
-
-    [JsonPropertyOrder(0)]
-    public string Version { get; set; }
+    public string SchemaVersion { get; set; }
 
     [JsonPropertyOrder(1)]
-    public string Directory { get; set; }
+    public string Name { get; set; }
 
     [JsonPropertyOrder(2)]
-    public int ID { get; set; }
+    public string Version { get; set; }
 
     [JsonPropertyOrder(3)]
-    public List<string> Cim { get; set; } = [];
+    public string Directory { get; set; }
 
     [JsonPropertyOrder(4)]
-    public List<string> Textures { get; set; } = [];
+    public int ID { get; set; }
 
     [JsonPropertyOrder(5)]
-    public List<string> Audio { get; set; } = [];
+    public List<string> Cim { get; set; } = [];
 
     [JsonPropertyOrder(6)]
-    public List<string> Java { get; set; } = [];
+    public List<string> Textures { get; set; } = [];
 
     [JsonPropertyOrder(7)]
-    public List<string> Other { get; set; } = [];
+    public List<string> Audio { get; set; } = [];
 
     [JsonPropertyOrder(8)]
+    public List<string> Java { get; set; } = [];
+
+    [JsonPropertyOrder(9)]
+    public List<string> Other { get; set; } = [];
+
+    [JsonPropertyOrder(10)]
     public List<VarInfo> Vars { get; set; } = [];
 }
 
