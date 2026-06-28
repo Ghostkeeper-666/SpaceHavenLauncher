@@ -154,7 +154,7 @@ x:DataType="vm:SystemCoreViewModel"
         <!-- Force 2048 x 2048 sprite sheet size -->
         <Border Grid.Row="24" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
         ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files" />
-        <CheckBox Grid.Row="24" Grid.Column="2" Grid.ColumnSpan="5" Content="Force sprite sheet generation with size 2048 x 2048 pixels" IsChecked="{Binding AppSettings.ForceSpritesheetSize2048}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
+        <CheckBox Grid.Row="24" Grid.Column="2" Grid.ColumnSpan="5" Content="Force sprite sheet generation with size 2048 x 2048 pixels" IsChecked="{Binding AppSettings.ForceSpriteSheetSize2048}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
         ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files" />
 
         <!-- Export: Textures -->

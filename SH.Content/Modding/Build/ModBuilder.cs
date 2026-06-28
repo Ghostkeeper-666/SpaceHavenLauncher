@@ -166,14 +166,14 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await TryPatchXML())
                     return false;
 
-                // Build JAR:
-                if (!await TryCreateSpaceHavenJarFile())
-                    return false;
-
                 // Save all XML files:
                 foreach (XmlFile xmlFile in Build.XmlFile.Values)
                     if (!await xmlFile.TrySaveAsync(Log, CT))
                         return false;
+
+                // Build JAR:
+                if (!await TryCreateSpaceHavenJarFile())
+                    return false;
 
                 // Copy XML hash file:
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
@@ -519,6 +519,12 @@ public sealed class ModBuilder : IAsyncDisposable
                     // Process each source:
                     foreach (XmlFile modAudioXmlFile in mod.XmlFiles[EXmlFileType.Audio].Values)
                     {
+                        if (modAudioXmlFile.IsIgnored)
+                        {
+                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
+                            continue;
+                        }
+
                         foreach (XElement audioXml in modAudioXmlFile.Xml.Root.Elements("a"))
                         {
                             CT.ThrowIfCancellationRequested();
@@ -643,14 +649,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-            // Fast check mods trying to use library/textures*.xml file for anything
+            // Fast check mods trying to use library/textures*.xml file for anything:
             bool errors = false;
             foreach (ModBuildData mod in Build.Mods)
             {
                 ILogger modLog = mod.Log;
 
-                XmlFile[] modXmlFiles = mod.XmlFiles[EXmlFileType.Textures].Values.ToArray();
-                foreach (XmlFile modXmlFile in modXmlFiles)
+                foreach (XmlFile modTexturesXmlFile in mod.XmlFiles[EXmlFileType.Textures].Values)
                 {
                     modLog.Error($@"The mod should not define ""library/texture*"" XML files! If the intention was to replace textures, do it with ""library/animations*"" and ""patch/animations*"" files");
                     errors = true;
@@ -660,9 +665,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
 
-
-            // Create sprite atlas for each mod:
-            Log.Debug($@"Packing all sprites into sprite sheets...", Paths.BuildTexturesDirectory);
+            // Create sprite atlases for each mod:
+            Log.Debug($@"Packing sprites to sprite sheets...", Paths.BuildTexturesDirectory);
             Clock.Restart();
             await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
             {
@@ -676,100 +680,124 @@ public sealed class ModBuilder : IAsyncDisposable
                         return;
                     }
 
-                    // List all sprite images required by animations, separated by texture filtering:
-                    Dictionary<string, HashSet<ETextureFilter>> requiredFilters = [];
-                    foreach (XmlFile modXmlFile in mod.XmlFiles[EXmlFileType.Animations].Values)
+                    // List sprite images required by animations, organized by texture filtering:
+                    int localSpriteId = 0;
+                    SortedDictionary<string, SpriteReference> spriteReferences = [];
+                    foreach (XmlFile modAnimationsXmlFile in mod.XmlFiles[EXmlFileType.Animations].Values)
                     {
-                        foreach (XElement assetPos in modXmlFile.Xml.GetEveryAssetPos().Where(assetPos => assetPos.HasAttribute("filename")))
+                        if (modAnimationsXmlFile.IsIgnored)
+                        {
+                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
+                            continue;
+                        }
+
+                        foreach (XElement assetPos in modAnimationsXmlFile.Xml.GetEveryAssetPos().Where(assetPos => assetPos.HasAttribute("filename")))
                         {
                             CT.ThrowIfCancellationRequested();
 
-                            // Read sprite relative path:
-                            string relativePath = assetPos?.Attribute("filename")?.Value?.AsOSPath();
-
-                            // Validate relative path:
-                            string relativePathWithoutExtension = relativePath.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase);
-                            if (relativePathWithoutExtension.IsNullOrWhiteSpace())
+                            // Get or create a sprite reference:
+                            string spriteName = SpriteReference.GetName(assetPos?.Attribute("filename")?.Value);
+                            if (spriteName.IsNullOrWhiteSpace())
                             {
-                                modLog.Error($@"Malformed texture reference at line {assetPos.Line()}, file ""{modXmlFile}""", modXmlFile.Path);
-                                BuildSettings.Fail();
+                                modLog.Error($@"Malformed <assetPos> sprite texture 'filename' reference in file ""{modAnimationsXmlFile}"" line {assetPos.Line()}", modAnimationsXmlFile.Path);
+                                Fail();
                                 return;
                             }
+                            if (!spriteReferences.TryGetValue(spriteName, out SpriteReference spriteReference))
+                                spriteReferences[spriteName] = spriteReference = new(spriteName, ++localSpriteId) { BasePath = mod.TexturesDirectory, XmlFile = modAnimationsXmlFile };
 
-                            // Read sprite filter: nearest, linear, ...
+                            // Read required filter:
                             string filterStr = assetPos?.Attribute("filter")?.Value;
                             if (!filterStr.TryParse(out ETextureFilter filter) && !filterStr.TryParseFromNumericValue(out filter))
-                                filter = ETextureFilter.Nearest;
-
-                            // Map sprite path by required texture filter:
-                            if (!requiredFilters.TryGetValue(relativePathWithoutExtension, out HashSet<ETextureFilter> filters))
-                                requiredFilters[relativePathWithoutExtension] = new HashSet<ETextureFilter>() { filter };
-                            else filters.Add(filter);
+                                filter = ETextureFilter.Nearest; // if undefined, use 'nearest' as default filter
+                            spriteReference.Filters.Add(filter);
                         }
                     }
 
-                    int localSpriteId = 0;
+                    // Map sprite image files to each sprite reference:
+                    foreach (string relativePath in mod.TextureRelativeFilePaths)
+                    {
+                        string spriteName = SpriteReference.GetName(relativePath);
+                        if (!spriteReferences.TryGetValue(spriteName, out SpriteReference spriteReference))
+                        {
+                            modLog.Warn($@"Ignoring texture file ""{relativePath}"" because it is not referenced by any <assetPos> entry in the mod's animations file(s)", Path.Combine(mod.TexturesDirectory, relativePath).AsOSPath());
+                            continue;
+                        }
+                        spriteReference.RelativePath = relativePath;
+                        modLog.Debug(spriteReference);
+                    }
+
+                    // Check for missing image files:
+                    bool missingSpriteTextures = false;
+                    foreach (SpriteReference spriteReference in spriteReferences.Values)
+                    {
+                        if (!spriteReference.RelativePath.IsNullOrWhiteSpace())
+                            continue;
+                        modLog.Error($@"Unable to find sprite texture file for {spriteReference}", spriteReference.XmlFile.Path);
+                        missingSpriteTextures = true;
+                    }
+                    if (missingSpriteTextures)
+                    {
+                        Fail();
+                        return;
+                    }
+
+                    // Generate one sprite atlases for each texture filter, if required:
                     foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>())
                     {
-                        int filterIdx = (int)filter;
+                        SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
 
                         // Read absolute paths of actual sprite image files:
                         SortedDictionary<string, SpriteBuildData> sprites = [];
-                        foreach (string relativePath in mod.TextureRelativeFilePaths)
-                        {
-                            string relativePathWithoutExtension = relativePath.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase);
-
-                            // Get the required filters for this sprite, and assume 'Nearest' filter
-                            // for texture files not referenced by any animation:
-                            if (!requiredFilters.TryGetValue(relativePathWithoutExtension, out HashSet<ETextureFilter> filters))
-                                filters = new HashSet<ETextureFilter>() { ETextureFilter.Nearest };
-                            if (filters.Contains(filter))
-                                sprites[relativePathWithoutExtension] = new(relativePathWithoutExtension, localSpriteId++, Path.Combine(mod.TexturesDirectory, relativePath));
-                        }
+                        foreach (SpriteReference spriteReference in spriteReferences.Values.Where(r => r.Filters.Contains(filter)))
+                            sprites[spriteReference.LocalName] = new(spriteReference.LocalName, spriteReference.LocalID, spriteReference.AbsolutePath);
 
                         // Any sprites requiring this texture filter?
                         if (sprites.Count <= 0)
+                        {
+                            modLog.Debug($"No sprites require texture filter '{filter}'");
                             continue;
-
+                        }
                         int expectedSpriteCount = sprites.Count;
-                        modLog.Debug($@"Adding the following {expectedSpriteCount} sprite(s): {sprites.Values.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
+                        modLog.Debug($@"Packing the following {expectedSpriteCount} sprite(s) to sprite atlas '{spriteAtlas.Name}': {sprites.Values.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
 
-                        // Pack sprites to sprite sheets:
-                        SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filterIdx];
+                        // Pack sprites:
                         spriteAtlas.Clear();
-                        bool crop = !BuildSettings.ForceSpritesheetSize2048;
+                        bool crop = !BuildSettings.ForceSpriteSheetSize2048;
                         if (!spriteAtlas.Add(sprites.Values, 2048, 2048, crop, modLog))
                         {
-                            BuildSettings.Fail();
+                            Fail();
                             return;
                         }
 
-                        // Double-check number of added sprites:
+                        // Validate number of packed sprites:
                         int actualSpriteCount = spriteAtlas.Sprites.Count;
                         if (expectedSpriteCount != actualSpriteCount)
                         {
-                            modLog.Error($@"Expected {expectedSpriteCount} sprite(s) requiring the '{filter}' texture filter, but only the {actualSpriteCount} following sprite(s) could be added: {spriteAtlas.Sprites.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
-                            BuildSettings.Fail();
+                            modLog.Error($@"Expected {expectedSpriteCount} sprite(s) in sprite atlas '{spriteAtlas.Name}', but only the {actualSpriteCount} following sprite(s) could be packed: {spriteAtlas.Sprites.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
+                            Fail();
                             return;
                         }
 
                         // Draw sprites to their spritesheets:
                         foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
                         {
-                            if (!spriteSheet.TryGenerateFromSprites(modLog))
-                            {
-                                BuildSettings.Fail();
-                                return;
-                            }
+                            if (spriteSheet.TryGenerateFromSprites(modLog))
+                                continue;
+                            modLog.Error($@"Unable to generate sprite sheet containing sprite(s): {spriteSheet.Sprites.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}");
+                            Fail();
+                            return;
                         }
-                        modLog.Debug($@"{spriteAtlas.SpriteCount} sprite(s) found requiring the '{filter}' texture filter, mapped to {spriteAtlas.SpriteSheets.Count} sprite sheet(s)", mod.Directory);
+
+                        // Done.
+                        modLog.Debug($@"{spriteAtlas.SpriteCount} sprite(s) were packed to {spriteAtlas.SpriteSheets.Count} sprite sheet(s) in sprite atlas '{spriteAtlas.Name}'", mod.Directory);
                     }
                 }
                 catch (OperationCanceledException ex) { modLog.Debug(ex); }
                 catch (Exception ex)
                 {
                     modLog.Error(ex);
-                    BuildSettings.Fail();
+                    Fail();
                     return;
                 }
                 finally
@@ -797,7 +825,7 @@ public sealed class ModBuilder : IAsyncDisposable
             {
                 foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>())
                 {
-                    SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[(int)filter];
+                    SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
 
                     foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.LocalId))
                     {
@@ -831,7 +859,7 @@ public sealed class ModBuilder : IAsyncDisposable
             {
                 try
                 {
-                    foreach (SpriteSheetBuildData spriteSheet in mod.SpriteAtlases.SelectMany(spriteAtlas => spriteAtlas.SpriteSheets))
+                    foreach (SpriteSheetBuildData spriteSheet in mod.SpriteAtlases.Values.SelectMany(spriteAtlas => spriteAtlas.SpriteSheets))
                     {
                         string cimFilename = $"{spriteSheet.GlobalId}.cim";
 
@@ -878,7 +906,7 @@ public sealed class ModBuilder : IAsyncDisposable
             {
                 try
                 {
-                    foreach (SpriteBuildData sprite in mod.SpriteAtlases.SelectMany(spriteAtlas => spriteAtlas.Sprites.OrderBy(s => s.LocalId)))
+                    foreach (SpriteBuildData sprite in mod.SpriteAtlases.Values.SelectMany(spriteAtlas => spriteAtlas.Sprites.OrderBy(s => s.LocalId)))
                     {
                         CT.ThrowIfCancellationRequested();
 
@@ -928,36 +956,39 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     foreach (XmlFile modAnimationsXmlFile in mod.XmlFiles[EXmlFileType.Animations].Values)
                     {
+                        if (modAnimationsXmlFile.IsIgnored)
+                        {
+                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
+                            continue;
+                        }
+
                         foreach (XElement assetPos in modAnimationsXmlFile.Xml.GetEveryAssetPos().Where(assetPos => assetPos.HasAttribute("filename")))
                         {
                             CT.ThrowIfCancellationRequested();
 
-                            // Read sprite relative path:
-                            string relativePath = assetPos?.Attribute("filename")?.Value?.AsOSPath();
-
                             // Validate relative path:
-                            string relativePathWithoutExtension = relativePath.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase);
-                            if (relativePathWithoutExtension.IsNullOrWhiteSpace())
+                            string spriteName = SpriteReference.GetName(assetPos?.Attribute("filename")?.Value);
+                            if (spriteName.IsNullOrWhiteSpace())
                             {
-                                modLog.Error($@"Malformed texture reference at line {assetPos.Line()}, file ""{modAnimationsXmlFile}""", modAnimationsXmlFile.Path);
-                                BuildSettings.Fail();
+                                modLog.Error($@"Malformed <assetPos> sprite texture 'filename' reference in file ""{modAnimationsXmlFile}"" line {assetPos.Line()}", modAnimationsXmlFile.Path);
+                                Fail();
                                 return false;
                             }
 
-                            // Read sprite filter: nearest, linear, ...
+                            // Read sprite filter:
                             string filterStr = assetPos?.Attribute("filter")?.Value;
                             if (!filterStr.TryParse(out ETextureFilter filter) && !filterStr.TryParseFromNumericValue(out filter))
                                 filter = ETextureFilter.Nearest;
 
                             // Get sprite atlas:
-                            SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[(int)filter];
+                            SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
 
                             // Get sprite:
-                            SpriteBuildData sprite = spriteAtlas.GetSpriteWithLocalName(relativePathWithoutExtension);
+                            SpriteBuildData sprite = spriteAtlas.GetSpriteWithLocalName(spriteName);
                             if (sprite == null)
                             {
-                                modLog.Error($@"Missing texture file ""{relativePathWithoutExtension}"" at line {assetPos.Line()}, file ""{modAnimationsXmlFile}""", modAnimationsXmlFile.Path);
-                                BuildSettings.Fail();
+                                modLog.Error($@"Missing texture file ""{spriteName}"" at line {assetPos.Line()}, file ""{modAnimationsXmlFile}""", modAnimationsXmlFile.Path);
+                                Fail();
                                 return false;
                             }
 
@@ -1034,6 +1065,12 @@ public sealed class ModBuilder : IAsyncDisposable
                         // Merge with all mod library XML files:
                         foreach (XmlFile modXmlFile in modXmlFiles)
                         {
+                            if (modXmlFile.IsIgnored)
+                            {
+                                modLog.Warn($@"Ignoring ""{modXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
+                                continue;
+                            }
+
                             // Merge by registered node type:
                             foreach (NodeType nodeType in NodeType.RegisteredTypes.Values.Where(n => n.XmlFileType == xmlFileType))
                             {
@@ -1189,6 +1226,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     foreach (XmlFile modXmlFile in mod.XmlFiles[EXmlFileType.Patch].Values)
                     {
+                        if (modXmlFile.IsIgnored)
+                        {
+                            modLog.Warn($@"Ignoring ""{modXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
+                            continue;
+                        }
+
                         // Get the target XML file:
                         if (!XmlFile.TryGetPatchXmlFileType(modXmlFile, out EXmlFileType targetXmlType))
                         {
@@ -1297,11 +1340,6 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             BuildJarFile.SetNormalized(0.10);
-
-            // Make sure all XML files are saved:
-            foreach (XmlFile xmlFile in Build.XmlFile.Values)
-                if (!await xmlFile.TrySaveAsync(Log, CT))
-                    return false;
 
             // Select files to add to template JAR:
             DirectoryInfo di = new(Paths.BuildStageDirectory);

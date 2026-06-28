@@ -22,7 +22,7 @@ public sealed class BuildSettings : IAsyncDisposable
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = LinkedCTS.Token,
         };
-        ForceSpritesheetSize2048 = false;
+        ForceSpriteSheetSize2048 = false;
         Initialization = new ProgressInfo(nameof(Initialization));
         XmlBuild = new ProgressInfo(nameof(XmlBuild));
         JavaBuild = new ProgressInfo(nameof(JavaBuild));
@@ -30,7 +30,7 @@ public sealed class BuildSettings : IAsyncDisposable
 
     public VersionInfo AppVersion { get; set; }
     public VersionInfo SpaceHavenVersion { get; set; }
-    public bool ForceSpritesheetSize2048 { get; set; }
+    public bool ForceSpriteSheetSize2048 { get; set; }
 
     public List<ModData> Mods { get; } = [];
     private CancellationToken ExternalCT { get; }
@@ -58,7 +58,7 @@ public sealed class BuildSettings : IAsyncDisposable
         {
             StringBuilder sb = new();
 
-            sb.AppendLine($"{nameof(ForceSpritesheetSize2048)}={ForceSpritesheetSize2048}");
+            sb.AppendLine($"{nameof(ForceSpriteSheetSize2048)}={ForceSpriteSheetSize2048}");
 
             Hash = XxHash64Calculator.ComputeFromString(sb.ToString(), logger);
             return true;

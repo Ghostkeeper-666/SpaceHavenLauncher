@@ -20,13 +20,13 @@ public static class IOUtils
         catch { return relativePath ?? basePath; }
     }
 
-    public static string CombinePathAsOS(string basePath, string relativePath)
+    public static string CombineAsOSPath(string basePath, string relativePath)
     {
         try { return Path.Combine(basePath.AsOSPath(), relativePath.AsOSPath()).AsOSPath(); }
         catch { return relativePath ?? basePath; }
     }
 
-    public static string CombinePathAsStd(string basePath, string relativePath)
+    public static string CombineAsStdPath(string basePath, string relativePath)
     {
         try { return Path.Combine(basePath.AsStdPath(), relativePath.AsStdPath()).AsStdPath(); }
         catch { return relativePath ?? basePath; }

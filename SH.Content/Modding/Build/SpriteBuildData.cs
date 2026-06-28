@@ -49,7 +49,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
 
         LocalName = localName;
         LocalId = localId;
-        AbsoluteFilePath = absoluteFilePath;
+        AbsoluteFilePath = absoluteFilePath.AsOSPath();
 
         // Read image pixel data from file:
         Image = SKBitmap.Decode(absoluteFilePath);

@@ -15,7 +15,7 @@ public sealed class AppSettingsData
         ModPageSplitterHeight = 380,
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
-        ForceSpritesheetSize2048 = false,
+        ForceSpriteSheetSize2048 = true,
         ExportXmlAnnotationLanguage = ELanguage.EN,
         ExportTextures = true,
         ExportOption = EExportOption.Both,
@@ -29,7 +29,7 @@ public sealed class AppSettingsData
     public int ModPageSplitterHeight { get; set; }
     public bool IsBackgroundEnabled { get; set; }
     public double BackgroundDarkness { get; set; }
-    public bool ForceSpritesheetSize2048 { get; set; }
+    public bool ForceSpriteSheetSize2048 { get; set; }
     public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }
     public EExportOption ExportOption { get; set; }

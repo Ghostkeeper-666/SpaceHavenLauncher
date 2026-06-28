@@ -1,13 +1,10 @@
 ﻿using CommonLibrary;
 using RectpackSharp;
-using SH.Content.Art;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace SH.Content.Modding.Build;
 
@@ -69,7 +66,7 @@ internal sealed class SpriteAtlasBuildData
 
             int maxLocalId = sprites.Max(s => s.LocalId);
             SpriteBuildData[] spritesByLocalId = new SpriteBuildData[maxLocalId + 1];
-            foreach(SpriteBuildData sprite in sprites)
+            foreach (SpriteBuildData sprite in sprites)
                 spritesByLocalId[sprite.LocalId] = sprite;
 
             // Fit each sprite to a spritesheet:
@@ -148,7 +145,15 @@ internal sealed class SpriteAtlasBuildData
             rectList.Add(CreatePackingRectangleForSprite(additionalSprite));
         PackingRectangle[] rects = rectList.ToArray();
 
-        RectanglePacker.Pack(rects, out bounds, PackingHints.FindBest, 1.0, 1, (uint)spriteSheet.Width, (uint)spriteSheet.Height);
+        try
+        {
+            RectanglePacker.Pack(rects, out bounds, PackingHints.FindBest, 1.0, 1, (uint)spriteSheet.Width, (uint)spriteSheet.Height);
+        }
+        catch
+        {
+            bounds = default;
+            return false;
+        }
 
         uint usedWidth = 0;
         uint usedHeight = 0;

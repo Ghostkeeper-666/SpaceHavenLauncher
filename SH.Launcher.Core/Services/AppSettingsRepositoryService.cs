@@ -80,9 +80,9 @@ public sealed class AppSettingsRepositoryService
 
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
-
-            data.ForceSpritesheetSize2048 =
-                bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpritesheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) && forceSpritesheetSize2048;
+            
+            data.ForceSpriteSheetSize2048 =
+                bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpriteSheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) && forceSpritesheetSize2048;
 
             data.ExportXmlAnnotationLanguage =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : ELanguage.EN;
@@ -124,7 +124,7 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
-            root.Add(new XElement(nameof(AppSettingsData.ForceSpritesheetSize2048), data.ForceSpritesheetSize2048));
+            root.Add(new XElement(nameof(AppSettingsData.ForceSpriteSheetSize2048), data.ForceSpriteSheetSize2048));
             root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));
             root.Add(new XElement(nameof(AppSettingsData.ExportTextures), data.ExportTextures));
             root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));

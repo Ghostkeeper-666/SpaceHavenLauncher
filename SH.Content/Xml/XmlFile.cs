@@ -15,6 +15,8 @@ namespace SH.Content.Xml;
 
 public sealed class XmlFile
 {
+    public static readonly string ATTRIBUTE_IGNORE = "ignore";
+
     public static bool TryGetLibraryXmlFileType(string path, out EXmlFileType type) =>
         EXmlFileType.Unknown != (type =
         IOUtils.TextFileContains(path, "<Patch>", 4096, true, StringComparison.OrdinalIgnoreCase) ? EXmlFileType.Patch : // ignore case is OK
@@ -76,8 +78,8 @@ public sealed class XmlFile
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         Type = type;
-        Path = path;
-        BaseDir = baseDir?.TrimEnd('/', '\\');
+        Path = path.AsOSPath();
+        BaseDir = baseDir.AsOSPath();
     }
 
     public EXmlFileType Type { get; }
@@ -90,6 +92,9 @@ public sealed class XmlFile
     public XDocument Xml { get; internal set; }
 
     public XElement Root => Xml.Root;
+
+    public bool IsIgnored =>
+        Xml.Root?.Attribute(ATTRIBUTE_IGNORE)?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
 
     public XElement GetParentNode(NodeType nodeType) =>
         Xml.XPathSelectElements(nodeType.ParentXPath)?.FirstOrDefault();

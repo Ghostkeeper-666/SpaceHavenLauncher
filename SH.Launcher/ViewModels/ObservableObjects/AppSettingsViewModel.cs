@@ -47,7 +47,7 @@ public partial class AppSettingsViewModel : ObservableObject
             ModPageSplitterHeight = data.ModPageSplitterHeight;
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
-            ForceSpritesheetSize2048 = data.ForceSpritesheetSize2048;
+            ForceSpriteSheetSize2048 = data.ForceSpriteSheetSize2048;
             ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
             ExportTextures = data.ExportTextures;
             ExportOption = data.ExportOption;
@@ -90,8 +90,8 @@ public partial class AppSettingsViewModel : ObservableObject
                     Data?.BackgroundDarkness = BackgroundDarkness;
                     BackgroundTransparencyText = BackgroundDarkness >= 1.0 ? $"Background: OFF" : $"Background: {(1.0 - BackgroundDarkness):0%}";
                     break;
-                case nameof(ForceSpritesheetSize2048):
-                    Data?.ForceSpritesheetSize2048 = ForceSpritesheetSize2048;
+                case nameof(ForceSpriteSheetSize2048):
+                    Data?.ForceSpriteSheetSize2048 = ForceSpriteSheetSize2048;
                     break;
                 case nameof(ExportXmlAnnotationLanguage):
                     Data?.ExportXmlAnnotationLanguage = ExportXmlAnnotationLanguage;
@@ -146,7 +146,7 @@ public partial class AppSettingsViewModel : ObservableObject
 
     // BUILD:
     [ObservableProperty]
-    private bool _ForceSpritesheetSize2048;
+    private bool _ForceSpriteSheetSize2048;
 
     // EXPORT:
     [ObservableProperty]

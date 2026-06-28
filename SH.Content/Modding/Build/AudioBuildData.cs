@@ -152,7 +152,7 @@ internal sealed class AudioBuildData
             SourceRelativePath = Xml.Attribute(ATTRIBUTE_FILENAME)?.Value?.AsOSPath();
             if (!SourceRelativePath.IsNullOrWhiteSpace())
             {
-                SourceAbsolutePath = IOUtils.CombinePathAsOS(Mod.AudioDirectory, SourceRelativePath);
+                SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath);
                 if (IOUtils.FileExists(SourceAbsolutePath))
                 {
                     Log.Debug($"Audio entry '{Name}' was mapped to audio file '{SourceAbsolutePath}'", ModXmlFile.Path);
@@ -168,7 +168,7 @@ internal sealed class AudioBuildData
 
             // In same relative directory?
             SourceRelativePath = relativePath.AsOSPath();
-            SourceAbsolutePath = IOUtils.CombinePathAsOS(Mod.AudioDirectory, SourceRelativePath);
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath);
             if (IOUtils.FileExists(SourceAbsolutePath))
             {
                 Log.Debug($"Audio entry '{Name}' was mapped to audio file '{SourceAbsolutePath}'", ModXmlFile.Path);
@@ -177,7 +177,7 @@ internal sealed class AudioBuildData
 
             // In mod's root audio directory?
             SourceRelativePath = Path.GetFileName(relativePath).AsOSPath();
-            SourceAbsolutePath = IOUtils.CombinePathAsOS(Mod.AudioDirectory, SourceRelativePath);
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath);
             if (IOUtils.FileExists(SourceAbsolutePath))
             {
                 Log.Debug($"Audio entry '{Name}' was mapped to audio file '{SourceAbsolutePath}'", ModXmlFile.Path);
@@ -186,7 +186,7 @@ internal sealed class AudioBuildData
 
             // Is the audio entry using an existing audio file?
             SourceRelativePath = relativePath.AsOSPath();
-            SourceAbsolutePath = IOUtils.CombinePathAsOS(Paths.BuildStageLibraryDirectory, relativePath);
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, relativePath);
             if (IOUtils.FileExists(SourceAbsolutePath))
             {
                 // Warn, since this could eventually not be the intention in this mod:
