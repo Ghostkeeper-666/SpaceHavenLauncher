@@ -409,7 +409,7 @@ public sealed class ModBuilder : IAsyncDisposable
             IsNewJar = templateJarHash != buildJarHash || buildJarHash != cacheJarHash;
 
             // XML:
-            NeedsXmlBuild = Build.HasXmlMods &&
+            NeedsXmlBuild = !BuildSettings.SkipRebuilding || Build.HasXmlMods &&
             (
                 IsNewJar ||
                 !File.Exists(Paths.CacheJarPath) ||
@@ -418,7 +418,7 @@ public sealed class ModBuilder : IAsyncDisposable
             );
 
             // JAVA:
-            NeedsJavaBuild = Build.HasJavaMods && (
+            NeedsJavaBuild = !BuildSettings.SkipRebuilding || Build.HasJavaMods && (
                 !File.Exists(Paths.CacheConfigJsonPath) ||
                 !File.Exists(Paths.CacheJavaHashPath) ||
                 (Build.JavaHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty)

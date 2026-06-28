@@ -356,24 +356,32 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Everything is ready!
             progress.Complete();
+            CentralScreen.LeftLeverState = EControlState.Ready;
 
             // LAUNCH GAME
-            CentralScreen.LeftLeverState = EControlState.Ready;
-            runGame.Complete();
+            if (AppSettings.StartSpaceHavenAutomatically)
+            {
+                runGame.Complete();
 
-            StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
-            string dashedLine = $"{new('=', sb.Length - 1)}";
-            sb.Insert(0, $"{dashedLine}\n");
-            sb.Append(dashedLine);
-            Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
+                StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
+                string dashedLine = $"{new('=', sb.Length - 1)}";
+                sb.Insert(0, $"{dashedLine}\n");
+                sb.Append(dashedLine);
+                Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
 
-            // Run and await Space Haven:
-            await Task.Yield();
-            State.IsSpaceHavenRunning = true;
-            if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
-                Log.Success($"{Paths.SpaceHavenName} has completed successfully");
-            else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
-            await Task.Yield();
+                // Run and await Space Haven:
+                await Task.Yield();
+                State.IsSpaceHavenRunning = true;
+                if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
+                    Log.Success($"{Paths.SpaceHavenName} has completed successfully");
+                else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
+                await Task.Yield();
+            }
+            else
+            {
+                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "tab://SystemCore");
+                await Task.Delay(500);
+            }
 
             // Done.
             CentralScreen.LeftLeverState = EControlState.Standby;
@@ -521,6 +529,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 AppVersion = SpaceHavenLauncher.Version,
                 SpaceHavenVersion = Paths.SpaceHavenVersion,
                 ForceSpriteSheetSize2048 = AppSettings.ForceSpriteSheetSize2048,
+                SkipRebuilding = AppSettings.SkipRebuilding,
                 Initialization = initialization,
                 JavaBuild = javaBuild,
                 XmlBuild = xmlBuild,
@@ -530,7 +539,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             BuildService builderSvc = new(Paths.Data, Log);
             if (!await builderSvc.TryBuildAsync(paths, settings))
             {
-                Log.Error(State.StatusBarText = "Unable to build all the required mods", Paths.Data.BuildDir);
+                Log.Error(State.StatusBarText = "Unable to build selected mods", Paths.Data.BuildDir);
                 CentralScreen.RightLeverState = EControlState.Error;
                 return;
             }
@@ -547,24 +556,32 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Everything is ready!
             progress.Complete();
+            CentralScreen.RightLeverState = EControlState.Ready;
 
             // LAUNCH GAME
-            CentralScreen.RightLeverState = EControlState.Ready;
-            runGame.Complete();
+            if (AppSettings.StartSpaceHavenAutomatically)
+            {
+                runGame.Complete();
 
-            StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
-            string dashedLine = $"{new('=', sb.Length - 1)}";
-            sb.Insert(0, $"{dashedLine}\n");
-            sb.Append(dashedLine);
-            Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
+                StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
+                string dashedLine = $"{new('=', sb.Length - 1)}";
+                sb.Insert(0, $"{dashedLine}\n");
+                sb.Append(dashedLine);
+                Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
 
-            // Run and await Space Haven:
-            await Task.Yield();
-            State.IsSpaceHavenRunning = true;
-            if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
-                Log.Success($"{Paths.SpaceHavenName} has completed successfully");
-            else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
-            await Task.Yield();
+                // Run and await Space Haven:
+                await Task.Yield();
+                State.IsSpaceHavenRunning = true;
+                if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
+                    Log.Success($"{Paths.SpaceHavenName} has completed successfully");
+                else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
+                await Task.Yield();
+            }
+            else
+            {
+                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "tab://SystemCore");
+                await Task.Delay(500);
+            }
 
             // Done.
             CentralScreen.RightLeverState = EControlState.Standby;

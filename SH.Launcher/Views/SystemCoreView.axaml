@@ -54,7 +54,7 @@ x:DataType="vm:SystemCoreViewModel"
     HorizontalScrollBarVisibility="Disabled"
     VerticalScrollBarVisibility="Auto" >
       <Grid
-      RowDefinitions="Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,*,Auto,36"
+      RowDefinitions="Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,Auto,16,*,Auto,36"
       ColumnDefinitions="16,4,Auto,Auto,Auto,Auto,*,4,16"
       HorizontalAlignment="Stretch"
       VerticalAlignment="Stretch"
@@ -153,41 +153,53 @@ x:DataType="vm:SystemCoreViewModel"
 
         <!-- Force 2048 x 2048 sprite sheet size -->
         <Border Grid.Row="24" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-        ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files" />
-        <CheckBox Grid.Row="24" Grid.Column="2" Grid.ColumnSpan="5" Content="Force sprite sheet generation with size 2048 x 2048 pixels" IsChecked="{Binding AppSettings.ForceSpriteSheetSize2048}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
-        ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files" />
+        ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files (recommended = yes)" />
+        <CheckBox Grid.Row="24" Grid.Column="2" Grid.ColumnSpan="5" Content="Build: Force sprite sheets with size 2048 x 2048 pixels?" IsChecked="{Binding AppSettings.ForceSpriteSheetSize2048}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
+        ToolTip.Tip="Forces the XML mod build system to always create 2048 x 2048 CIM texture files (recommended = yes)" />
+
+        <!-- Start Space Haven automatically -->
+        <Border Grid.Row="26" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        ToolTip.Tip="Turn this off if you don't want to start Space Haven automatically when launching a vanilla or a modified game on Navigation Console" />
+        <CheckBox Grid.Row="26" Grid.Column="2" Grid.ColumnSpan="5" Content="Build: Start Space Haven automatically?" IsChecked="{Binding AppSettings.StartSpaceHavenAutomatically}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
+        ToolTip.Tip="Turn this off if you don't want to start Space Haven automatically when launching a vanilla or a modified game on Navigation Console" />
+
+        <!-- Skip Rebuilding -->
+        <Border Grid.Row="28" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        ToolTip.Tip="Turn this off if you want to forcibly rebuild the mods every time you launch a modified game" />
+        <CheckBox Grid.Row="28" Grid.Column="2" Grid.ColumnSpan="5" Content="Build: Skip builds when possible?" IsChecked="{Binding AppSettings.SkipRebuilding}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
+        ToolTip.Tip="Turn this off if you want to forcibly rebuild the mods every time you launch a modified game" />
 
         <!-- Export: Textures -->
-        <Border Grid.Row="26" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-        ToolTip.Tip="This is an option for enabling or disabling the export of textures, since this takes a long time to complete" />
-        <CheckBox Grid.Row="26" Grid.Column="2" Grid.ColumnSpan="5" Content="Export: Enable exporting of textures?" IsChecked="{Binding AppSettings.ExportTextures}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
-        ToolTip.Tip="This is an option for enabling or disabling the export of textures, since this takes a long time to complete" />
-
-        <!-- Export: Language -->
-        <Border Grid.Row="28" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
-        <ComboBox Grid.Row="28" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding ExportXmlAnnotationLanguages}" SelectedItem="{Binding AppSettings.ExportXmlAnnotationLanguage}" CornerRadius="7" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
-        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
-        <TextBlock Grid.Row="28" Grid.Column="5" Grid.ColumnSpan="2" Text="Export: Language used for XML Annotations" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
-        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
+        <Border Grid.Row="30" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        ToolTip.Tip="Turn this off if you dn't want to export textures, since this takes a long time to complete" />
+        <CheckBox Grid.Row="30" Grid.Column="2" Grid.ColumnSpan="5" Content="Export: Enable exporting of textures?" IsChecked="{Binding AppSettings.ExportTextures}" MinWidth="0" Foreground="LightCyan" BorderBrush="Transparent" BorderThickness="0" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Regular"
+        ToolTip.Tip="Turn this off if you dn't want to export textures, since this takes a long time to complete" />
 
         <!-- Export: ORIGINAL or MODIFIED -->
-        <Border Grid.Row="30" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Border Grid.Row="32" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
         ToolTip.Tip="Choose whether ORIGINAL or MODIFIED assets should be exported" />
-        <ComboBox Grid.Row="30" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding ExportOptions}" SelectedItem="{Binding AppSettings.ExportOption}" CornerRadius="7" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        <ComboBox Grid.Row="32" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding ExportOptions}" SelectedItem="{Binding AppSettings.ExportOption}" CornerRadius="7" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
         ToolTip.Tip="Choose whether ORIGINAL or MODIFIED assets should be exported" />
-        <TextBlock Grid.Row="30" Grid.Column="5" Grid.ColumnSpan="2" Text="Export: Original or Modified libraries?" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        <TextBlock Grid.Row="32" Grid.Column="5" Grid.ColumnSpan="2" Text="Export: Original or Modified libraries?" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
         ToolTip.Tip="Choose whether ORIGINAL or MODIFIED assets should be exported" />
+
+        <!-- Export: Language -->
+        <Border Grid.Row="34" Grid.Column="1" Grid.ColumnSpan="6" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
+        <ComboBox Grid.Row="34" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding ExportXmlAnnotationLanguages}" SelectedItem="{Binding AppSettings.ExportXmlAnnotationLanguage}" CornerRadius="7" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
+        <TextBlock Grid.Row="34" Grid.Column="5" Grid.ColumnSpan="2" Text="Export: Language used for XML Annotations" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        ToolTip.Tip="Choose one of the languages supported by Space Haven for XML annotations in exported files" />
 
 
 
         
         <!-- WINDOWS: Create Desktop Shortcut -->
-        <Border Grid.Row="33" Grid.Column="1" Grid.ColumnSpan="6" IsVisible="{Binding IsWin}" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+        <Border Grid.Row="37" Grid.Column="1" Grid.ColumnSpan="6" IsVisible="{Binding IsWin}" BorderBrush="DarkSlateGray" BorderThickness="1" CornerRadius="15" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
         ToolTip.Tip="Create a Windows desktop shortcut" />
-        <Button Grid.Row="33" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="{Binding IsWin}" Click="CreateWindowsShortcut" Content="CREATE ICON" Width="182" CornerRadius="7" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="13" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        <Button Grid.Row="37" Grid.Column="2" Grid.ColumnSpan="3" IsVisible="{Binding IsWin}" Click="CreateWindowsShortcut" Content="CREATE ICON" Width="182" CornerRadius="7" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="13" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
         ToolTip.Tip="Create a Windows desktop shortcut" />
-        <TextBlock Grid.Row="33" Grid.Column="5" Grid.ColumnSpan="2" IsVisible="{Binding IsWin}" Text="Create desktop shortcut for Space Haven Launcher (Windows)" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
+        <TextBlock Grid.Row="37" Grid.Column="5" Grid.ColumnSpan="2" IsVisible="{Binding IsWin}" Text="Create desktop shortcut for Space Haven Launcher (Windows)" Foreground="LightCyan" Margin="8" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Left" FontSize="14" FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono" FontWeight="Medium"
         ToolTip.Tip="Create a Windows desktop shortcut" />
 
       </Grid>

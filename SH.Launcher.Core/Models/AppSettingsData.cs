@@ -16,6 +16,8 @@ public sealed class AppSettingsData
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
         ForceSpriteSheetSize2048 = true,
+        StartSpaceHavenAutomatically = true,
+        SkipRebuilding = true,
         ExportXmlAnnotationLanguage = ELanguage.EN,
         ExportTextures = true,
         ExportOption = EExportOption.Both,
@@ -30,6 +32,8 @@ public sealed class AppSettingsData
     public bool IsBackgroundEnabled { get; set; }
     public double BackgroundDarkness { get; set; }
     public bool ForceSpriteSheetSize2048 { get; set; }
+    public bool StartSpaceHavenAutomatically { get; set; }
+    public bool SkipRebuilding { get; set; }
     public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }
     public EExportOption ExportOption { get; set; }

@@ -22,7 +22,8 @@ public sealed class BuildSettings : IAsyncDisposable
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = LinkedCTS.Token,
         };
-        ForceSpriteSheetSize2048 = false;
+        ForceSpriteSheetSize2048 = true;
+        SkipRebuilding = true;
         Initialization = new ProgressInfo(nameof(Initialization));
         XmlBuild = new ProgressInfo(nameof(XmlBuild));
         JavaBuild = new ProgressInfo(nameof(JavaBuild));
@@ -31,6 +32,7 @@ public sealed class BuildSettings : IAsyncDisposable
     public VersionInfo AppVersion { get; set; }
     public VersionInfo SpaceHavenVersion { get; set; }
     public bool ForceSpriteSheetSize2048 { get; set; }
+    public bool SkipRebuilding { get; set; }
 
     public List<ModData> Mods { get; } = [];
     private CancellationToken ExternalCT { get; }

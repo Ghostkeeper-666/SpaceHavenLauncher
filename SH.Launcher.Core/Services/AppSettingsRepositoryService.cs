@@ -61,37 +61,43 @@ public sealed class AppSettingsRepositoryService
             // TODO: Version it, for future use...
             string version = root.Attribute("launcherVersion")?.Value;
 
-            // Read fields:
 
+            // Read fields:
             data.MonitorIndex =
-                int.TryParse(root.Element(nameof(AppSettingsData.MonitorIndex))?.Value ?? string.Empty, out int monitorIndex) ? monitorIndex : 0;
+                int.TryParse(root.Element(nameof(AppSettingsData.MonitorIndex))?.Value ?? string.Empty, out int monitorIndex) ? monitorIndex : data.MonitorIndex;
 
             data.IsLeftPaneCollapsed =
-                bool.TryParse(root.Element(nameof(AppSettingsData.IsLeftPaneCollapsed))?.Value ?? string.Empty, out bool isLeftPaneCollapsed) && isLeftPaneCollapsed;
+                bool.TryParse(root.Element(nameof(AppSettingsData.IsLeftPaneCollapsed))?.Value ?? string.Empty, out bool isLeftPaneCollapsed) ? isLeftPaneCollapsed : data.IsLeftPaneCollapsed;
 
             data.LogVerbosity =
-                Enum.TryParse(root.Element(nameof(AppSettingsData.LogVerbosity))?.Value ?? string.Empty, out ELogVerbosity logVerbosity) ? logVerbosity : ELogVerbosity.Minimal;
+                Enum.TryParse(root.Element(nameof(AppSettingsData.LogVerbosity))?.Value ?? string.Empty, out ELogVerbosity logVerbosity) ? logVerbosity : data.LogVerbosity;
             
             data.ModPageSplitterHeight =
                 int.TryParse(root.Element(nameof(AppSettingsData.ModPageSplitterHeight))?.Value ?? string.Empty, out int modPageSplitterHeight) ? modPageSplitterHeight : data.ModPageSplitterHeight;
 
             data.IsBackgroundEnabled =
-                bool.TryParse(root.Element(nameof(AppSettingsData.IsBackgroundEnabled))?.Value ?? string.Empty, out bool isBackgroundEnabled) && isBackgroundEnabled;
+                bool.TryParse(root.Element(nameof(AppSettingsData.IsBackgroundEnabled))?.Value ?? string.Empty, out bool isBackgroundEnabled) ? isBackgroundEnabled : data.IsBackgroundEnabled;
 
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
             
             data.ForceSpriteSheetSize2048 =
-                bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpriteSheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) && forceSpritesheetSize2048;
+                bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpriteSheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) ? forceSpritesheetSize2048 : data.ForceSpriteSheetSize2048;
+
+            data.StartSpaceHavenAutomatically =
+                bool.TryParse(root.Element(nameof(AppSettingsData.StartSpaceHavenAutomatically))?.Value ?? string.Empty, out bool startSpaceHavenAutomatically) ? startSpaceHavenAutomatically : data.StartSpaceHavenAutomatically;
+
+            data.SkipRebuilding =
+                bool.TryParse(root.Element(nameof(AppSettingsData.SkipRebuilding))?.Value ?? string.Empty, out bool skipRebuilding) ? skipRebuilding : data.SkipRebuilding;
 
             data.ExportXmlAnnotationLanguage =
-                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : ELanguage.EN;
+                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : data.ExportXmlAnnotationLanguage;
 
             data.ExportTextures = 
-                bool.TryParse(root.Element(nameof(AppSettingsData.ExportTextures))?.Value ?? string.Empty, out bool exportTextures) && exportTextures;
+                bool.TryParse(root.Element(nameof(AppSettingsData.ExportTextures))?.Value ?? string.Empty, out bool exportTextures) ? exportTextures : data.ExportTextures;
 
             data.ExportOption =
-                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportOption))?.Value ?? string.Empty, out EExportOption exportOption) ? exportOption : EExportOption.Both;
+                Enum.TryParse(root.Element(nameof(AppSettingsData.ExportOption))?.Value ?? string.Empty, out EExportOption exportOption) ? exportOption : data.ExportOption;
 
             // Done.
             Log.Success($"Application settings loaded", Paths.ApplicationSettingsPath);
@@ -125,6 +131,8 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
             root.Add(new XElement(nameof(AppSettingsData.ForceSpriteSheetSize2048), data.ForceSpriteSheetSize2048));
+            root.Add(new XElement(nameof(AppSettingsData.StartSpaceHavenAutomatically), data.StartSpaceHavenAutomatically));
+            root.Add(new XElement(nameof(AppSettingsData.SkipRebuilding), data.SkipRebuilding));
             root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));
             root.Add(new XElement(nameof(AppSettingsData.ExportTextures), data.ExportTextures));
             root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));

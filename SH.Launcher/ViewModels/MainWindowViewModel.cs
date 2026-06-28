@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SH.Launcher.Core.Services;
+using SH.Framework.IO;
 
 namespace SH.Launcher.ViewModels;
 
@@ -18,6 +19,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public ILogger Log => State.Log;
     public PathViewModel Paths => State.Paths;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+
+    public bool IsNewInstall { get; private set; }
 
     [ObservableProperty]
     private string _Title;
@@ -34,7 +37,6 @@ public partial class MainWindowViewModel : ViewModelBase
         State.SystemCorePage = new();
         State.AirlockPage = new();
 
-        State.CurrentPage = State.NavigationConsolePage;
         State.LeftPaneItems.Clear();
         State.FilteredLeftPaneItems.Clear();
 
@@ -59,6 +61,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (await InitializeSettings(ct))
         {
+            State.CurrentPage = IsNewInstall ? State.LearningComputerPage : State.NavigationConsolePage;
+
             // Move app to the previously used monitor:
             try
             {
@@ -139,6 +143,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
+            IsNewInstall = !IOUtils.FileExists(Paths.Data.ApplicationSettingsPath);
+
             AppSettingsRepositoryService repo = new(Paths.Data, Log);
             
             AppSettingsData data = await repo.TryLoadOrCreateAsync(ct);

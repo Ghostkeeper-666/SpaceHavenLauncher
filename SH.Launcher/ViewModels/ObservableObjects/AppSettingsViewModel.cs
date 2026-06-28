@@ -48,6 +48,8 @@ public partial class AppSettingsViewModel : ObservableObject
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
             ForceSpriteSheetSize2048 = data.ForceSpriteSheetSize2048;
+            StartSpaceHavenAutomatically = data.StartSpaceHavenAutomatically;
+            SkipRebuilding = data.SkipRebuilding;
             ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
             ExportTextures = data.ExportTextures;
             ExportOption = data.ExportOption;
@@ -92,6 +94,12 @@ public partial class AppSettingsViewModel : ObservableObject
                     break;
                 case nameof(ForceSpriteSheetSize2048):
                     Data?.ForceSpriteSheetSize2048 = ForceSpriteSheetSize2048;
+                    break;
+                case nameof(StartSpaceHavenAutomatically):
+                    Data?.StartSpaceHavenAutomatically = StartSpaceHavenAutomatically;
+                    break;
+                case nameof(SkipRebuilding):
+                    Data?.SkipRebuilding = SkipRebuilding;
                     break;
                 case nameof(ExportXmlAnnotationLanguage):
                     Data?.ExportXmlAnnotationLanguage = ExportXmlAnnotationLanguage;
@@ -147,6 +155,12 @@ public partial class AppSettingsViewModel : ObservableObject
     // BUILD:
     [ObservableProperty]
     private bool _ForceSpriteSheetSize2048;
+
+    [ObservableProperty]
+    private bool _StartSpaceHavenAutomatically;
+
+    [ObservableProperty]
+    private bool _SkipRebuilding;
 
     // EXPORT:
     [ObservableProperty]
