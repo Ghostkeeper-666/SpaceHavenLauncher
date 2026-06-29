@@ -28,13 +28,13 @@ jobs:
       run: dotnet restore
 
     - name: Publish Windows
-      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=win-x64
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:Version=$VERSION /p:PublishProfile=win-x64
 
     - name: Publish Linux
-      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=lnx-x64
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:Version=$VERSION /p:PublishProfile=lnx-x64
 
     - name: Publish macOS
-      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:PublishProfile=mac-x64
+      run: dotnet publish SH.Launcher/SH.Launcher.csproj /p:Version=$VERSION /p:PublishProfile=mac-x64
 
     - name: Create release folder
       run: mkdir -p release
