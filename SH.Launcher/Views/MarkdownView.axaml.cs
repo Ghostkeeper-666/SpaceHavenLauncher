@@ -252,7 +252,7 @@ public partial class MarkdownView : UserControl
                 VerticalAlignment = VerticalAlignment.Bottom,
                 [ToolTip.TipProperty] = "Click to copy",
             };
-            codeBlock.PointerPressed += async (_, _) => await SharedState.State.CopyToClipboardAsync(codeText);
+            codeBlock.PointerPressed += (_, _) => SharedState.State.CopyToClipboardAsync(codeText);
             return codeBlock;
         }
         return null;
@@ -337,8 +337,7 @@ public partial class MarkdownView : UserControl
                     [ToolTip.TipProperty] = "Click to copy",
                 };
 
-                codeTextBlock.PointerPressed += async (_, _) =>
-                    await SharedState.State.CopyToClipboardAsync(codeInline.Content);
+                codeTextBlock.PointerPressed += (_, _) => SharedState.State.CopyToClipboardAsync(codeInline.Content);
 
                 Avalonia.Controls.Documents.InlineUIContainer container = new(codeTextBlock)
                 {

@@ -13,8 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -174,13 +172,13 @@ public partial class SharedState : ObservableObject
 
     #region Helper methods
 
-    public Task CopyToClipboardAsync(string text)
+    public void CopyToClipboardAsync(string text)
     {
-        if (string.IsNullOrEmpty(text))
-            return Task.CompletedTask;
+        if (text.IsNullOrWhiteSpace())
+            return;
 
         // Fire and forget:
-        return RunAsync(async () =>
+        DispatchQueue.TryEnqueue(async () =>
         {
             try
             {
@@ -195,7 +193,10 @@ public partial class SharedState : ObservableObject
 
                 await clipboard.SetTextAsync(text);
             }
-            catch (Exception ex) { Log.Debug(ex); }
+            catch (Exception ex)
+            {
+                Log.Debug(ex);
+            }
         });
     }
 
@@ -272,7 +273,7 @@ public partial class SharedState : ObservableObject
             mod.ModIdErrors.Clear();
 
         // Set:
-        foreach (ModViewModel sourceMod in Mods)
+        foreach (ModViewModel sourceMod in Mods.Where(m => m.IsEnabled))
         {
             foreach (ModViewModel targetMod in Mods.Where(m => m.IsEnabled && m != sourceMod))
             {

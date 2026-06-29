@@ -179,23 +179,25 @@ public static class OS
                         return;
 
                     case EOSType.OSX:
-                        if (filePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
                         {
-                            Process.Start(new ProcessStartInfo
+                            ProcessStartInfo psi = new()
                             {
                                 FileName = "open",
-                                ArgumentList = { filePath },
-                            });
-                        }
-                        else
-                        {
-                            Process.Start(new ProcessStartInfo
+                            };
+
+                            if (filePath.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
                             {
-                                FileName = "xdg-open",
-                                ArgumentList = { filePath },
-                            });
+                                psi.ArgumentList.Add("-R"); // reveal in Finder
+                                psi.ArgumentList.Add(filePath);
+                            }
+                            else
+                            {
+                                psi.ArgumentList.Add(filePath);
+                            }
+
+                            Process.Start(psi);
+                            return;
                         }
-                        return;
 
                     case EOSType.Linux:
                         Process.Start(new ProcessStartInfo

@@ -417,7 +417,7 @@ public partial class NavigationConsoleView : UserControl
                 return;
 
             if (point.Properties.IsLeftButtonPressed)
-                State.DispatchQueue.TryEnqueue(() => State.CopyToClipboardAsync(logMessage.Text));
+                State.CopyToClipboardAsync(logMessage.Text);
 
             else if (point.Properties.IsRightButtonPressed)
                 State.DispatchQueue.TryEnqueue(() => OS.OpenLinkAsync(SpaceHavenLauncher.Directory, logMessage.Link, Log));

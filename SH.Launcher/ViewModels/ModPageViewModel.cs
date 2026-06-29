@@ -117,10 +117,8 @@ public partial class ModPageViewModel : ViewModelBase
     [RelayCommand]
     public async Task DirectoryClicked()
     {
-        await Task.WhenAll(
-            Framework.IO.OS.OpenDirectoryAsync(Mod.Directory, Log),
-            State.CopyToClipboardAsync(Mod.Directory)
-        );
+        State.CopyToClipboardAsync(Mod.Directory);
+        await Framework.IO.OS.OpenDirectoryAsync(Mod.Directory, Log);
     }
 
     [RelayCommand]

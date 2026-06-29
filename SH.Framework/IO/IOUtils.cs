@@ -47,14 +47,14 @@ public static class IOUtils
     public static void ThrowIfFileNotExists(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (!File.Exists(path.Trim()))
+        if (!File.Exists(path))
             throw new FileNotFoundException($@"File does not exist: ""{path}""", path);
     }
 
     public static void ThrowIfDirectoryNotExists(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (!Directory.Exists(path.Trim()))
+        if (!Directory.Exists(path))
             throw new FileNotFoundException($@"Directory does not exist: ""{path}""", path);
     }
 
@@ -92,7 +92,7 @@ public static class IOUtils
             int read = await fs.ReadAtLeastAsync(bytes.AsMemory(startPos, size), size, throwOnEndOfStream: false).ConfigureAwait(false);
             return read == size;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             logger?.Error($@"Unable to read first bytes of file ""{path}"": {ex}");
@@ -116,7 +116,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             return XDocument.Parse(xml, LoadOptions.SetLineInfo | LoadOptions.SetLineInfo);
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -158,7 +158,7 @@ public static class IOUtils
 
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -200,43 +200,70 @@ public static class IOUtils
 
 
 
-    public static bool TryDeleteDirectory(string directory, out string error)
+
+    public static async Task<bool> TryDeleteDirectoryAsync(string directory, ILogger logger, CancellationToken ct)
     {
-        try
+        return await Task.Run(() =>
         {
-            directory = directory.AsOSPath();
-            if (!Directory.Exists(directory))
+            try
             {
-                error = null;
+                string root = Path.GetFullPath(directory.AsOSPath()).AsOSPath();
+                if (!Directory.Exists(root))
+                    return true;
+
+                DeleteDirectoryContents(root, root, ct);
+                Directory.Delete(root);
                 return true;
             }
-            Directory.Delete(directory, true);
-            error = null;
-            return true;
-        }
-        catch (DirectoryNotFoundException)
-        {
-            error = null;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = ex.ToString();
-            return false;
-        }
+            catch (DirectoryNotFoundException)
+            {
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex);
+                return false;
+            }
+        }, ct);
     }
-    public static bool TryDeleteDirectory(string directory, ILogger logger)
+
+    private static void DeleteDirectoryContents(string root, string current, CancellationToken ct)
     {
-        directory = directory.AsOSPath();
-        if (TryDeleteDirectory(directory, out string error))
-            return true;
-        string parent = null;
-        try { parent = Path.GetDirectoryName(directory); } catch { }
-        logger?.Error(error, parent);
-        return false;
+        foreach (string file in Directory.EnumerateFiles(current))
+        {
+            ct.ThrowIfCancellationRequested();
+            string fullPath = Path.GetFullPath(file).AsOSPath();
+            EnsureInsideRoot(root, fullPath);
+            File.SetAttributes(fullPath, FileAttributes.Normal);
+            File.Delete(fullPath);
+        }
+
+        foreach (string directory in Directory.EnumerateDirectories(current))
+        {
+            ct.ThrowIfCancellationRequested();
+            string fullPath = Path.GetFullPath(directory).AsOSPath();
+            EnsureInsideRoot(root, fullPath);
+            DirectoryInfo info = new(fullPath);
+            bool isLink = info.LinkTarget != null || info.Attributes.HasFlag(FileAttributes.ReparsePoint);
+            if (isLink)
+            {
+                // Junction/symlink: delete only the link itself.
+                info.Delete();
+                continue;
+            }
+            DeleteDirectoryContents(root, fullPath, ct);
+            info.Attributes = FileAttributes.Normal;
+            info.Delete();
+        }
     }
-    public static Task<bool> TryDeleteDirectoryAsync(string directory, ILogger logger, CancellationToken ct) =>
-        Task.Run(() => TryDeleteDirectory(directory, logger), ct);
+
+    private static void EnsureInsideRoot(string root, string path)
+    {
+        string normalizedRoot = root + Path.DirectorySeparatorChar;
+        if (!path.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+            throw new IOException($@"Refusing to delete ""{path}"" because it is outside the root directory ""{root}""");
+    }
+
 
 
 
@@ -301,7 +328,7 @@ public static class IOUtils
             await File.WriteAllTextAsync(path, text ?? string.Empty, ct);
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -352,7 +379,7 @@ public static class IOUtils
                 return null;
             return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -391,7 +418,7 @@ public static class IOUtils
             await File.AppendAllTextAsync(absolutePath, text ?? string.Empty, ct);
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             logger?.Error(ex);
@@ -431,7 +458,7 @@ public static class IOUtils
             await File.WriteAllBytesAsync(path, bytes ?? Array.Empty<byte>(), ct);
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -482,7 +509,7 @@ public static class IOUtils
                 return null;
             return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -521,7 +548,7 @@ public static class IOUtils
             await File.AppendAllBytesAsync(absolutePath, bytes ?? Array.Empty<byte>(), ct);
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             logger?.Error(ex);
@@ -600,7 +627,7 @@ public static class IOUtils
             await source.CopyToAsync(target, bufferSize, ct);
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -661,7 +688,7 @@ public static class IOUtils
             // Done.
             return !ct.IsCancellationRequested;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -708,7 +735,7 @@ public static class IOUtils
 
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             logger?.Error(ex);

@@ -193,7 +193,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Create file for JAVA modders:
-            if (!await TryCreateModsJson())
+            if (!await TryWriteModsJson())
                 return false;
             // Done.
             Log.Success($"{this} has completed", Paths.BuildDirectory);
@@ -408,21 +408,22 @@ public sealed class ModBuilder : IAsyncDisposable
             cacheJarHash ??= string.Empty;
             IsNewJar = templateJarHash != buildJarHash || buildJarHash != cacheJarHash;
 
-            // XML:
-            NeedsXmlBuild = !BuildSettings.SkipRebuilding || Build.HasXmlMods &&
-            (
-                IsNewJar ||
-                !File.Exists(Paths.CacheJarPath) ||
-                !File.Exists(Paths.CacheJarHashPath) ||
-                (Build.XmlHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheXmlHashPath, Log, CT) ?? string.Empty)
-            );
+            // Is a new build required?
+            NeedsXmlBuild = Build.HasXmlMods;
+            NeedsJavaBuild = Build.HasJavaMods;
+            if (BuildSettings.SkipRebuilding)
+            {
+                NeedsXmlBuild &=
+                    IsNewJar ||
+                    !File.Exists(Paths.CacheJarPath) ||
+                    !File.Exists(Paths.CacheJarHashPath) ||
+                    (Build.XmlHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheXmlHashPath, Log, CT) ?? string.Empty);
 
-            // JAVA:
-            NeedsJavaBuild = !BuildSettings.SkipRebuilding || Build.HasJavaMods && (
-                !File.Exists(Paths.CacheConfigJsonPath) ||
-                !File.Exists(Paths.CacheJavaHashPath) ||
-                (Build.JavaHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty)
-            );
+                NeedsJavaBuild &=
+                    !File.Exists(Paths.CacheConfigJsonPath) ||
+                    !File.Exists(Paths.CacheJavaHashPath) ||
+                    (Build.JavaHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty);
+            }
 
             // Done.
             return true;
@@ -521,7 +522,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         if (modAudioXmlFile.IsIgnored)
                         {
-                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
+                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
                             continue;
                         }
 
@@ -657,6 +658,11 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 foreach (XmlFile modTexturesXmlFile in mod.XmlFiles[EXmlFileType.Textures].Values)
                 {
+                    if (modTexturesXmlFile.IsIgnored)
+                    {
+                        modLog.Warn($@"Ignoring ""{modTexturesXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modTexturesXmlFile.Path);
+                        continue;
+                    }
                     modLog.Error($@"The mod should not define ""library/texture*"" XML files! If the intention was to replace textures, do it with ""library/animations*"" and ""patch/animations*"" files");
                     errors = true;
                 }
@@ -687,7 +693,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         if (modAnimationsXmlFile.IsIgnored)
                         {
-                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
+                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
                             continue;
                         }
 
@@ -958,7 +964,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         if (modAnimationsXmlFile.IsIgnored)
                         {
-                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
+                            modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
                             continue;
                         }
 
@@ -1067,7 +1073,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         {
                             if (modXmlFile.IsIgnored)
                             {
-                                modLog.Warn($@"Ignoring ""{modXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
+                                modLog.Warn($@"Ignoring ""{modXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
                                 continue;
                             }
 
@@ -1228,7 +1234,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         if (modXmlFile.IsIgnored)
                         {
-                            modLog.Warn($@"Ignoring ""{modXmlFile}"" as defiend by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
+                            modLog.Warn($@"Ignoring ""{modXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
                             continue;
                         }
 
@@ -1387,6 +1393,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Create modified config.json:
             ConfigJsonFile config = await ConfigJsonFile.GetTemplateAsync(Paths.TemplateConfigJsonPath, Log, CT);
+            if (config == null || config.ClassPath == null || config.VMArgs == null || config.MainClass.IsNullOrWhiteSpace())
+            {
+                Log.Error($@"Invalid template {SpaceHavenConstants.CONFIG_JSON} in ""{Paths.TemplateConfigJsonPath}"", please repair the game by reinstalling it");
+                return false;
+            }
+
             if (Build.HasXmlMods)
             {
                 config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR);
@@ -1461,7 +1473,7 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
-    private async Task<bool> TryCreateModsJson()
+    private async Task<bool> TryWriteModsJson()
     {
         try
         {

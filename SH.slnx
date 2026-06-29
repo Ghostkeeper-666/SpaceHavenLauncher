@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
     <File Path="LICENSE.txt" />
   </Folder>
   <Project Path="SH.Content.Test/SH.Content.Test.csproj" Id="76bb90bc-ca07-487b-866d-3358b12c6da2">

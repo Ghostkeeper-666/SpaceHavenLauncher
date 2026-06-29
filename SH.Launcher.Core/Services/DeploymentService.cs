@@ -1,6 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.Zip;
 using SH.Content;
-using SH.Content.Modding;
 using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -315,6 +314,12 @@ public sealed class DeploymentService
             if (File.Exists(Paths.SpaceHavenModsJsonPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenModsJsonPath, Log, ct);
 
+            // Try to delete AOP libraries, but do not stop on error:
+            if (File.Exists(Paths.SpaceHavenAspectJPath))
+                await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenAspectJPath, Log, ct);
+            if (File.Exists(Paths.SpaceHavenAspectJWeaverPath))
+                await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenAspectJWeaverPath, Log, ct);
+
             // Done.
             return true;
         }
@@ -348,21 +353,17 @@ public sealed class DeploymentService
 
             if (hasJavaMods)
             {
-                // Deploy aspectj
+                // Forcefully deploy AOP libraries:
+    
+                if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJPath, Paths.SpaceHavenAspectJPath, true, Log, ct))
                 {
-                    if (!File.Exists(Paths.SpaceHavenAspectJPath) && !await IOUtils.TryCopyFileAsync(Paths.AppAspectJPath, Paths.SpaceHavenAspectJPath, true, Log, ct))
-                    {
-                        Log.Error($@"Unable to deploy file ""{ModdingConstants.ASPECTJ}""");
-                        return false;
-                    }
+                    Log.Error($@"Unable to deploy file ""{ModdingConstants.ASPECTJ}""");
+                    return false;
                 }
-                // Deploy aspectjweaver
+                if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJWeaverPath, Paths.SpaceHavenAspectJWeaverPath, true, Log, ct))
                 {
-                    if (!File.Exists(Paths.SpaceHavenAspectJWeaverPath) && !await IOUtils.TryCopyFileAsync(Paths.AppAspectJWeaverPath, Paths.SpaceHavenAspectJWeaverPath, true, Log, ct))
-                    {
-                        Log.Error($@"Unable to deploy file ""{ModdingConstants.ASPECTJWEAVER}""");
-                        return false;
-                    }
+                    Log.Error($@"Unable to deploy file ""{ModdingConstants.ASPECTJWEAVER}""");
+                    return false;
                 }
             }
 
@@ -370,7 +371,7 @@ public sealed class DeploymentService
             if (!await IOUtils.TryCopyFileAsync(Paths.CacheConfigJsonPath, Paths.SpaceHavenConfigJsonPath, true, Log, ct))
                 return false;
 
-            // Copy config.json file to space haven directory:
+            // Copy mods.json file to space haven directory:
             if (!await IOUtils.TryCopyFileAsync(Paths.CacheModsJsonPath, Paths.SpaceHavenModsJsonPath, true, Log, ct))
                 return false;
 

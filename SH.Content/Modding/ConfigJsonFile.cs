@@ -53,7 +53,6 @@ public sealed class ConfigJsonFile
             log?.Error($"Unable to parse template config.json file content: {Environment.NewLine}{content}");
             return null;
         }
-
         return config;
     }
 
