@@ -13,35 +13,6 @@ namespace SH.Content.Modding.Build;
 
 internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDisposable
 {
-    public SpriteBuildData(string localName, int localId, int width, int height, int regionX, int regionY, SpriteSheetBuildData sheet)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(regionX);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(regionY);
-        ArgumentNullException.ThrowIfNull(sheet);
-
-        LocalName = localName;
-        LocalId = localId;
-
-        CroppedWidth = Width = width;
-        CroppedHeight = Height = height;
-
-        SpriteSheetX = regionX;
-        SpriteSheetY = regionY;
-
-        // Read pixel data from spritesheet:
-        SpriteSheet = sheet;
-        PixelData = new byte[4 * Width * Height];
-        for (int y = 0; y < Height; ++y)
-            Buffer.BlockCopy(sheet.PixelData, (SpriteSheetY + y) * 4 * sheet.Width + SpriteSheetX * 4, PixelData, y * 4 * Width, 4 * Width);
-
-        // Create image:
-        Image = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
-        Marshal.Copy(PixelData, 0, Image.GetPixels(), PixelData.Length);
-    }
-
     public SpriteBuildData(string localName, int localId, string absoluteFilePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localName);
@@ -56,8 +27,8 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
         PixelData = new byte[Image.ByteCount];
         Marshal.Copy(Image.GetPixels(), PixelData, 0, PixelData.Length);
 
-        CroppedWidth = Width = Image.Width;
-        CroppedHeight = Height = Image.Height;
+        Width = Image.Width;
+        Height = Image.Height;
     }
 
     public SpriteSheetBuildData SpriteSheet { get; set; }
@@ -73,9 +44,6 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
 
     public int Width { get; }
     public int Height { get; }
-
-    public int CroppedWidth { get; private set; }
-    public int CroppedHeight { get; private set; }
 
     public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath);
     public string AbsoluteFilePath { get; }

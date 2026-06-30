@@ -44,21 +44,18 @@ public sealed class ModInfo
     public int ID { get; set; }
 
     [JsonPropertyOrder(5)]
-    public List<string> Cim { get; set; } = [];
-
-    [JsonPropertyOrder(6)]
     public List<string> Textures { get; set; } = [];
 
-    [JsonPropertyOrder(7)]
+    [JsonPropertyOrder(6)]
     public List<string> Audio { get; set; } = [];
 
-    [JsonPropertyOrder(8)]
+    [JsonPropertyOrder(7)]
     public List<string> Java { get; set; } = [];
 
-    [JsonPropertyOrder(9)]
+    [JsonPropertyOrder(8)]
     public List<string> Other { get; set; } = [];
 
-    [JsonPropertyOrder(10)]
+    [JsonPropertyOrder(9)]
     public List<VarInfo> Vars { get; set; } = [];
 }
 

@@ -15,7 +15,6 @@ public sealed class AppSettingsData
         ModPageSplitterHeight = 380,
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
-        ForceSpriteSheetSize2048 = true,
         StartSpaceHavenAutomatically = true,
         SkipRebuilding = true,
         ExportXmlAnnotationLanguage = ELanguage.EN,
@@ -31,7 +30,6 @@ public sealed class AppSettingsData
     public int ModPageSplitterHeight { get; set; }
     public bool IsBackgroundEnabled { get; set; }
     public double BackgroundDarkness { get; set; }
-    public bool ForceSpriteSheetSize2048 { get; set; }
     public bool StartSpaceHavenAutomatically { get; set; }
     public bool SkipRebuilding { get; set; }
     public ELanguage ExportXmlAnnotationLanguage { get; set; }

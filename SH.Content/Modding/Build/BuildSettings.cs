@@ -22,7 +22,6 @@ public sealed class BuildSettings : IAsyncDisposable
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = LinkedCTS.Token,
         };
-        ForceSpriteSheetSize2048 = true;
         SkipRebuilding = true;
         Initialization = new ProgressInfo(nameof(Initialization));
         XmlBuild = new ProgressInfo(nameof(XmlBuild));
@@ -31,7 +30,6 @@ public sealed class BuildSettings : IAsyncDisposable
 
     public VersionInfo AppVersion { get; set; }
     public VersionInfo SpaceHavenVersion { get; set; }
-    public bool ForceSpriteSheetSize2048 { get; set; }
     public bool SkipRebuilding { get; set; }
 
     public List<ModData> Mods { get; } = [];
@@ -50,26 +48,6 @@ public sealed class BuildSettings : IAsyncDisposable
     {
         BuildFailure = true;
         try { InternalCTS.Cancel(); } catch { }
-    }
-
-
-    internal string Hash { get; private set; }
-    internal async Task<bool> ComputeHash(ILogger logger)
-    {
-        try
-        {
-            StringBuilder sb = new();
-
-            sb.AppendLine($"{nameof(ForceSpriteSheetSize2048)}={ForceSpriteSheetSize2048}");
-
-            Hash = XxHash64Calculator.ComputeFromString(sb.ToString(), logger);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            logger?.Error(ex);
-            return false;
-        }
     }
 
     public ValueTask DisposeAsync()

@@ -528,7 +528,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 AppVersion = SpaceHavenLauncher.Version,
                 SpaceHavenVersion = Paths.SpaceHavenVersion,
-                ForceSpriteSheetSize2048 = AppSettings.ForceSpriteSheetSize2048,
                 SkipRebuilding = AppSettings.SkipRebuilding,
                 Initialization = initialization,
                 JavaBuild = javaBuild,

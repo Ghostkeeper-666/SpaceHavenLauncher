@@ -1,59 +1,77 @@
 ﻿namespace SH.Content.Modding;
 
+public enum ENodePatchOperation
+{
+    AddNodeAsFirst = 001,
+    AddNodeAsLast = 002,
+    InsertNodeBefore = 003,
+    InsertNodeAfter = 004,
+    RemoveNode = 005,
+    ReplaceNode = 006,
+}
+
+public enum EAttributePatchOperation
+{
+    SetAttribute = 101,
+    AddAttribute = 102,
+    RemoveAttribute = 103,
+    MathAttribute = 104,
+}
+
 #pragma warning disable CA1069 // Enums values should not be duplicated
 public enum EPatchOperation
 {
     None = 000,
 
-    // Node Operations
+    // Node Operations Aliases
 
-    AddNodeAsFirst = 001,
-    NodeAddAsFirst = 001,
-    AddNodeFirst = 001,
-    NodeAddFirst = 001,
-    AddFirst = 001,
+    AddNodeAsFirst = ENodePatchOperation.AddNodeAsFirst,
+    NodeAddAsFirst = ENodePatchOperation.AddNodeAsFirst,
+    AddNodeFirst = ENodePatchOperation.AddNodeAsFirst,
+    NodeAddFirst = ENodePatchOperation.AddNodeAsFirst,
+    AddFirst = ENodePatchOperation.AddNodeAsFirst,
 
-    AddNodeAsLast = 002,
-    NodeAddAsLast = 002,
-    AddNodeLast = 002,
-    NodeAddLast = 002,
-    AddLast = 002,
-    AddNode = 002,
-    NodeAdd = 002,
-    Add = 002,
+    AddNodeAsLast = ENodePatchOperation.AddNodeAsLast,
+    NodeAddAsLast = ENodePatchOperation.AddNodeAsLast,
+    AddNodeLast = ENodePatchOperation.AddNodeAsLast,
+    NodeAddLast = ENodePatchOperation.AddNodeAsLast,
+    AddLast = ENodePatchOperation.AddNodeAsLast,
+    AddNode = ENodePatchOperation.AddNodeAsLast,
+    NodeAdd = ENodePatchOperation.AddNodeAsLast,
+    Add = ENodePatchOperation.AddNodeAsLast,
 
-    InsertNodeBefore = 003,
-    NodeInsertBefore = 003,
-    InsertBefore = 003,
+    InsertNodeBefore = ENodePatchOperation.InsertNodeBefore,
+    NodeInsertBefore = ENodePatchOperation.InsertNodeBefore,
+    InsertBefore = ENodePatchOperation.InsertNodeBefore,
 
-    InsertNodeAfter = 004,
-    NodeInsertAfter = 004,
-    InsertAfter = 004,
-    InsertNode = 004,
-    NodeInsert = 004,
-    Insert = 004,
+    InsertNodeAfter = ENodePatchOperation.InsertNodeAfter,
+    NodeInsertAfter = ENodePatchOperation.InsertNodeAfter,
+    InsertAfter = ENodePatchOperation.InsertNodeAfter,
+    InsertNode = ENodePatchOperation.InsertNodeAfter,
+    NodeInsert = ENodePatchOperation.InsertNodeAfter,
+    Insert = ENodePatchOperation.InsertNodeAfter,
 
-    RemoveNode = 005,
-    NodeRemove = 005,
-    Remove = 005,
+    RemoveNode = ENodePatchOperation.RemoveNode,
+    NodeRemove = ENodePatchOperation.RemoveNode,
+    Remove = ENodePatchOperation.RemoveNode,
 
-    ReplaceNode = 006,
-    NodeReplace = 006,
-    Replace = 006,
+    ReplaceNode = ENodePatchOperation.ReplaceNode,
+    NodeReplace = ENodePatchOperation.ReplaceNode,
+    Replace = ENodePatchOperation.ReplaceNode,
 
-    // Attribute Operations
+    // Attribute Operations Aliases
 
-    SetAttribute = 101,
-    AttributeSet = 101,
+    SetAttribute = EAttributePatchOperation.SetAttribute,
+    AttributeSet = EAttributePatchOperation.SetAttribute,
 
-    AddAttribute = 102,
-    AttributeAdd = 102,
+    AddAttribute = EAttributePatchOperation.AddAttribute,
+    AttributeAdd = EAttributePatchOperation.AddAttribute,
 
-    RemoveAttribute = 103,
-    AttributeRemove = 103,
+    RemoveAttribute = EAttributePatchOperation.RemoveAttribute,
+    AttributeRemove = EAttributePatchOperation.RemoveAttribute,
 
-    MathAttribute = 104,
-    AttributeMath = 104,
+    MathAttribute = EAttributePatchOperation.MathAttribute,
+    AttributeMath = EAttributePatchOperation.MathAttribute,
 }
 #pragma warning restore CA1069 // Enums values should not be duplicated
 

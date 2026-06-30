@@ -9,9 +9,9 @@ namespace SH.Content.Xml;
 
 public sealed class NodeType
 {
-    public static readonly string MergedByMod = "mergedByMod";
-    public static readonly string MergeSource = "mergeSource";
-    public static readonly string PatchedByMods = "patchedByMods";
+    public static readonly string ATTRIBUTE_OWNER = "_owner";
+    public static readonly string ATTRIBUTE_LIBRARY = "_library";
+    public static readonly string ATTRIBUTE_PATCH = "_patch";
 
     public static NodeType Audio { get; }
     public static NodeType Animations { get; }

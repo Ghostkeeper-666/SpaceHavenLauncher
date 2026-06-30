@@ -81,9 +81,6 @@ public sealed class AppSettingsRepositoryService
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
             
-            data.ForceSpriteSheetSize2048 =
-                bool.TryParse(root.Element(nameof(AppSettingsData.ForceSpriteSheetSize2048))?.Value ?? string.Empty, out bool forceSpritesheetSize2048) ? forceSpritesheetSize2048 : data.ForceSpriteSheetSize2048;
-
             data.StartSpaceHavenAutomatically =
                 bool.TryParse(root.Element(nameof(AppSettingsData.StartSpaceHavenAutomatically))?.Value ?? string.Empty, out bool startSpaceHavenAutomatically) ? startSpaceHavenAutomatically : data.StartSpaceHavenAutomatically;
 
@@ -111,6 +108,8 @@ public sealed class AppSettingsRepositoryService
         }
     }
 
+
+
     public async Task<bool> TrySaveAsync(AppSettingsData data, CancellationToken ct)
     {
         try
@@ -130,7 +129,6 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
-            root.Add(new XElement(nameof(AppSettingsData.ForceSpriteSheetSize2048), data.ForceSpriteSheetSize2048));
             root.Add(new XElement(nameof(AppSettingsData.StartSpaceHavenAutomatically), data.StartSpaceHavenAutomatically));
             root.Add(new XElement(nameof(AppSettingsData.SkipRebuilding), data.SkipRebuilding));
             root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));

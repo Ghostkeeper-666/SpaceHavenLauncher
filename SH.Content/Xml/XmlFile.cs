@@ -49,10 +49,10 @@ public sealed class XmlFile
 
         // Detect by xpath content:
         IEnumerable<XElement> elements = patchXmlFile?.Root?.Nodes()?.Select(n => n as XElement);
-        foreach (XElement patchNode in elements)
+        foreach (XElement xpathNode in patchXmlFile?.Root?.Descendants("xpath"))
         {
-            string xpath = patchNode?.Element("xpath")?.Value;
-            if (xpath.IsNullOrWhiteSpace())
+            string xpath = xpathNode?.Value;
+            if (xpath.IsNullOrEmpty())
                 continue;
 
             type =

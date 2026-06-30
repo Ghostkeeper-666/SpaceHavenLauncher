@@ -47,7 +47,6 @@ public partial class AppSettingsViewModel : ObservableObject
             ModPageSplitterHeight = data.ModPageSplitterHeight;
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
-            ForceSpriteSheetSize2048 = data.ForceSpriteSheetSize2048;
             StartSpaceHavenAutomatically = data.StartSpaceHavenAutomatically;
             SkipRebuilding = data.SkipRebuilding;
             ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
@@ -91,9 +90,6 @@ public partial class AppSettingsViewModel : ObservableObject
                 case nameof(BackgroundDarkness):
                     Data?.BackgroundDarkness = BackgroundDarkness;
                     BackgroundTransparencyText = BackgroundDarkness >= 1.0 ? $"Background: OFF" : $"Background: {(1.0 - BackgroundDarkness):0%}";
-                    break;
-                case nameof(ForceSpriteSheetSize2048):
-                    Data?.ForceSpriteSheetSize2048 = ForceSpriteSheetSize2048;
                     break;
                 case nameof(StartSpaceHavenAutomatically):
                     Data?.StartSpaceHavenAutomatically = StartSpaceHavenAutomatically;
@@ -153,9 +149,6 @@ public partial class AppSettingsViewModel : ObservableObject
     private int _ModPageSplitterHeight;
 
     // BUILD:
-    [ObservableProperty]
-    private bool _ForceSpriteSheetSize2048;
-
     [ObservableProperty]
     private bool _StartSpaceHavenAutomatically;
 

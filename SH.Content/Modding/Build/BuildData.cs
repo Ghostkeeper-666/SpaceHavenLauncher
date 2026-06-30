@@ -57,10 +57,6 @@ internal sealed class BuildData : IAsyncDisposable
         {
             Log.Info("Computing build hash...");
 
-            // Compute Build Settings hash:
-            if (!await Settings.ComputeHash(Log))
-                return false;
-
             // Compute mod hashes:
             await Parallel.ForEachAsync(Mods, ParallelOptions, async (mod, ct) => await mod.ComputeHash());
 
@@ -86,9 +82,6 @@ internal sealed class BuildData : IAsyncDisposable
                 // App:
                 xmlHashes["App"] = appHash;
 
-                // Build Settings:
-                xmlHashes[nameof(BuildSettings)] = Settings.Hash;
-
                 // JAR:
                 xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
 
@@ -109,9 +102,6 @@ internal sealed class BuildData : IAsyncDisposable
 
                 // App:
                 javaHashes["App"] = appHash;
-
-                // Build Settings:
-                javaHashes[nameof(BuildSettings)] = Settings.Hash;
 
                 // Mods:
                 string javaModsHashData = Mods.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.Name}={mod.JavaHash}", "\n") ?? string.Empty;
