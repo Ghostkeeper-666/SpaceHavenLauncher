@@ -144,18 +144,14 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsNewInstall = !IOUtils.FileExists(Paths.Data.ApplicationSettingsPath);
-
             AppSettingsRepositoryService repo = new(Paths.Data, Log);
-            
             AppSettingsData data = await repo.TryLoadOrCreateAsync(ct);
-            if (data != null)
-                State.Log.SetLogLevel(data.LogVerbosity.ToLogLevel());
-            
-            if(data == null)
+            if (data == null)
             {
-                Log.Error($@"Unable to load or create application settings => please check for write permissions in ""{Paths.WorkDir}""");
-                data = AppSettingsData.GetDefault(); // continue anyway
+                Log.Error($@"Unable to load or create application settings => please check for write permissions on ""{Paths.WorkDir}""");
+                data = AppSettingsData.GetDefault();
             }
+            State.Log.SetLogLevel(data.LogVerbosity.ToLogLevel());
             State.AppSettings.SetData(data);
             return true;
         }

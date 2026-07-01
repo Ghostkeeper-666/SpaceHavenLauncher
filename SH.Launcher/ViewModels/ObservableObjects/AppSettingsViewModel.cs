@@ -18,7 +18,7 @@ public partial class AppSettingsViewModel : ObservableObject
 
     private volatile bool IsUpdating;
 
-    private readonly AppSettingsData Data;
+    private AppSettingsData Data;
     public AppSettingsViewModel()
     {
         Data = AppSettingsData.GetDefault();
@@ -41,6 +41,7 @@ public partial class AppSettingsViewModel : ObservableObject
         {
             IsUpdating = true;
 
+            Data = data ?? throw new ArgumentNullException(nameof(data));
             MonitorIndex = data.MonitorIndex;
             IsLeftPaneCollapsed = data.IsLeftPaneCollapsed;
             LogVerbosity = data.LogVerbosity;
