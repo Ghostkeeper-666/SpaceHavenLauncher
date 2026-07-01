@@ -1,7 +1,7 @@
-﻿using SH.Framework.Logging;
-using SH.Content.Enums;
-using SH.Content.Extensions;
+﻿using SH.Content.Enums;
 using SH.Content.Xml.Haven.Products;
+using SH.Framework.Extensions;
+using SH.Framework.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -184,7 +184,7 @@ HorizontalAlignment="Stretch"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
             TextAlignment="Left"
-            PlaceholderText="Search mod..."
+            PlaceholderText="Search mods..."
             PlaceholderForeground="DarkGray"
             FontSize="15"
             FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
@@ -258,7 +258,7 @@ HorizontalAlignment="Stretch"
             PointerPressed="EnabledListedModsAsync"
             IsHitTestVisible="True"
 
-            ToolTip.Tip="ENABLE the mods which are visible in the list below &#10;&#10;You can also enable just a part of the mods by restricting the mod list using the search box"
+            ToolTip.Tip="{Binding ToolTipText_EnableModsButton}"
             ToolTip.VerticalOffset="40" >
 
               <PathIcon
@@ -296,7 +296,7 @@ HorizontalAlignment="Stretch"
             PointerPressed="DisabledListedModsAsync"
             IsHitTestVisible="True"
 
-            ToolTip.Tip="DISABLE the mods which are visible in the list below &#10;&#10;You can also disable just a part of the mods by restricting the mod list using the search box"
+            ToolTip.Tip="{Binding ToolTipText_DisableModsButton}"
             ToolTip.VerticalOffset="40" >
 
               <PathIcon
@@ -444,7 +444,7 @@ HorizontalAlignment="Stretch"
 
                 ToolTip.HorizontalOffset="40"
                 ToolTip.VerticalOffset="0"
-                ToolTip.Tip="{Binding Label}" >
+                ToolTip.Tip="{Binding ToolTipText}" >
 
                   <Border
                   Grid.Column="0"
@@ -473,11 +473,11 @@ HorizontalAlignment="Stretch"
 
                     <Button.Styles>
                       <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
-                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="Foreground" Value="Aqua" />
                         <Setter Property="Background" Value="Transparent" />
                       </Style>
                       <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
-                        <Setter Property="Foreground" Value="Gold" />
+                        <Setter Property="Foreground" Value="DarkCyan" />
                         <Setter Property="Background" Value="Transparent" />
                       </Style>
                     </Button.Styles>
@@ -502,7 +502,7 @@ HorizontalAlignment="Stretch"
 
                     ToolTip.HorizontalOffset="40"
                     ToolTip.VerticalOffset="0"
-                    ToolTip.Tip="{Binding Label}" />
+                    ToolTip.Tip="{Binding ToolTipText}" />
 
                   </Button>
 
@@ -527,15 +527,15 @@ HorizontalAlignment="Stretch"
 
                   ToolTip.HorizontalOffset="40"
                   ToolTip.VerticalOffset="0"
-                  ToolTip.Tip="{Binding Label}" >
+                  ToolTip.Tip="{Binding ToolTipText}" >
 
                     <Button.Styles>
                       <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
-                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="Foreground" Value="Aqua" />
                         <Setter Property="Background" Value="Transparent" />
                       </Style>
                       <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter" >
-                        <Setter Property="Foreground" Value="Gold" />
+                        <Setter Property="Foreground" Value="DarkCyan" />
                         <Setter Property="Background" Value="Transparent" />
                       </Style>
                     </Button.Styles>

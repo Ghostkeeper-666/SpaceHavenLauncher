@@ -187,8 +187,7 @@ public sealed class XmlAnnotator
             if (id.IsNullOrWhiteSpace())
                 continue;
             string text = t.Element(lang)?.Value;
-            if (text == null)
-                text = t.Element(en)?.Value; // Try EN before skipping
+            text ??= t.Element(en)?.Value; // Try EN before skipping
             if (text == null)
                 continue;
             IdToText[id] = text;
@@ -925,9 +924,9 @@ public sealed class XmlAnnotator
     private void AnnotateHavenGenericAttributes(IProgressInfo progress, long progressMax)
     {
         List<XElement> nodes = HavenXml.Root.Descendants().ToList();
-        int prevProgress = 0;
-        int currProgress = 0;
         long count = 0;
+        int prevProgress = 0;
+        int currProgress;
 
         foreach (XElement node in nodes)
         {

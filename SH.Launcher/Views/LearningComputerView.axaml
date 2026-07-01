@@ -77,7 +77,7 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
 		VerticalAlignment="Stretch"
 		HorizontalContentAlignment="Center"
 		VerticalContentAlignment="Center"
-		FontSize="32"
+		FontSize="36"
 		FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
     FontWeight="ExtraBold"
 		TextWrapping="NoWrap"
@@ -87,14 +87,35 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
       <TextBox.Background>
         <RadialGradientBrush
 				Center="50%,50%"
-				GradientOrigin="50%,50%"
+				GradientOrigin="0%,0%"
 				RadiusX="100%"
-				RadiusY="80%" >
-          <GradientStop Color="#2F777766" Offset="0" />
-          <GradientStop Color="#0F363330" Offset="1" />
+				RadiusY="100%" >
+          <GradientStop Color="#FF777766" Offset="0" />
+          <GradientStop Color="#00000000" Offset="1" />
         </RadialGradientBrush>
       </TextBox.Background>
     </TextBox>
+
+    <TextBox
+    Grid.Row="0"
+    Grid.Column="3"
+    Padding="8 0 8 0"
+    Foreground="Black"
+    Background="Transparent"
+    BorderBrush="Transparent"
+    CornerRadius="0"
+    BorderThickness="0"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    HorizontalContentAlignment="Center"
+    VerticalContentAlignment="Center"
+    FontSize="36"
+    FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
+    FontWeight="Thin"
+    TextWrapping="NoWrap"
+    IsHitTestVisible="False"
+    IsReadOnly="True"
+    Text="TOPICS" />
 
     <!-- List of Learning Items -->
     <ListBox

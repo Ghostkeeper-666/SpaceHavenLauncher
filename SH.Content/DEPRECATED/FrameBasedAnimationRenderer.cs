@@ -1,4 +1,5 @@
-﻿using SH.Framework.Logging;
+﻿using SH.Content.Art;
+using SH.Framework.Logging;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Content.Art;
+namespace SH.Content.DEPRECATED;
 
 public sealed class FrameBasedAnimationRenderer
 {

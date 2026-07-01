@@ -1,15 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Controls.Shapes;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Services;
+using SH.Launcher.Extensions;
 using SH.Launcher.Views;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SH.Launcher.Core.Services;
-using SH.Framework.IO;
 
 namespace SH.Launcher.ViewModels;
 
@@ -27,6 +28,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _SearchText;
+
+    [ObservableProperty]
+    private string _ToolTipText_EnableModsButton = "This button ENABLES the mods which are visible in the list below &#10;&#10;To individually ENABLE or DISABLE a mod, click on the mod's STAR icon, OR click on it's title in the mod page &#10;&#10;You may also selectively ENABLE just a subset of the mods by using the search box, and then clicking on this button";
+
+    [ObservableProperty]
+    private string _ToolTipText_DisableModsButton = "This button DISABLES the mods which are visible in the list below &#10;&#10;To individually ENABLE or DISABLE a mod, click on the mod's STAR icon, OR click on it's title in the mod page &#10;&#10;You may also selectively DISABLE just a subset of the mods by using the search box, and then clicking on this button";
+
 
     public MainWindowViewModel()
     {

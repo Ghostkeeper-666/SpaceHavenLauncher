@@ -7,7 +7,6 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -33,7 +32,7 @@ public sealed class ArtRepository
     public OrderedDictionary<string, Animation> AnimationsByName { get; } = new();
     public OrderedDictionary<int, Animation> AnimationsById { get; } = new();
 
-    private readonly object Lock = new();
+    private readonly Lock Lock = new();
 
     public ArtRepository(TexturesXmlRepository textureXmlRepository, AnimationsXmlRepository animationsXmlRepository, ILogger logger)
     {
@@ -148,7 +147,7 @@ public sealed class ArtRepository
 
                         if (isSameImage) Log.Debug(message);
                         else Log.Warn(message);
-                        
+
                         if (SpritesByName[kvp.Key].SpriteSheet.Name > kvp.Value.SpriteSheet.Name)
                             SpritesByName[kvp.Key] = kvp.Value;
                     }
@@ -248,7 +247,7 @@ public sealed class ArtRepository
             // Create directories using SpriteSheet names first:
             string[] dirs = SpriteSheets.Keys.Select(name => Path.Combine(exportDir, name.ToString())).ToArray() ?? [];
             foreach (string dir in dirs)
-                if(!await IOUtils.TryCreateDirectoryAsync(dir, Log, parallelOptions.CancellationToken))
+                if (!await IOUtils.TryCreateDirectoryAsync(dir, Log, parallelOptions.CancellationToken))
                     return false;
 
             double delta = 1.0 / sprites.Count;

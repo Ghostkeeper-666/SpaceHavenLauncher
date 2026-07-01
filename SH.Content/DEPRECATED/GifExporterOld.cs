@@ -1,4 +1,5 @@
-﻿using SixLabors.ImageSharp;
+﻿using SH.Content.Art;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Processors.Quantization;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Content.Art;
+namespace SH.Content.DEPRECATED;
 
 public sealed class GifExporterOld
 {

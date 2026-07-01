@@ -5,6 +5,7 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -146,9 +147,9 @@ public sealed class ModRepository
                 .Any(possiblePath => path.Equals(possiblePath, StringComparison.OrdinalIgnoreCase)));
 
             // XML library files:
-            if(Directory.Exists(mod.XmlLibraryDirectory))
-            mod.XmlLibraryFilePaths.AddRange(Directory.GetFiles(mod.XmlLibraryDirectory, "*.*", SearchOption.AllDirectories)
-                .Where(path => !Path.GetFileName(path).StartsWith(ModdingConstants.GENERATED_TEXTURES_XML, StringComparison.OrdinalIgnoreCase)));
+            if (Directory.Exists(mod.XmlLibraryDirectory))
+                mod.XmlLibraryFilePaths.AddRange(Directory.GetFiles(mod.XmlLibraryDirectory, "*.*", SearchOption.AllDirectories)
+                    .Where(path => !Path.GetFileName(path).StartsWith(ModdingConstants.GENERATED_TEXTURES_XML, StringComparison.OrdinalIgnoreCase)));
 
             // XML Patch files:
             if (Directory.Exists(mod.XmlPatchesDirectory))
@@ -160,7 +161,7 @@ public sealed class ModRepository
                     .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)));
 
             // Texture files:
-            if(Directory.Exists(mod.TexturesDirectory))
+            if (Directory.Exists(mod.TexturesDirectory))
                 mod.TextureFilePaths.AddRange(Directory.GetFiles(mod.TexturesDirectory, "*.*", SearchOption.AllDirectories)
                     .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
 
@@ -202,13 +203,12 @@ public sealed class ModRepository
             }
 
             // UNIQUE NAME
-            mod.Name = root.Element("name")?.Value?.Trim();
+            mod.Name = NormalizeModName(root.Element("name")?.Value);
             if (mod.Name.IsNullOrWhiteSpace())
             {
-                Log.Error($@"Each mod must have a unique name! The XML node <name> is missing or empty in file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
+                Log.Error($@"Each mod must have a unique valid name! The XML node <name> is missing or invalid in file ""{mod.InfoXmlPath}""", mod.InfoXmlPath);
                 return null;
             }
-            mod.Name = NormalizeModName(mod.Name);
 
             // AUTO ID:
             mod.AutoId = ModAutoId.ComputeMajorId(mod.Name);
@@ -377,7 +377,7 @@ public sealed class ModRepository
             rootVarNodes.AddRange(root.Elements("config"));
             rootVarNodes.AddRange(root.Elements("vars"));
             rootVarNodes.AddRange(root.Elements("variables"));
-            
+
             VarData previousModVar = null;
             HashSet<string> duplicateVariables = [];
 
@@ -512,13 +512,51 @@ public sealed class ModRepository
         }
     }
 
+    private readonly string ValidModNameChars = "01234567890abcdefghijklmnopqrstuvwxyz-()";
+
+    private readonly ImmutableDictionary<char, string> SpecialModNameChars = ImmutableDictionary.CreateRange(new[]
+    {
+        new KeyValuePair<char, string>('&', "And"),
+        new KeyValuePair<char, string>('+', "Plus"),
+        new KeyValuePair<char, string>('[', "("),
+        new KeyValuePair<char, string>(']', ")"),
+        new KeyValuePair<char, string>('{', "("),
+        new KeyValuePair<char, string>('}', ")"),
+    });
+
     private string NormalizeModName(string name)
     {
-        const string ValidModNameChars = " 01234567890abcdefghijklmnopqrstuvwxyz-()";
+        if (name.IsNullOrWhiteSpace())
+            return string.Empty;
+
         StringBuilder sb = new();
+        char prevChar = default;
+
         for (int i = 0; i < name.Length; ++i)
-            sb.Append(ValidModNameChars.Contains(name[i], StringComparison.OrdinalIgnoreCase) ? name[i] : '_');
-        return sb.ToString();
+        {
+            char ch = name[i];
+
+            // Valid chars:
+            if (ValidModNameChars.Contains(ch, StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append(ch);
+                continue;
+            }
+
+            // Special treatment for other chars:
+            if (SpecialModNameChars.TryGetValue(ch, out string replacement))
+            {
+                sb.Append(replacement);
+                continue;
+            }
+
+            // Otherwise replace by a whitespace:
+            if (prevChar != ' ' && sb.Length > 0)
+                sb.Append(' ');
+        }
+
+        // Done.
+        return sb.ToString().Trim(); // trim whitespaces
     }
 }
 

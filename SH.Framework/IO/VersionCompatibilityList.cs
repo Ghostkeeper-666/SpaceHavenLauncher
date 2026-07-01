@@ -1,4 +1,5 @@
 ﻿using SH.Framework.IO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,8 +22,10 @@ public sealed class VersionCompatibilityList
     public void Add(VersionCompatibility item) =>
         ItemList.Add(item);
 
-    public string ToDisplayString(string separator = "\r\n")
+    public string ToDisplayString(string separator = null)
     {
+        separator ??= Environment.NewLine;
+
         if (ItemList.Count <= 0)
             return null;
 

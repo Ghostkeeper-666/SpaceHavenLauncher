@@ -189,8 +189,10 @@ public partial class MarkdownView : UserControl
                 Margin = new Thickness(0),
                 Spacing = 0,
             };
-            foreach (ListItemBlock item in listBlock)
+            foreach (Block childBlock in listBlock)
             {
+                if(childBlock is not ListItemBlock item)
+                    continue;
                 Control control = RenderBlock(item);
                 control?.VerticalAlignment = VerticalAlignment.Bottom;
                 if (control != null)

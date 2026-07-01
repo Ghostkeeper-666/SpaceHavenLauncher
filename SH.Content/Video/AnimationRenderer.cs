@@ -155,7 +155,7 @@ public sealed class AnimationRenderer
             {
                 Animation childAnimation = Animations[asset.AnimationName];
                 int subLoop = childAnimation.KeyFrames.Count == 0 ? 1 : childAnimation.KeyFrames[^1];
-                int subFrame = TimeToFrame(time, childAnimation.FrameRate, subLoop);
+                _ = TimeToFrame(time, childAnimation.FrameRate, subLoop);
                 await RenderAnimationAsync($"{path}--(B){asset.BoneId}--(AN){asset.AnimationName}", canvas, childAnimation, time, clipFps, global, renderIntermediateSteps, ct, stack);
             }
             else

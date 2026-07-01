@@ -19,8 +19,8 @@ public partial class App : Application
     {
         SharedState.State.Log.SetLogLevel(ELogLevel.Info);
 
-        ToolTip.ShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 10);
-        ToolTip.BetweenShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 10);
+        ToolTip.ShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);
+        ToolTip.BetweenShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

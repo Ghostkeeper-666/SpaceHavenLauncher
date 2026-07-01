@@ -5,7 +5,7 @@ namespace SH.Content.Modding.Annotation;
 
 public static class Translations
 {
-    public static Dictionary<ELanguage, string> LinkedBy = new()
+    public static IReadOnlyDictionary<ELanguage, string> LinkedBy { get; } = new Dictionary<ELanguage, string>()
     {
         [ELanguage.EN] = "Linked by",
         [ELanguage.ES] = "Vinculado por",
@@ -22,7 +22,7 @@ public static class Translations
         [ELanguage.TR] = "Bağlayan",
     };
 
-    public static Dictionary<ELanguage, string> LinksTo = new()
+    public static IReadOnlyDictionary<ELanguage, string> LinksTo { get; } = new Dictionary<ELanguage, string>()
     {
         [ELanguage.EN] = "Links to",
         [ELanguage.ES] = "Enlaza a",
@@ -39,7 +39,7 @@ public static class Translations
         [ELanguage.TR] = "Bağlantı hedefi",
     };
 
-    public static Dictionary<ELanguage, string> IndirectlyLinkedBy = new()
+    public static IReadOnlyDictionary<ELanguage, string> IndirectlyLinkedBy { get; } = new Dictionary<ELanguage, string>()
     {
         // Indirectly linked by
         [ELanguage.EN] = "Indirectly linked by",
@@ -57,7 +57,7 @@ public static class Translations
         [ELanguage.TR] = "Dolaylı olarak bağlayan",
     };
 
-    public static Dictionary<ELanguage, string> IndirectlyLinksTo = new()
+    public static IReadOnlyDictionary<ELanguage, string> IndirectlyLinksTo { get; } = new Dictionary<ELanguage, string>()
     {
         // Indirectly linked by
         [ELanguage.EN] = "Indirectly links to",
@@ -75,7 +75,7 @@ public static class Translations
         [ELanguage.TR] = "Dolaylı olarak bağlanır"
     };
 
-    public static Dictionary<ELanguage, string> RootNode = new()
+    public static IReadOnlyDictionary<ELanguage, string> RootNode { get; } = new Dictionary<ELanguage, string>()
     {
         [ELanguage.EN] = "Root Node",
         [ELanguage.ES] = "Nodo raíz",

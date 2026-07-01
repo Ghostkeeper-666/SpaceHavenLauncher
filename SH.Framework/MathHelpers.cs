@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace CommonLibrary;
+namespace SH.Framework;
 
 public static class MathHelpers
 {
@@ -19,8 +19,6 @@ public static class MathHelpers
         n |= n >> 16;
         return n + 1;
     }
-
-
 
     private static readonly string[] TRUE_VALUES = ["yes", "y", "ok", "positive", "afirmative", "continue", "proceed", "do", "do it", "go on", "always"];
     private static readonly string[] FALSE_VALUES = ["no", "n", "not", "negative", "zero", "null", "stop", "abort", "cancel", "do not", "don't", "nope", "never"];

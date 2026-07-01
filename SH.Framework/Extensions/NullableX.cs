@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SH.Content.Extensions;
+namespace SH.Framework.Extensions;
 
 public static class NullableEnum
 {

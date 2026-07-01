@@ -1,5 +1,4 @@
-﻿using SH.Content.Art;
-using SH.Content.Enums;
+﻿using SH.Content.Enums;
 using SH.Content.Xml;
 using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
@@ -57,6 +56,8 @@ public sealed class ModBuilder : IAsyncDisposable
     private readonly EXmlFileType[] XmlMergeFileTypes =
     [
         EXmlFileType.SpaceHavenSettings,
+        EXmlFileType.Audio,
+        //EXmlFileType.Textures,
         EXmlFileType.Animations,
         EXmlFileType.Texts,
         EXmlFileType.Haven,
@@ -75,6 +76,21 @@ public sealed class ModBuilder : IAsyncDisposable
     }
 
     private void Fail() => BuildSettings.Fail();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public async Task<bool> TryBuildAsync()
     {
@@ -151,16 +167,16 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await Build.TryWriteVersion(Log, CT))
                     return false;
 
-                // Merge Audio:
-                if (!await TryMergeAudio())
-                    return false;
-
                 // Merge XML:
                 if (!await TryMergeXML())
                     return false;
 
                 // Patch XML:
                 if (!await TryPatchXML())
+                    return false;
+
+                // Merge Audio:
+                if (!await TryMergeAudio())
                     return false;
 
                 // Generate Textures:
@@ -253,6 +269,24 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private async Task<bool> TrySetupProgress()
     {
         try
@@ -311,6 +345,23 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private async Task<bool> TryInitialize()
     {
         try
@@ -357,14 +408,12 @@ public sealed class ModBuilder : IAsyncDisposable
                 modInfo.Audio.AddRange(mod.AudioFilePaths.Select(path => path.AsStdPath()));
                 modInfo.Java.AddRange(mod.JavaFilePaths.Select(path => path.AsStdPath()));
                 modInfo.Other.AddRange(mod.OtherFilePaths.Select(path => path.AsStdPath()));
-
                 foreach (VarBuildData var in mod.Variables.Values)
                 {
                     VarInfo varInfo = new();
                     varInfo.Name = var.Name;
                     varInfo.Type = var.Type;
                     varInfo.Value = var.StrValue;
-
                     modInfo.Vars.Add(varInfo);
                 }
                 Build.ModsJsonFile.Mods.Add(modInfo);
@@ -384,6 +433,17 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
 
     private async Task<bool> TryComputeHashes()
     {
@@ -439,6 +499,15 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
+
+
+
+
+
+
+
+
+
     private async Task<bool> TryResetXmlBuild()
     {
         try
@@ -477,172 +546,20 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
-    private async Task<bool> TryMergeAudio()
-    {
-        try
-        {
-            Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
-            Clock.Restart();
 
-            foreach (ModBuildData mod in Build.Mods)
-            {
-                CT.ThrowIfCancellationRequested();
 
-                ILogger modLog = mod.Log;
 
-                try
-                {
-                    // Are audio files available?
-                    if (!mod.HasAudio)
-                    {
-                        modLog.Debug($"This mod has no audio files", mod.Directory);
-                        continue;
-                    }
 
-                    modLog.Debug($"Performing audio merge operations...", mod.BuildAudioDirectory);
 
-                    // Audio must be added by library XML files because the ycontain the relative path of the audio:
-                    // TODO: maybe we could use the relative path inside the mod's audio folder insted?
-                    if (mod.XmlFiles[EXmlFileType.Audio].Count <= 0)
-                    {
-                        modLog.Error($"New audio files MUST be added through a XML file in the library directory of your mod. Afterwards you may patch the audio XML nodes", mod.Directory);
-                        return false;
-                    }
 
-                    modLog.Debug($@"Adding the following audio files: {mod.AudioFilePaths.Select(path => $"\n- {path}").OrderBy(str => str).JoinToString()}", mod.Directory);
 
-                    // Get target:
-                    XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
-                    XElement parentNode = spaceHavenAudioXmlFile.GetParentNode(NodeType.Audio);
-                    if (parentNode == null)
-                    {
-                        modLog.Error("Unable to find root node of audio XML", spaceHavenAudioXmlFile.Path);
-                        return false;
-                    }
 
-                    // Process each source:
-                    foreach (XmlFile modAudioXmlFile in mod.XmlFiles[EXmlFileType.Audio].Values)
-                    {
-                        if (modAudioXmlFile.IsIgnored)
-                        {
-                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
-                            continue;
-                        }
 
-                        foreach (XElement audioXml in modAudioXmlFile.Xml.Root.Elements("a"))
-                        {
-                            CT.ThrowIfCancellationRequested();
 
-                            // Organize mod audio in objects:
-                            AudioBuildData audio = new(Paths, mod, modAudioXmlFile, audioXml);
 
-                            // Locate audio file:
-                            if (!audio.TryParse())
-                                return false;
 
-                            // Add:
-                            if (mod.Audio.ContainsKey(audio.Name))
-                            {
-                                modLog.Error($@"Duplicate audio entry '{audio.Name}' {audio.XmlLocation}", modAudioXmlFile.Path);
-                                return false;
-                            }
-                            mod.Audio.Add(audio.Name, audio);
 
-                            CT.ThrowIfCancellationRequested();
 
-                            // Merge audio XML:
-                            XElement[] existingNodes =
-                                spaceHavenAudioXmlFile.GetNodes(NodeType.Audio)
-                                .Where(n =>
-                                    n.Attribute("n")?.Value == audio.Name ||
-                                    n.Attribute(NodeType.Audio.IdAttribute)?.Value == audio.Id.ToString()
-                                ).ToArray() ?? [];
-
-                            // Remove existing nodes:
-                            foreach (XElement existingNode in existingNodes)
-                            {
-                                CT.ThrowIfCancellationRequested();
-
-                                string existingMod = existingNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                                string existingId = existingNode.Attribute(NodeType.Audio.IdAttribute)?.Value;
-                                string existingName = existingNode.Attribute(NodeType.Audio.NameAttribute)?.Value;
-
-                                if (existingMod == null)
-                                    modLog.Debug($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}'", modAudioXmlFile.Path);
-                                else if (existingMod == mod.Name)
-                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the same mod => This could be an ERROR", modAudioXmlFile.Path);
-                                else
-                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the mod '{existingMod}' => This could be a MOD INCOMPATIBILITY", modAudioXmlFile.Path);
-                                existingNode.Remove();
-                            }
-
-                            // Locate an insertion position for the new audio node, within the same Audio Type group, and sorted ascnding by ID:
-                            audioXml.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-                            XElement sibling = null;
-                            foreach (XElement other in parentNode.Elements("a").Reverse())
-                            {
-                                string otherIdStr = other.Attribute(NodeType.Audio.IdAttribute)?.Value;
-                                string otherAudioTypeStr = other.Attribute("at")?.Value;
-
-                                if (!int.TryParse(otherIdStr, out int otherId))
-                                    continue;
-
-                                if (otherId == audio.Id)
-                                {
-                                    // Not expected here...
-                                    modLog.Error($@"An audio entry with {NodeType.Audio.IdAttribute}={audio.Id} already exists!");
-                                    return false;
-                                }
-
-                                if (otherId > audio.Id)
-                                    continue;
-
-                                if (!Enum.TryParse(otherAudioTypeStr, true, out EAudioType at) || at != audio.AudioType)
-                                    continue;
-
-                                sibling = other;
-                                break;
-                            }
-
-                            // Insert audio node:
-                            if (sibling != null)
-                                sibling.AddAfterSelf(new XElement(audioXml));
-                            else // rare situation
-                                parentNode.Add(new XElement(audioXml));
-                        }
-
-                        // Save mod audio XML file:
-                        if (!await modAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, "mod", modAudioXmlFile.RelativePath), modLog, CT))
-                            return false;
-
-                        // Save to mod build audio folder, for debugging:
-                        if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
-                            return false;
-                    }
-
-                    // Save to build audio folder, for debugging:
-                    if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
-                        return false;
-                }
-                finally
-                {
-                    MergeAudio?.IncrementNormalized(1.0 / Build.Mods.Count);
-                }
-            }
-
-            // Done.
-            MergeAudio?.Complete();
-            Log.Debug($"{MergeAudio} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildAudioDirectory);
-            Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
-            return false;
-        }
-    }
 
     private async Task<bool> TryMergeXML()
     {
@@ -821,6 +738,23 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<bool> TryPatchXML()
     {
         try
@@ -981,6 +915,270 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+
+
+
+
+    //private async Task<bool> TryMergeAudio()
+    //{
+    //    try
+    //    {
+    //        Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
+    //        Clock.Restart();
+
+    //        // Get and save animations document, for debugging:
+    //        XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
+    //        if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildStageAudioXmlPath, Log, CT))
+    //            return false;
+
+    //        // Collect all texture paths:
+    //        IReadOnlyList<string> audioFilePaths = Build.Mods.SelectMany(mod => mod.AudioFilePaths).OrderBy(path => path).ToArray();
+
+    //        // Collect all assetPos filename references and save it to spriteReference objects:
+    //        bool errors = false;
+    //        int localSpriteId = 0;
+    //        SortedDictionary<string, SpriteReference> spriteReferences = [];
+    //        List<XElement> audioNodes = spaceHavenAudioXmlFile.Root.Descendants("a").ToList();
+    //        foreach (XElement audioNode in audioNodes)
+    //        {
+    //            CT.ThrowIfCancellationRequested();
+    //            try
+    //            {
+    //                // name:
+    //                string name = audioNode?.Attribute(NodeType.Audio.NameAttribute)?.Value;
+    //                string id = audioNode?.Attribute(NodeType.Audio.IdAttribute)?.Value;
+    //                string modName = audioNode?.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
+
+    //                if (modName.IsNullOrWhiteSpace())
+    //                    continue; // not a modified node, ignore it
+
+    //                ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+    //                if (mod == null)
+    //                {
+    //                    Log.Error($@"Unable to retrieve mod '{modName}' owning audio node with 'filename' reference ""{""}"", in animations file line {audioNode.Line()}", Paths.BuildStageAnimationsXmlPath);
+    //                    errors = true;
+    //                    continue;
+    //                }
+
+    //                //AudioReference audioRef = new(mod, audioNode, "")
+    //                //{
+    //                //};
+
+    //                // filename reference:
+    //                XAttribute filenameAttribute = audioNode?.Attribute("filename");
+    //                if (filenameAttribute == null)
+    //                {
+    //                }
+    //                else
+    //                {
+    //                    string assetPosFilenameReference = filenameAttribute.Value;
+    //                    if (assetPosFilenameReference.IsNullOrWhiteSpace())
+    //                    {
+    //                        Log.Error($@"Invalid <assetPos> node with empty 'filename' reference, in animations file line {audioNode.Line()}", Paths.BuildStageAnimationsXmlPath);
+    //                        errors = true;
+    //                        continue;
+    //                    }
+    //                }
+
+
+
+    //            }
+    //            finally
+    //            {
+    //                // TODO
+    //            }
+    //        }
+
+
+    //        // Done.
+    //        MergeAudio?.Complete();
+    //        Log.Debug($"{MergeAudio} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildAudioDirectory);
+    //        Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
+    //        return true;
+    //    }
+    //    catch (OperationCanceledException) { throw; }
+    //    catch (Exception ex)
+    //    {
+    //        Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
+    //        return false;
+    //    }
+
+    //}
+
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryMergeAudio()
+    {
+        try
+        {
+            Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
+            Clock.Restart();
+
+            foreach (ModBuildData mod in Build.Mods)
+            {
+                CT.ThrowIfCancellationRequested();
+
+                ILogger modLog = mod.Log;
+
+                try
+                {
+                    // Are audio files available?
+                    if (!mod.HasAudio)
+                    {
+                        modLog.Debug($"This mod has no audio files", mod.Directory);
+                        continue;
+                    }
+
+                    modLog.Debug($"Performing audio merge operations...", mod.BuildAudioDirectory);
+
+                    // Audio must be added by library XML files because they contain the relative path of the audio:
+                    if (mod.XmlFiles[EXmlFileType.Audio].Count <= 0)
+                    {
+                        modLog.Error($"New audio files MUST be added through a XML file in the library directory of your mod. Afterwards you may patch the audio XML nodes", mod.Directory);
+                        return false;
+                    }
+
+                    modLog.Debug($@"Adding the following audio files: {mod.AudioFilePaths.Select(path => $"\n- {path}").OrderBy(str => str).JoinToString()}", mod.Directory);
+
+                    // Get target:
+                    XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
+                    XElement parentNode = spaceHavenAudioXmlFile.GetParentNode(NodeType.Audio);
+                    if (parentNode == null)
+                    {
+                        modLog.Error("Unable to find root node of audio XML", spaceHavenAudioXmlFile.Path);
+                        return false;
+                    }
+
+                    // Process each source:
+                    foreach (XmlFile modAudioXmlFile in mod.XmlFiles[EXmlFileType.Audio].Values)
+                    {
+                        if (modAudioXmlFile.IsIgnored)
+                        {
+                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
+                            continue;
+                        }
+
+                        foreach (XElement audioXml in modAudioXmlFile.Xml.Root.Elements("a"))
+                        {
+                            CT.ThrowIfCancellationRequested();
+
+                            // Organize mod audio in objects:
+                            AudioBuildData audio = new(Paths, mod, modAudioXmlFile, audioXml);
+
+                            // Locate audio file:
+                            if (!audio.TryParse())
+                                return false;
+
+                            // Add:
+                            if (mod.Audio.ContainsKey(audio.Name))
+                            {
+                                modLog.Error($@"Duplicate audio entry '{audio.Name}' {audio.XmlLocation}", modAudioXmlFile.Path);
+                                return false;
+                            }
+                            mod.Audio.Add(audio.Name, audio);
+
+                            CT.ThrowIfCancellationRequested();
+
+                            // Merge audio XML:
+                            XElement[] existingNodes =
+                                spaceHavenAudioXmlFile.GetNodes(NodeType.Audio)
+                                .Where(n =>
+                                    n.Attribute("n")?.Value == audio.Name ||
+                                    n.Attribute(NodeType.Audio.IdAttribute)?.Value == audio.Id.ToString()
+                                ).ToArray() ?? [];
+
+                            // Remove existing nodes:
+                            foreach (XElement existingNode in existingNodes)
+                            {
+                                CT.ThrowIfCancellationRequested();
+
+                                string existingMod = existingNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
+                                string existingId = existingNode.Attribute(NodeType.Audio.IdAttribute)?.Value;
+                                string existingName = existingNode.Attribute(NodeType.Audio.NameAttribute)?.Value;
+
+                                if (existingMod == null)
+                                    modLog.Debug($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}'", modAudioXmlFile.Path);
+                                else if (existingMod == mod.Name)
+                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the same mod => This could be an ERROR", modAudioXmlFile.Path);
+                                else
+                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the mod '{existingMod}' => This could be a MOD INCOMPATIBILITY", modAudioXmlFile.Path);
+                                existingNode.Remove();
+                            }
+
+                            // Locate an insertion position for the new audio node, within the same Audio Type group, and sorted ascnding by ID:
+                            audioXml.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                            XElement sibling = null;
+                            foreach (XElement other in parentNode.Elements("a").Reverse())
+                            {
+                                string otherIdStr = other.Attribute(NodeType.Audio.IdAttribute)?.Value;
+                                string otherAudioTypeStr = other.Attribute("at")?.Value;
+
+                                if (!int.TryParse(otherIdStr, out int otherId))
+                                    continue;
+
+                                if (otherId == audio.Id)
+                                {
+                                    // Not expected here...
+                                    modLog.Error($@"An audio entry with {NodeType.Audio.IdAttribute}={audio.Id} already exists!");
+                                    return false;
+                                }
+
+                                if (otherId > audio.Id)
+                                    continue;
+
+                                if (!Enum.TryParse(otherAudioTypeStr, true, out EAudioType at) || at != audio.AudioType)
+                                    continue;
+
+                                sibling = other;
+                                break;
+                            }
+
+                            // Insert audio node:
+                            if (sibling != null)
+                                sibling.AddAfterSelf(new XElement(audioXml));
+                            else // rare situation
+                                parentNode.Add(new XElement(audioXml));
+                        }
+
+                        // Save mod audio XML file:
+                        if (!await modAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, "mod", modAudioXmlFile.RelativePath), modLog, CT))
+                            return false;
+
+                        // Save to mod build audio folder, for debugging:
+                        if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
+                            return false;
+                    }
+
+                    // Save to build audio folder, for debugging:
+                    if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
+                        return false;
+                }
+                finally
+                {
+                    MergeAudio?.IncrementNormalized(1.0 / Build.Mods.Count);
+                }
+            }
+
+            // Done.
+            MergeAudio?.Complete();
+            Log.Debug($"{MergeAudio} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildAudioDirectory);
+            Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
+            return false;
+        }
+    }
 
 
 
@@ -1300,394 +1498,18 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    //private async Task<bool> OLD_CODE____________________________________________________________()
-    //{
-    //    try
-    //    {
-    //        Log.Info($@"Generating TEXTURES...", Paths.BuildTexturesDirectory);
-    //        Clock.Restart();
-
-    //        // Fast check mods trying to use library/textures*.xml file for anything:
-    //        bool errors = false;
-    //        foreach (ModBuildData mod in Build.Mods)
-    //        {
-    //            ILogger modLog = mod.Log;
-
-    //            foreach (XmlFile modTexturesXmlFile in mod.XmlFiles[EXmlFileType.Textures].Values)
-    //            {
-    //                if (modTexturesXmlFile.IsIgnored)
-    //                {
-    //                    modLog.Warn($@"Ignoring ""{modTexturesXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modTexturesXmlFile.Path);
-    //                    continue;
-    //                }
-    //                modLog.Error($@"The mod should not define ""library/texture*"" XML files! If the intention was to replace textures, do it with ""library/animations*"" and ""patch/animations*"" files");
-    //                errors = true;
-    //            }
-    //        }
-    //        if (errors)
-    //            return false;
-
-
-    //        // Create sprite atlases for each mod:
-    //        Log.Debug($@"Packing sprites to sprite sheets...", Paths.BuildTexturesDirectory);
-    //        Clock.Restart();
-    //        await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
-    //        {
-    //            ILogger modLog = mod.Log;
-    //            try
-    //            {
-    //                // Are sprites available?
-    //                if (!mod.HasTextures)
-    //                {
-    //                    modLog.Debug($@"This mod has no texture files", mod.Directory);
-    //                    return;
-    //                }
-
-    //                // List sprite images required by animations, organized by texture filtering:
-    //                int localSpriteId = 0;
-    //                SortedDictionary<string, SpriteReference> spriteReferences = [];
-    //                foreach (XmlFile modAnimationsXmlFile in mod.XmlFiles[EXmlFileType.Animations].Values)
-    //                {
-    //                    if (modAnimationsXmlFile.IsIgnored)
-    //                    {
-    //                        modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
-    //                        continue;
-    //                    }
-
-    //                    foreach (XElement assetPos in modAnimationsXmlFile.Xml.GetEveryAssetPos().Where(assetPos => assetPos.HasAttribute("filename")))
-    //                    {
-    //                        CT.ThrowIfCancellationRequested();
-
-    //                        // Get or create a sprite reference:
-    //                        string spriteName = SpriteReference.GetName(assetPos?.Attribute("filename")?.Value);
-    //                        if (spriteName.IsNullOrWhiteSpace())
-    //                        {
-    //                            modLog.Error($@"Malformed <assetPos> sprite texture 'filename' reference in file ""{modAnimationsXmlFile}"" line {assetPos.Line()}", modAnimationsXmlFile.Path);
-    //                            Fail();
-    //                            return;
-    //                        }
-    //                        if (!spriteReferences.TryGetValue(spriteName, out SpriteReference spriteReference))
-    //                            spriteReferences[spriteName] = spriteReference = new(mod, spriteName, ++localSpriteId) { BasePath = mod.TexturesDirectory, ModLibraryAnimationsXmlFile = modAnimationsXmlFile };
-
-    //                        // Read required filter:
-    //                        string filterStr = assetPos?.Attribute("filter")?.Value;
-    //                        if (!filterStr.TryParse(out ETextureFilter filter) && !filterStr.TryParseFromNumericValue(out filter))
-    //                            filter = ETextureFilter.Nearest; // if undefined, use 'nearest' as default filter
-    //                        spriteReference.Filters.Add(filter);
-    //                    }
-    //                }
-
-    //                // Map sprite image files to each sprite reference:
-    //                foreach (string relativePath in mod.TextureRelativeFilePaths)
-    //                {
-    //                    string spriteName = SpriteReference.GetName(relativePath);
-    //                    if (!spriteReferences.TryGetValue(spriteName, out SpriteReference spriteReference))
-    //                    {
-    //                        modLog.Warn($@"Ignoring texture file ""{relativePath}"" because it is not referenced by any <assetPos> entry in the mod's animations file(s)", Path.Combine(mod.TexturesDirectory, relativePath).AsOSPath());
-    //                        continue;
-    //                    }
-    //                    spriteReference.RelativePath = relativePath;
-    //                    modLog.Debug(spriteReference);
-    //                }
-
-    //                // Check for missing image files:
-    //                bool missingSpriteTextures = false;
-    //                foreach (SpriteReference spriteReference in spriteReferences.Values)
-    //                {
-    //                    if (!spriteReference.RelativePath.IsNullOrWhiteSpace())
-    //                        continue;
-    //                    modLog.Error($@"Unable to find sprite texture file for {spriteReference}", spriteReference.ModLibraryAnimationsXmlFile.Path);
-    //                    missingSpriteTextures = true;
-    //                }
-    //                if (missingSpriteTextures)
-    //                {
-    //                    Fail();
-    //                    return;
-    //                }
-
-    //                // Generate sprite atlases for each texture filter, if required:
-    //                foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>())
-    //                {
-    //                    SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
-
-    //                    // Read absolute paths of actual sprite image files:
-    //                    SortedDictionary<string, SpriteBuildData> sprites = [];
-    //                    foreach (SpriteReference spriteReference in spriteReferences.Values.Where(r => r.Filters.Contains(filter)))
-    //                        sprites[spriteReference.LocalName] = new(spriteReference.LocalName, spriteReference.LocalID, spriteReference.AbsolutePath);
-
-    //                    // Any sprites requiring this texture filter?
-    //                    if (sprites.Count <= 0)
-    //                    {
-    //                        modLog.Debug($"No sprites require texture filter '{filter}'");
-    //                        continue;
-    //                    }
-    //                    int expectedSpriteCount = sprites.Count;
-    //                    modLog.Debug($@"Packing the following {expectedSpriteCount} sprite(s) to sprite atlas '{spriteAtlas.Name}': {sprites.Values.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
-
-    //                    // Pack sprites:
-    //                    spriteAtlas.Clear();
-    //                    bool crop = !BuildSettings.ForceSpriteSheetSize2048;
-    //                    if (!spriteAtlas.Add(sprites.Values, 2048, 2048, crop, modLog))
-    //                    {
-    //                        Fail();
-    //                        return;
-    //                    }
-
-    //                    // Validate number of packed sprites:
-    //                    int actualSpriteCount = spriteAtlas.Sprites.Count;
-    //                    if (expectedSpriteCount != actualSpriteCount)
-    //                    {
-    //                        modLog.Error($@"Expected {expectedSpriteCount} sprite(s) in sprite atlas '{spriteAtlas.Name}', but only the {actualSpriteCount} following sprite(s) could be packed: {spriteAtlas.Sprites.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}", mod.Directory);
-    //                        Fail();
-    //                        return;
-    //                    }
-
-    //                    // Draw sprites to their spritesheets:
-    //                    foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
-    //                    {
-    //                        if (spriteSheet.TryGenerateFromSprites(modLog))
-    //                            continue;
-    //                        modLog.Error($@"Unable to generate sprite sheet containing sprite(s): {spriteSheet.Sprites.Select(sprite => sprite.FileName).OrderBy(str => str).JoinToString(", ")}");
-    //                        Fail();
-    //                        return;
-    //                    }
-
-    //                    // Done.
-    //                    modLog.Debug($@"{spriteAtlas.SpriteCount} sprite(s) were packed to {spriteAtlas.SpriteSheets.Count} sprite sheet(s) in sprite atlas '{spriteAtlas.Name}'", mod.Directory);
-    //                }
-    //            }
-    //            catch (OperationCanceledException ex) { modLog.Debug(ex); }
-    //            catch (Exception ex)
-    //            {
-    //                modLog.Error(ex);
-    //                Fail();
-    //                return;
-    //            }
-    //            finally
-    //            {
-    //                CollectSpriteRefs?.IncrementNormalized(1.0 / Build.Mods.Count);
-    //            }
-    //        });
-    //        if (BuildSettings.BuildFailure)
-    //            return false;
-    //        CollectSpriteRefs?.Complete();
-    //        Log.Debug($"{CollectSpriteRefs} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-
-    //        CT.ThrowIfCancellationRequested();
-
-
-
-
-
-    //        // Assign a global ID to each Sprite Sheet, and configure a corresponding XML node:
-    //        Log.Debug($@"Assigning IDs to new sprite sheets...", Paths.BuildTexturesDirectory);
-    //        Clock.Restart();
-    //        XmlFile spaceHavenTexturesXmlFile = Build.XmlFile[EXmlFileType.Textures];
-    //        XElement parentTexturesCimNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesCim);
-    //        foreach (ModBuildData mod in Build.Mods)
-    //        {
-    //            foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>())
-    //            {
-    //                SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
-
-    //                foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.LocalId))
-    //                {
-    //                    XElement t = new("t");
-    //                    t.SetAttributeValue("i", spriteSheet.GlobalId = Build.AllocateNextNumericId(EIdPool.TexturesCim));
-    //                    t.SetAttributeValue("w", spriteSheet.Width);
-    //                    t.SetAttributeValue("h", spriteSheet.Height);
-    //                    t.SetAttributeValue("f", 1);
-    //                    t.SetAttributeValue("min", (int)filter);
-    //                    t.SetAttributeValue("max", (int)filter);
-    //                    t.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, $"{mod}");
-    //                    parentTexturesCimNode.Add(t);
-    //                }
-    //            }
-    //            LoadSprites?.IncrementNormalized(1.0 / Build.Mods.Count);
-    //        }
-    //        LoadSprites?.Complete();
-    //        Log.Debug($"{LoadSprites} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-
-    //        CT.ThrowIfCancellationRequested();
 
 
 
 
 
 
-    //        // Write Sprite Sheet files:
-    //        Log.Debug($@"Writing sprite sheets...", Paths.BuildTexturesDirectory);
-    //        Clock.Restart();
-    //        await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
-    //        {
-    //            try
-    //            {
-    //                foreach (SpriteSheetBuildData spriteSheet in mod.SpriteAtlases.Values.SelectMany(spriteAtlas => spriteAtlas.SpriteSheets))
-    //                {
-    //                    string cimFilename = $"{spriteSheet.GlobalId}.cim";
-
-    //                    // Export to CIM to build stage directory:
-    //                    await spriteSheet.TryExportToCimAsync(Path.Combine(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
-
-    //                    // Export to PNG, for debugging:
-    //                    spriteSheet.TryExportToPng(Path.Combine(mod.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
-
-    //                    // Add CIM:
-    //                    lock (Build.ModsJsonFile.Mods)
-    //                        Build.ModsJsonFile.Mods.FirstOrDefault(m => m.Name == mod.Name)?.Cim.Add(cimFilename);
-    //                }
-    //            }
-    //            finally
-    //            {
-    //                PackSprites?.IncrementNormalized(1.0 / Build.Mods.Count);
-    //            }
-    //        });
-    //        if (BuildSettings.BuildFailure)
-    //            return false;
-    //        PackSprites?.Complete();
-    //        Log.Debug($"{PackSprites} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-
-    //        CT.ThrowIfCancellationRequested();
 
 
 
 
 
 
-    //        // Assign a global region ID to each sprite, and add a corresponding XML node:
-    //        Log.Debug($@"Assigning a global NAME and ID to each sprite...", Paths.BuildTexturesDirectory);
-    //        Clock.Restart();
-
-    //        int lastSpriteName =
-    //            spaceHavenTexturesXmlFile.GetNodes(NodeType.TexturesRegion)?
-    //            .Select(node => node.Attribute(NodeType.TexturesRegion.NameAttribute)?.Value ?? string.Empty)
-    //            .Max(strId => int.TryParse(strId, out int id) ? id : 0)
-    //            ?? 0;
-
-    //        XElement parentTexturesRegionNode = Build.XmlFile[EXmlFileType.Textures].GetParentNode(NodeType.TexturesRegion);
-    //        foreach (ModBuildData mod in Build.Mods)
-    //        {
-    //            try
-    //            {
-    //                foreach (SpriteBuildData sprite in mod.SpriteAtlases.Values.SelectMany(spriteAtlas => spriteAtlas.Sprites.OrderBy(s => s.LocalId)))
-    //                {
-    //                    CT.ThrowIfCancellationRequested();
-
-    //                    XElement re = new("re");
-    //                    re.SetAttributeValue("n", sprite.GlobalName = (++lastSpriteName).ToString());
-    //                    re.SetAttributeValue("t", sprite.SpriteSheet.GlobalId);
-    //                    re.SetAttributeValue("x", sprite.SpriteSheetX);
-    //                    re.SetAttributeValue("y", sprite.SpriteSheetY);
-    //                    re.SetAttributeValue("w", sprite.Width);
-    //                    re.SetAttributeValue("h", sprite.Height);
-    //                    re.SetAttributeValue("id", sprite.GlobalId = Build.AllocateNextNumericId(EIdPool.TexturesRegion));
-    //                    re.SetAttributeValue("file", Path.GetFileName(sprite.AbsoluteFilePath?.Substring(mod.TexturesDirectory.Length + 1) ?? string.Empty));
-    //                    re.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, $"{mod}");
-    //                    parentTexturesRegionNode.Add(re);
-    //                }
-
-    //                // Save to mod build textures folder, for debugging:
-    //                if (!await spaceHavenTexturesXmlFile.TrySaveToAsync(Path.Combine(mod.BuildTexturesDirectory, spaceHavenTexturesXmlFile.FileName), Log, CT))
-    //                    return false;
-    //            }
-    //            finally
-    //            {
-    //                WriteSpriteSheets?.IncrementNormalized(1.0 / Build.Mods.Count);
-    //            }
-    //        }
-
-    //        // Save to build textures folder, for debugging:
-    //        if (!await spaceHavenTexturesXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildTexturesDirectory, spaceHavenTexturesXmlFile.FileName), Log, CT))
-    //            return false;
-
-    //        WriteSpriteSheets?.Complete();
-    //        Log.Debug($"{WriteSpriteSheets} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-
-
-
-
-
-
-    //        // Remap texture references in mod animations files:
-    //        Log.Debug($@"Remapping animation texture references...");
-    //        Clock.Restart();
-    //        foreach (ModBuildData mod in Build.Mods)
-    //        {
-    //            try
-    //            {
-    //                ILogger modLog = mod.Log;
-
-    //                foreach (XmlFile modAnimationsXmlFile in mod.XmlFiles[EXmlFileType.Animations].Values)
-    //                {
-    //                    if (modAnimationsXmlFile.IsIgnored)
-    //                    {
-    //                        modLog.Warn($@"Ignoring ""{modAnimationsXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAnimationsXmlFile.Path);
-    //                        continue;
-    //                    }
-
-    //                    foreach (XElement assetPos in modAnimationsXmlFile.Xml.GetEveryAssetPos().Where(assetPos => assetPos.HasAttribute("filename")))
-    //                    {
-    //                        CT.ThrowIfCancellationRequested();
-
-    //                        // Validate relative path:
-    //                        string spriteName = SpriteReference.GetName(assetPos?.Attribute("filename")?.Value);
-    //                        if (spriteName.IsNullOrWhiteSpace())
-    //                        {
-    //                            modLog.Error($@"Malformed <assetPos> sprite texture 'filename' reference in file ""{modAnimationsXmlFile}"" line {assetPos.Line()}", modAnimationsXmlFile.Path);
-    //                            Fail();
-    //                            return false;
-    //                        }
-
-    //                        // Read sprite filter:
-    //                        string filterStr = assetPos?.Attribute("filter")?.Value;
-    //                        if (!filterStr.TryParse(out ETextureFilter filter) && !filterStr.TryParseFromNumericValue(out filter))
-    //                            filter = ETextureFilter.Nearest;
-
-    //                        // Get sprite atlas:
-    //                        SpriteAtlasBuildData spriteAtlas = mod.SpriteAtlases[filter];
-
-    //                        // Get sprite:
-    //                        SpriteBuildData sprite = spriteAtlas.GetSpriteWithLocalName(spriteName);
-    //                        if (sprite == null)
-    //                        {
-    //                            modLog.Error($@"Missing texture file ""{spriteName}"" at line {assetPos.Line()}, file ""{modAnimationsXmlFile}""", modAnimationsXmlFile.Path);
-    //                            Fail();
-    //                            return false;
-    //                        }
-
-    //                        // Sprites are referenced in the animations file by their name, not by their id:
-    //                        assetPos.SetAttributeValue("a", sprite.GlobalName);
-
-    //                        // This moves the 'filename' attribute to the end:
-    //                        string filenameAttribute = assetPos.Attribute("filename")?.Value;
-    //                        assetPos.RemoveAttribute("filename");
-    //                        assetPos.SetAttributeValue("filename", filenameAttribute);
-    //                    }
-
-    //                    // Write mod's animations files, for debugging:
-    //                    if (!await modAnimationsXmlFile.TrySaveToAsync(Path.Combine(mod.BuildTexturesDirectory, "mod", modAnimationsXmlFile.RelativePath), modLog, CT))
-    //                        return false;
-    //                }
-    //            }
-    //            finally
-    //            {
-    //                WriteTextureXmlFiles?.IncrementNormalized(1.0 / Build.Mods.Count);
-    //            }
-    //        }
-    //        WriteTextureXmlFiles?.Complete();
-    //        Log.Debug($"{WriteTextureXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-
-    //        // Done.
-    //        Log.Success($"TEXTURES files ready", Paths.BuildTexturesDirectory);
-    //        return true;
-    //    }
-    //    catch (OperationCanceledException) { throw; }
-    //    catch (Exception ex)
-    //    {
-    //        Log.Error($"Unable to merge TEXTURES: {ex}", Paths.BuildTexturesDirectory);
-    //        return false;
-    //    }
-    //}
 
 
 
@@ -1742,6 +1564,22 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private async Task<bool> TryCreateConfigJson()
     {
@@ -1832,6 +1670,21 @@ public sealed class ModBuilder : IAsyncDisposable
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private async Task<bool> TryWriteModsJson()
     {
         try
@@ -1856,6 +1709,16 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
+
+
+
+
+
+
+
+
+
+
 
     #region IAsyncDisposable
     public volatile bool IsDisposed;

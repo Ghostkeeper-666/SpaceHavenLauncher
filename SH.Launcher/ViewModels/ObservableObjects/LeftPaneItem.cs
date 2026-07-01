@@ -84,6 +84,9 @@ public partial class LeftPaneItem : ObservableObject
     private IImage _Image;
 
     [ObservableProperty]
+    private string _ToolTipText;
+
+    [ObservableProperty]
     private IBrush _SelectedColor = new SolidColorBrush(Color.Parse("#3fffff00"));
 
     private readonly Bitmap DisabledImage;
@@ -127,23 +130,23 @@ public partial class LeftPaneItem : ObservableObject
         {
             case EPageType.LearningComputer:
                 Label = "Learning Computer";
-                LabelColor = Brushes.LightCyan;
+                LabelColor = new SolidColorBrush(Color.Parse("#dfefff"));
                 break;
 
             case EPageType.NavigationConsole:
                 Label = "Navigation Console";
-                LabelColor = Brushes.LightCyan;
+                LabelColor = new SolidColorBrush(Color.Parse("#dfefff"));
                 break;
 
             case EPageType.SystemCore:
                 Label = "System Core";
-                LabelColor = Brushes.LightCyan;
+                LabelColor = new SolidColorBrush(Color.Parse("#dfefff"));
                 break;
 
             case EPageType.Airlock:
                 Label = "Airlock";
-                LabelColor = Brushes.LightCyan;
-                return;
+                LabelColor = new SolidColorBrush(Color.Parse("#dfefff"));
+                break;
 
             case EPageType.Mod:
 
@@ -154,7 +157,7 @@ public partial class LeftPaneItem : ObservableObject
                     LabelColor = new SolidColorBrush(Color.Parse("#bf7f888f"));
                     Image = DisabledImage;
                     Strikethrough = 3;
-                    return;
+                    break;
                 }
 
                 // ERRORS
@@ -164,14 +167,14 @@ public partial class LeftPaneItem : ObservableObject
                     LabelColor = Brushes.Tomato;
                     Image = ErrorImage;
                     Strikethrough = 0;
-                    return;
+                    break;
                 }
 
-                // HIGHLIGHT MODS WITH CUSTOM IDS:
+                // HIGHLIGHT MODS WITH CUSTOM ID:
                 if (Mod.HasCustomId)
                 {
-                    Label = $"{Mod.Name} (custom ID)";
-                    LabelColor = Brushes.LemonChiffon;
+                    Label = $"{Mod.Name}  [CUSTOM ID]";
+                    LabelColor = new SolidColorBrush(Color.Parse("#dfffaf"));
                     Image = EnabledImage;
                     Strikethrough = 0;
                     break;
@@ -179,7 +182,7 @@ public partial class LeftPaneItem : ObservableObject
 
                 // OK
                 Label = Mod.Name;
-                LabelColor = Brushes.LightCyan;
+                LabelColor = new SolidColorBrush(Color.Parse("#9FDFBF"));
                 Image = EnabledImage;
                 Strikethrough = 0;
                 break;
@@ -187,6 +190,9 @@ public partial class LeftPaneItem : ObservableObject
             default:
                 throw new NotImplementedException($"{nameof(EPageType)} = {Type}");
         }
+
+        // Tooltip:
+        ToolTipText = $"\"{Label}\" \n\nClick on the STAR icon (★) to ENABLE or DISABLE this mod \n\n( this works only when the left panel is NOT collapsed )";
     }
 
     [RelayCommand]

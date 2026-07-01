@@ -79,7 +79,8 @@ x:DataType="vm:ModPageViewModel"
         FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
         Command="{Binding TitleClickedCommand}"
         Content="{Binding Title}"
-        Cursor="Hand" >
+        Cursor="Hand"
+        ToolTip.Tip="Click the title to enable/disable the mod" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
               <Setter Property="Foreground" Value="LightCyan" />
@@ -240,7 +241,8 @@ x:DataType="vm:ModPageViewModel"
         TextWrapping="Wrap"
         TextTrimming="CharacterEllipsis"
         HorizontalAlignment="Stretch"
-        Text="PATH" />
+        Text="PATH"
+        ToolTip.Tip="Click to open this location" />
 
         <Button
         Grid.Row="3"
@@ -260,7 +262,6 @@ x:DataType="vm:ModPageViewModel"
         Command="{Binding DirectoryClickedCommand}"
         Content="{Binding Mod.Directory}"
         Cursor="Hand"
-
         ToolTip.Tip="Click to open this location" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >

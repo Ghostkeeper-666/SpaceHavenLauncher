@@ -7,7 +7,7 @@ using SH.Content.Video;
 using System.Collections.Generic;
 using System;
 
-namespace SH.Content.Art;
+namespace SH.Content.DEPRECATED;
 
 public sealed class GifExporter
 {

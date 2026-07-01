@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SH.Framework.FastZip;
+namespace SH.Framework.IO;
 
 internal static class JarDateTime
 {

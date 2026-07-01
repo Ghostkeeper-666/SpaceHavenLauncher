@@ -46,14 +46,14 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         Directory = data.Directory;
         Background = data.BackgroundImagePath;
 
-        AppCompatibility = data.AppCompatibility.ToDisplayString("\r\n") ?? "(any)";
+        AppCompatibility = data.AppCompatibility.ToDisplayString() ?? "(any)";
         HasAppCompatibilityError = !data.AppCompatibility.MatchAll(SpaceHavenLauncher.Name, SpaceHavenLauncher.Version);
 
-        SpaceHavenCompatibility = data.SpaceHavenCompatibility.ToDisplayString("\r\n") ?? "(any)";
+        SpaceHavenCompatibility = data.SpaceHavenCompatibility.ToDisplayString() ?? "(any)";
         HasSpaceHavenCompatibilityError = !data.SpaceHavenCompatibility.MatchAll(Paths.SpaceHavenName, Paths.SpaceHavenVersion);
 
-        AllModConflictsText = data.ModConflicts.ToDisplayString("\r\n") ?? "(none)";
-        AllModDependenciesText = data.ModDependencies.ToDisplayString("\r\n") ?? "(none)";
+        AllModConflictsText = data.ModConflicts.ToDisplayString() ?? "(none)";
+        AllModDependenciesText = data.ModDependencies.ToDisplayString() ?? "(none)";
 
         if (!data.BackgroundImagePath.IsNullOrWhiteSpace() && File.Exists(data.BackgroundImagePath))
             try { BackgroundImage = new(data.BackgroundImagePath); }
@@ -83,23 +83,23 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
     {
         // Custom for known modders:
         if (Author.StartsWith("ghostkeeper", StringComparison.OrdinalIgnoreCase))
-        {
             ForegroundColor ??= Brushes.MediumSpringGreen;
-        }
         else if (Author.StartsWith("paperfox", StringComparison.OrdinalIgnoreCase))
-        {
             ForegroundColor ??= Brushes.Orange;
-        }
         else if (Author.Equals("sub", StringComparison.OrdinalIgnoreCase)
             || Author.Equals("subzero", StringComparison.OrdinalIgnoreCase)
             || Author.Equals("sub-zero", StringComparison.OrdinalIgnoreCase))
-        {
             ForegroundColor ??= Brushes.Cyan;
-        }
         else if (Author.Contains("fuklaw", StringComparison.OrdinalIgnoreCase))
-        {
-            ForegroundColor ??= Brushes.Gold;
-        }
+            ForegroundColor ??= Brushes.Yellow;
+        else if (Author.Contains("chewday", StringComparison.OrdinalIgnoreCase))
+            ForegroundColor ??= new SolidColorBrush(Color.Parse("#7FBF3F"));
+        else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
+            ForegroundColor ??= Brushes.LightCoral;
+        else if (Name.Contains("Bikini", StringComparison.OrdinalIgnoreCase))
+            ForegroundColor ??= Brushes.LightPink;
+        else if (Author.Contains("Kaiser", StringComparison.OrdinalIgnoreCase))
+            ForegroundColor ??= Brushes.DeepSkyBlue;
 
         // Fallback:
         ForegroundColor ??= Brushes.Gold;
@@ -122,7 +122,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Chewday.jpg");
         else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Ravage.jpg");
-        else if (Name.Contains("Bikini"))
+        else if (Name.Contains("Bikini", StringComparison.OrdinalIgnoreCase))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Bikini.jpg");
     }
 
@@ -141,7 +141,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
     public void ResetId() =>
         FinalId = ModId != 0 ? ModId : AutoId;
 
-    public string IdHelp { get; } = $"This ID should be unique among all mods in your list. If not, you could potentially have a mod conflict. \n\nMOD IDs must be >= {ModAutoId.MinValue} and <= {ModAutoId.MaxValue}.\n\nFor savegames of the same series, you should keep this ID stable. \n\nManually assigning a new ID to the MOD is possible, but if the mod contains XML Patch or XML Library files, this will cause EXISTING instances of new entities introduced by that MOD to be removed from the savegame. \n\nJAVA mods usually don't suffer from such collateral effect, unless the mod mixes JAVA with XML Library or XML Patches.";
+    public string IdHelp { get; } = $"This ID must be unique among all enabled mods. If it's not, then there could be a potential mod conflict! \n\n- MOD IDs must be >= {ModAutoId.MinValue} and <= {ModAutoId.MaxValue}. \n\n- For savegames of the same series, you should keep this ID stable. \n\nManually assigning a new ID to the MOD is possible, but if the mod contains XML Patch or XML Library files, this will cause EXISTING instances of new entities introduced by that MOD to be removed from the savegame. \n\nJAVA mods usually don't suffer from such collateral effect, unless the mod mixes JAVA with XML Library or XML Patches.";
 
     public ModData Data { get; }
 

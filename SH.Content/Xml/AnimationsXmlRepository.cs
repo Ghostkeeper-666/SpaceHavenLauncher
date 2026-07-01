@@ -70,19 +70,17 @@ public sealed class AnimationsXmlRepository
                         animation.Items.Add(item);
                     }
 
-                    if (ById.ContainsKey(animation.Id))
+                    if (ByName.TryGetValue(animation.Name, out AnimationXml existingAnimation2))
                     {
-                        Log.Debug($"Animation '{animation.Name}' has same ID={animation.Id} as animation '{ById[animation.Id].Name}'");
-                        // It's not the primary key, so we continue...
-                    }
-                    if (ByName.ContainsKey(animation.Name))
-                    {
-                        Log.Info($"Ignoring animation with duplicate NAME={animation.Name}");
+                        Log.Info($"Ignoring animation with id={animation.Id} with SAME NAME={animation.Name} as animation with id={existingAnimation2.Id}");
                         continue;
                     }
+                    else ByName[animation.Name] = animation;
 
-                    ById[animation.Id] = animation;
-                    ByName[animation.Name] = animation;
+                    // ID is not the primary key, so we ignore errors here...
+                    if (ById.TryGetValue(animation.Id, out AnimationXml existingAnimation1))
+                        Log.Debug($@"Animation with name=""{animation.Name}"" has SAME ID={animation.Id} as animation with name=""{existingAnimation1.Name}""");
+                    else ById[animation.Id] = animation;
                 }
                 finally
                 {

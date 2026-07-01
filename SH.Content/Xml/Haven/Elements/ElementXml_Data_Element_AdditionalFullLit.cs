@@ -12,7 +12,7 @@ public sealed class ElementXml_Data_Element_AdditionalFullLit
 
     public bool AtNoPower { get; }
     public bool AtStandby { get; }
-    public bool atInUse { get; }
+    public bool AtInUse { get; }
 
     public OrderedDictionary<ERotation, ElementXml_AnimationReference> AnimationIds { get; } = [];
 }
