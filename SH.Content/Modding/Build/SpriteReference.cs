@@ -11,7 +11,7 @@ namespace SH.Content.Modding.Build;
 internal sealed class SpriteReference
 {
     public static string GetLocalName(string modName, string relativePathOrRelativeReference, ETextureFilter filter) =>
-        $"{modName}::{relativePathOrRelativeReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase)?.ToLowerInvariant().AsStdPath()}::{filter.ToString().ToUpperInvariant()}";
+        $"{filter.ToString().ToUpperInvariant()}::{modName}::{relativePathOrRelativeReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase)?.ToLowerInvariant().AsStdPath()}";
 
     public SpriteReference(string localName, int localId, ModBuildData mod, string assetPosFilenameReference, ETextureFilter filter)
     {

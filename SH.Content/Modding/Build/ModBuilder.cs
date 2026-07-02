@@ -25,7 +25,6 @@ public sealed class ModBuilder : IAsyncDisposable
     private FileLogger FileLogger;
 
     private BuildData Build;
-    private IReadOnlyList<ModData> Mods => BuildSettings.Mods;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
@@ -99,7 +98,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Info($"Starting {this}...", Paths.BuildDirectory);
 
             // No mods?
-            if (!(Mods?.Any() ?? false))
+            if ((BuildSettings?.Mods?.Count ?? 0) <= 0)
             {
                 Log.Error("There are no mods enabled");
                 return false;
@@ -373,7 +372,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Build = new(BuildSettings, Paths, Log);
 
             // Add mods:
-            Build.AddMods(Mods);
+            Build.AddMods(BuildSettings.Mods);
             Initialization?.SetNormalized(0.45);
 
             // Load mod variables:
@@ -688,16 +687,26 @@ public sealed class ModBuilder : IAsyncDisposable
                                         }
                                     }
 
-                                    // Mark new node:
+                                    // Mark node:
                                     node.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-                                    node.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
+
+                                    // Mark special nodes with additional modding metadata:
                                     if (xmlFileType == EXmlFileType.Animations)
                                     {
-                                        // Also mark all assetPos entries:
-                                        foreach (XElement assetPos in node.Descendants("assetPos"))
+                                        // Mark animations assetPos nodes:
+                                        foreach (XElement assetPos in node.DescendantsAndSelf("assetPos"))
                                         {
                                             assetPos.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
                                             assetPos.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
+                                        }
+                                    }
+                                    else if (xmlFileType == EXmlFileType.Audio)
+                                    {
+                                        // Mark audio nodes:
+                                        foreach (XElement a in node.DescendantsAndSelf("a"))
+                                        {
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
 
@@ -850,14 +859,62 @@ public sealed class ModBuilder : IAsyncDisposable
                             if (targetNodes.Count > 25)
                                 modLog.Warn($"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR \n{patch}", modPatchXmlFile.Path);
 
-                            // Mark all assetPos nodes:
-                            if (targetXmlType == EXmlFileType.Animations && patch.IsNodePatchOperation && patch.Operation != EPatchOperation.RemoveNode)
+                            // Mark special nodes with additional modding metadata:
+                            // (1) Attribute Operation
+                            if (patch.IsAttributePatchOperation)
                             {
-                                string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos") ?? [])
+                                // Mark audio nodes:
+                                if (targetXmlType == EXmlFileType.Audio)
                                 {
-                                    valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-                                    valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "a"))
+                                    {
+                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        string targetAttribute = patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value;
+                                        if (targetAttribute == "filename" || targetAttribute == "mp3" || targetAttribute == "ogg")
+                                        {
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+                                }
+
+                                // Mark animations <assetPos> nodes which have the attribute 'filename':
+                                else if (targetXmlType == EXmlFileType.Animations)
+                                {
+                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "assetPos"))
+                                    {
+                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "filename")
+                                        {
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+                                }
+                            }
+                            // (2) Node Operation
+                            else if (patch.IsNodePatchOperation && patch.Operation != EPatchOperation.RemoveNode)
+                            {
+                                // Mark audio nodes:
+                                if (targetXmlType == EXmlFileType.Audio)
+                                {
+                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("a") ?? [])
+                                    {
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                    }
+                                }
+
+                                // Mark animations <assetPos> nodes which have the attribute 'filename':
+                                else if (targetXmlType == EXmlFileType.Animations)
+                                {
+                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos").Where(n => n.Attribute("filename") != null) ?? [])
+                                    {
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                    }
                                 }
                             }
 
@@ -866,20 +923,6 @@ public sealed class ModBuilder : IAsyncDisposable
                             {
                                 modLog.Error($"Patch operation has FAILED. \n{patch}", modPatchXmlFile.Path);
                                 return false;
-                            }
-
-                            // Mark assetPos nodes with modified "filename":
-                            if (targetXmlType == EXmlFileType.Animations && patch.IsAttributePatchOperation)
-                            {
-                                foreach (XElement targetNode in targetNodes.Where(n => n.Name == "assetPos"))
-                                {
-                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                    if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "filename")
-                                    {
-                                        targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-                                        targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                    }
-                                }
                             }
 
                             // Done with this patch operation.
@@ -919,101 +962,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    //private async Task<bool> TryMergeAudio()
-    //{
-    //    try
-    //    {
-    //        Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
-    //        Clock.Restart();
-
-    //        // Get and save animations document, for debugging:
-    //        XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
-    //        if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildStageAudioXmlPath, Log, CT))
-    //            return false;
-
-    //        // Collect all texture paths:
-    //        IReadOnlyList<string> audioFilePaths = Build.Mods.SelectMany(mod => mod.AudioFilePaths).OrderBy(path => path).ToArray();
-
-    //        // Collect all assetPos filename references and save it to spriteReference objects:
-    //        bool errors = false;
-    //        int localSpriteId = 0;
-    //        SortedDictionary<string, SpriteReference> spriteReferences = [];
-    //        List<XElement> audioNodes = spaceHavenAudioXmlFile.Root.Descendants("a").ToList();
-    //        foreach (XElement audioNode in audioNodes)
-    //        {
-    //            CT.ThrowIfCancellationRequested();
-    //            try
-    //            {
-    //                // name:
-    //                string name = audioNode?.Attribute(NodeType.Audio.NameAttribute)?.Value;
-    //                string id = audioNode?.Attribute(NodeType.Audio.IdAttribute)?.Value;
-    //                string modName = audioNode?.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-
-    //                if (modName.IsNullOrWhiteSpace())
-    //                    continue; // not a modified node, ignore it
-
-    //                ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
-    //                if (mod == null)
-    //                {
-    //                    Log.Error($@"Unable to retrieve mod '{modName}' owning audio node with 'filename' reference ""{""}"", in animations file line {audioNode.Line()}", Paths.BuildStageAnimationsXmlPath);
-    //                    errors = true;
-    //                    continue;
-    //                }
-
-    //                //AudioReference audioRef = new(mod, audioNode, "")
-    //                //{
-    //                //};
-
-    //                // filename reference:
-    //                XAttribute filenameAttribute = audioNode?.Attribute("filename");
-    //                if (filenameAttribute == null)
-    //                {
-    //                }
-    //                else
-    //                {
-    //                    string assetPosFilenameReference = filenameAttribute.Value;
-    //                    if (assetPosFilenameReference.IsNullOrWhiteSpace())
-    //                    {
-    //                        Log.Error($@"Invalid <assetPos> node with empty 'filename' reference, in animations file line {audioNode.Line()}", Paths.BuildStageAnimationsXmlPath);
-    //                        errors = true;
-    //                        continue;
-    //                    }
-    //                }
-
-
-
-    //            }
-    //            finally
-    //            {
-    //                // TODO
-    //            }
-    //        }
-
-
-    //        // Done.
-    //        MergeAudio?.Complete();
-    //        Log.Debug($"{MergeAudio} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildAudioDirectory);
-    //        Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
-    //        return true;
-    //    }
-    //    catch (OperationCanceledException) { throw; }
-    //    catch (Exception ex)
-    //    {
-    //        Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
-    //        return false;
-    //    }
-
-    //}
-
-
-
-
-
-
-
-
-
-
     private async Task<bool> TryMergeAudio()
     {
         try
@@ -1021,149 +969,76 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
             Clock.Restart();
 
-            foreach (ModBuildData mod in Build.Mods)
+            // Get and save animations document, for debugging:
+            XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
+            if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildAudioFile, Log, CT))
+                return false;
+
+            // Collect all assetPos filename references and save it to spriteReference objects:
+            bool errors = false;
+            OrderedDictionary<int, AudioBuildData> audioById = []; // keep original order!
+            OrderedDictionary<string, AudioBuildData> audioByName = []; // keep original order!
+            List<XElement> audioNodes = spaceHavenAudioXmlFile.Root.Descendants("a").ToList();
+            foreach (XElement audioNode in audioNodes)
             {
                 CT.ThrowIfCancellationRequested();
 
-                ILogger modLog = mod.Log;
+                // Only modded audio:
+                string owner = audioNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
+                if (owner.IsNullOrWhiteSpace())
+                    continue;
 
-                try
+                // Get mod:
+                ModBuildData mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
+                if (mod == null)
                 {
-                    // Are audio files available?
-                    if (!mod.HasAudio)
-                    {
-                        modLog.Debug($"This mod has no audio files", mod.Directory);
-                        continue;
-                    }
-
-                    modLog.Debug($"Performing audio merge operations...", mod.BuildAudioDirectory);
-
-                    // Audio must be added by library XML files because they contain the relative path of the audio:
-                    if (mod.XmlFiles[EXmlFileType.Audio].Count <= 0)
-                    {
-                        modLog.Error($"New audio files MUST be added through a XML file in the library directory of your mod. Afterwards you may patch the audio XML nodes", mod.Directory);
-                        return false;
-                    }
-
-                    modLog.Debug($@"Adding the following audio files: {mod.AudioFilePaths.Select(path => $"\n- {path}").OrderBy(str => str).JoinToString()}", mod.Directory);
-
-                    // Get target:
-                    XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
-                    XElement parentNode = spaceHavenAudioXmlFile.GetParentNode(NodeType.Audio);
-                    if (parentNode == null)
-                    {
-                        modLog.Error("Unable to find root node of audio XML", spaceHavenAudioXmlFile.Path);
-                        return false;
-                    }
-
-                    // Process each source:
-                    foreach (XmlFile modAudioXmlFile in mod.XmlFiles[EXmlFileType.Audio].Values)
-                    {
-                        if (modAudioXmlFile.IsIgnored)
-                        {
-                            modLog.Warn($@"Ignoring ""{modAudioXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modAudioXmlFile.Path);
-                            continue;
-                        }
-
-                        foreach (XElement audioXml in modAudioXmlFile.Xml.Root.Elements("a"))
-                        {
-                            CT.ThrowIfCancellationRequested();
-
-                            // Organize mod audio in objects:
-                            AudioBuildData audio = new(Paths, mod, modAudioXmlFile, audioXml);
-
-                            // Locate audio file:
-                            if (!audio.TryParse())
-                                return false;
-
-                            // Add:
-                            if (mod.Audio.ContainsKey(audio.Name))
-                            {
-                                modLog.Error($@"Duplicate audio entry '{audio.Name}' {audio.XmlLocation}", modAudioXmlFile.Path);
-                                return false;
-                            }
-                            mod.Audio.Add(audio.Name, audio);
-
-                            CT.ThrowIfCancellationRequested();
-
-                            // Merge audio XML:
-                            XElement[] existingNodes =
-                                spaceHavenAudioXmlFile.GetNodes(NodeType.Audio)
-                                .Where(n =>
-                                    n.Attribute("n")?.Value == audio.Name ||
-                                    n.Attribute(NodeType.Audio.IdAttribute)?.Value == audio.Id.ToString()
-                                ).ToArray() ?? [];
-
-                            // Remove existing nodes:
-                            foreach (XElement existingNode in existingNodes)
-                            {
-                                CT.ThrowIfCancellationRequested();
-
-                                string existingMod = existingNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                                string existingId = existingNode.Attribute(NodeType.Audio.IdAttribute)?.Value;
-                                string existingName = existingNode.Attribute(NodeType.Audio.NameAttribute)?.Value;
-
-                                if (existingMod == null)
-                                    modLog.Debug($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}'", modAudioXmlFile.Path);
-                                else if (existingMod == mod.Name)
-                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the same mod => This could be an ERROR", modAudioXmlFile.Path);
-                                else
-                                    modLog.Warn($"Replacing existing audio node with {NodeType.Audio.IdAttribute}={existingId} and {NodeType.Audio.NameAttribute}='{existingName}', which was previously modified by the mod '{existingMod}' => This could be a MOD INCOMPATIBILITY", modAudioXmlFile.Path);
-                                existingNode.Remove();
-                            }
-
-                            // Locate an insertion position for the new audio node, within the same Audio Type group, and sorted ascnding by ID:
-                            audioXml.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-                            XElement sibling = null;
-                            foreach (XElement other in parentNode.Elements("a").Reverse())
-                            {
-                                string otherIdStr = other.Attribute(NodeType.Audio.IdAttribute)?.Value;
-                                string otherAudioTypeStr = other.Attribute("at")?.Value;
-
-                                if (!int.TryParse(otherIdStr, out int otherId))
-                                    continue;
-
-                                if (otherId == audio.Id)
-                                {
-                                    // Not expected here...
-                                    modLog.Error($@"An audio entry with {NodeType.Audio.IdAttribute}={audio.Id} already exists!");
-                                    return false;
-                                }
-
-                                if (otherId > audio.Id)
-                                    continue;
-
-                                if (!Enum.TryParse(otherAudioTypeStr, true, out EAudioType at) || at != audio.AudioType)
-                                    continue;
-
-                                sibling = other;
-                                break;
-                            }
-
-                            // Insert audio node:
-                            if (sibling != null)
-                                sibling.AddAfterSelf(new XElement(audioXml));
-                            else // rare situation
-                                parentNode.Add(new XElement(audioXml));
-                        }
-
-                        // Save mod audio XML file:
-                        if (!await modAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, "mod", modAudioXmlFile.RelativePath), modLog, CT))
-                            return false;
-
-                        // Save to mod build audio folder, for debugging:
-                        if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(mod.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
-                            return false;
-                    }
-
-                    // Save to build audio folder, for debugging:
-                    if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildAudioDirectory, spaceHavenAudioXmlFile.FileName), Log, CT))
-                        return false;
+                    Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFile);
+                    return false;
                 }
-                finally
+
+                // Parse audio:
+                AudioBuildData audio = new(Paths, mod, audioNode, mod.Log);
+                if (!audio.TryParse(Build.Mods))
                 {
-                    MergeAudio?.IncrementNormalized(1.0 / Build.Mods.Count);
+                    errors = true;
+                    continue;
                 }
+
+                // Audio entry uses original game audio:
+                if (audio.IsOriginalAudioFile)
+                    continue;
+
+                // Check for duplicate audio ID:
+                if (audioById.TryGetValue(audio.Id, out AudioBuildData existingAudio1))
+                {
+                    Log.Error($@"Duplicate audio ID: {Environment.NewLine}{existingAudio1} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                    return false;
+                }
+                else audioById[audio.Id] = audio;
+
+                // Check for duplicate audio NAME:
+                if (audioByName.TryGetValue(audio.Name, out AudioBuildData existingAudio2))
+                {
+                    Log.Error($@"Duplicate audio NAME: {Environment.NewLine}{existingAudio2} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                    return false;
+                }
+                else audioByName[audio.Name] = audio;
+            }
+            if (errors)
+                return false;
+
+            // Copy audio files:
+            foreach (AudioBuildData audio in audioByName.Values)
+            {
+                string targetAbsolutePath = Path.GetFullPath(Path.Combine(Paths.BuildStageDirectory, audio.TargetRelativePath));
+                if (!targetAbsolutePath.StartsWith(Paths.BuildStageDirectory, StringComparison.Ordinal))
+                {
+                    Log.Error($@"Invalid target audio file path ""{targetAbsolutePath}"" for {audio}");
+                    return false;
+                }
+
+                if (!await IOUtils.TryCopyFileAsync(audio.SourceAbsolutePath, targetAbsolutePath, true, Log, CT))
+                    return false;
             }
 
             // Done.
@@ -1179,12 +1054,6 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
-
-
-
-
-
-
 
 
 

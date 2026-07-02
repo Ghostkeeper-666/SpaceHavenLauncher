@@ -39,6 +39,7 @@ public sealed class BuildPathData
     public string BuildPatchDirectory => Path.Combine(BuildDirectory, "patch");
     public string BuildStageDirectory => Path.Combine(BuildDirectory, ModdingConstants.STAGE);
     public string BuildModsJsonPath => Path.Combine(BuildDirectory, ModdingConstants.MODS_JSON);
+    public string BuildAudioFile => Path.Combine(BuildAudioDirectory, SpaceHavenConstants.AUDIO);
 
     public string BuildStageVersionPath => Path.Combine(BuildStageDirectory, SpaceHavenConstants.VERSION_TXT);
 
