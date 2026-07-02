@@ -1,4 +1,5 @@
-﻿using Avalonia.Media;
+﻿using Avalonia.Controls.Shapes;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
@@ -127,6 +128,10 @@ public partial class CentralScreen : ObservableObject
     public async void OnProgress_CentralScreenLine3Async(object sender, ProgressEventArgs e) =>
         DispatchQueue.TryEnqueue(async () => await SetTextAsync(3, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
+    public async void OnProgress_Title(object sender, ProgressEventArgs e) =>
+        DispatchQueue.TryEnqueue(async () => await SetTitleAsync(e.Progress.NormalizedValue, e.Progress.HasStarted));
+
+
 
     public void ShowEmptyOnMonitor()
     {
@@ -210,7 +215,6 @@ public partial class CentralScreen : ObservableObject
 
         if (progress >= 1.0)
         {
-            Title = Title_Running;
             for (int bar = 0; bar < ProgressBarCount; ++bar)
             {
                 ProgressBarBorder[bar] = BorderBrush_Active[bar];
@@ -238,5 +242,10 @@ public partial class CentralScreen : ObservableObject
     });
 
 
+    private async Task SetTitleAsync(double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
+    {
+        if(progress >= 1.0)
+            Title = Title_Running;
+    });
 
 }

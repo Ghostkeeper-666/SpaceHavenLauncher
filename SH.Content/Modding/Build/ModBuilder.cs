@@ -34,6 +34,7 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo ResetXmlBuild;
     private IProgressInfo CopyTemplateFiles;
     private IProgressInfo LoadXml;
+    private IProgressInfo FixTexts;
     private IProgressInfo MergeAudio;
     private IProgressInfo CollectSpriteRefs;
     private IProgressInfo LoadSprites;
@@ -52,7 +53,17 @@ public sealed class ModBuilder : IAsyncDisposable
     public bool NeedsXmlBuild { get; private set; }
     public bool NeedsJavaBuild { get; private set; }
 
-    private readonly EXmlFileType[] XmlMergeFileTypes =
+    private readonly EXmlFileType[] SupportedXmlMergeFileTypes =
+    [
+        EXmlFileType.SpaceHavenSettings,
+        EXmlFileType.Audio,
+        //EXmlFileType.Textures,
+        EXmlFileType.Animations,
+        EXmlFileType.Texts,
+        EXmlFileType.Haven,
+    ];
+
+    private readonly EXmlFileType[] SupportedXmlPatchFileTypes =
     [
         EXmlFileType.SpaceHavenSettings,
         EXmlFileType.Audio,
@@ -95,7 +106,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Starting {this}...", Paths.BuildDirectory);
+            Log.Info($"Starting Build...", Paths.BuildDirectory);
 
             // No mods?
             if ((BuildSettings?.Mods?.Count ?? 0) <= 0)
@@ -174,6 +185,10 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await TryPatchXML())
                     return false;
 
+                // Fix Text entries:
+                if (!await TryFixTexts())
+                    return false;
+
                 // Merge Audio:
                 if (!await TryMergeAudio())
                     return false;
@@ -211,6 +226,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Create file for JAVA modders:
             if (!await TryWriteModsJson())
                 return false;
+            
             // Done.
             Log.Success($"{this} has completed", Paths.BuildDirectory);
             return true;
@@ -219,7 +235,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (Exception ex)
         {
             Log.Error(ex, Paths.BuildDirectory);
-            Log.Error($"{this} has failed", Paths.BuildDirectory);
+            Log.Error($"Build has failed", Paths.BuildDirectory);
             return false;
         }
         finally
@@ -250,6 +266,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ResetXmlBuild?.Dispose();
             CopyTemplateFiles?.Dispose();
             LoadXml?.Dispose();
+            FixTexts?.Dispose();
             MergeAudio?.Dispose();
 
             CollectSpriteRefs?.Dispose();
@@ -301,29 +318,32 @@ public sealed class ModBuilder : IAsyncDisposable
             LoadXml = new ProgressInfo("Load Template Xml");
             XmlBuild.AddChild(LoadXml, 5000);
 
+            FixTexts = new ProgressInfo("Fix Text Entries");
+            XmlBuild.AddChild(FixTexts, 100);
+
             MergeAudio = new ProgressInfo("Merge Audio");
-            XmlBuild.AddChild(MergeAudio, 35);
+            XmlBuild.AddChild(MergeAudio, 100);
 
             CollectSpriteRefs = new ProgressInfo("Pack Textures");
             XmlBuild.AddChild(CollectSpriteRefs, 2270);
 
-            LoadSprites = new ProgressInfo("Assign CIM file ID");
-            XmlBuild.AddChild(LoadSprites, 1);
+            LoadSprites = new ProgressInfo("Load Sprites");
+            XmlBuild.AddChild(LoadSprites, 100);
 
-            PackSprites = new ProgressInfo("Write CIM files");
+            PackSprites = new ProgressInfo("Pack Sprites");
             XmlBuild.AddChild(PackSprites, 270);
 
-            WriteSpriteSheets = new ProgressInfo("Assign Texture ID");
+            WriteSpriteSheets = new ProgressInfo("Write Sprite Sheets");
             XmlBuild.AddChild(WriteSpriteSheets, 430);
 
-            WriteTextureXmlFiles = new ProgressInfo("Map Animation to Texture");
-            XmlBuild.AddChild(WriteTextureXmlFiles, 45);
+            WriteTextureXmlFiles = new ProgressInfo("Write Texture XML Files");
+            XmlBuild.AddChild(WriteTextureXmlFiles, 100);
 
             MergeXmlFiles = new ProgressInfo("Merge XML files");
-            XmlBuild.AddChild(MergeXmlFiles, 6900);
+            XmlBuild.AddChild(MergeXmlFiles, 8000);
 
             PatchXmlFiles = new ProgressInfo("Patch XML files");
-            XmlBuild.AddChild(PatchXmlFiles, 13450);
+            XmlBuild.AddChild(PatchXmlFiles, 16000);
 
             BuildJarFile = new ProgressInfo("Create JAR file");
             XmlBuild.AddChild(BuildJarFile, 260);
@@ -564,7 +584,8 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Merging XML files: {XmlMergeFileTypes.Select(t => $"{t.ToString().ToLowerInvariant()}").JoinToString(", ")}...", Paths.BuildMergeDirectory);
+            // Only merge supported files!
+            Log.Info($@"Merging XML files: {SupportedXmlMergeFileTypes.Select(t => $"{t.ToString().ToLowerInvariant()}").JoinToString(", ")}...", Paths.BuildMergeDirectory);
             Clock.Restart();
 
             HashSet<XmlFile> mergedSpaceHavenXmlFiles = [];
@@ -587,14 +608,20 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     HashSet<XmlFile> mergedModXmlFiles = [];
 
-                    foreach (EXmlFileType xmlFileType in XmlMergeFileTypes)
+                    // Only merge supported files!
+                    foreach (EXmlFileType xmlFileType in SupportedXmlMergeFileTypes)
                     {
                         // Any such files in mod?
                         XmlFile[] modXmlFiles = mod.XmlFiles[xmlFileType].Values.ToArray();
                         if (modXmlFiles.Length <= 0)
                             continue;
 
-                        XmlFile spaceHavenXmlFile = Build.XmlFile[xmlFileType];
+                        // Get target file:
+                        if (!Build.XmlFile.TryGetValue(xmlFileType, out XmlFile spaceHavenXmlFile))
+                        {
+                            modLog.Error($@"Unable to get target XML file of type '{xmlFileType}'", Paths.BuildStageDirectory);
+                            return false;
+                        }
 
                         // Merge with all mod library XML files:
                         foreach (XmlFile modXmlFile in modXmlFiles)
@@ -716,9 +743,11 @@ public sealed class ModBuilder : IAsyncDisposable
                             }
                         }
 
+                        // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
+
                         // Save merged Space Haven XML file to mod merge directory:
-                        if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildMergeDirectory, spaceHavenXmlFile.FileName), Log, CT))
-                            return false;
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //    return false;
                     }
                 }
                 finally
@@ -729,20 +758,25 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Save merged XML files to build merge directory:
-            foreach (XmlFile xmlFile in mergedSpaceHavenXmlFiles)
-                if (!await xmlFile.TrySaveToAsync(Path.Combine(Paths.BuildMergeDirectory, xmlFile.RelativePath), Log, CT))
+            foreach (XmlFile spaceHavenXmlFile in mergedSpaceHavenXmlFiles)
+            {
+                if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                     return false;
+                // Save and reload to update line numbers of XML nodes:
+                if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
+                    return false;
+            }
 
             // Done.
             MergeXmlFiles?.Complete();
             Log.Debug($"{MergeXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildMergeDirectory);
-            Log.Success($"XML merge completed", Paths.BuildMergeDirectory);
+            Log.Success("XML merge completed", Paths.BuildMergeDirectory);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to merge XML files: {ex}", Paths.BuildMergeDirectory);
+            Log.Error($@"Unable to merge XML files: {ex}", Paths.BuildMergeDirectory);
             return false;
         }
     }
@@ -768,7 +802,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Patching XML files...", Paths.BuildPatchDirectory);
+            Log.Info("Patching XML files...", Paths.BuildPatchDirectory);
             Clock.Restart();
 
             // Select mods with library XML files:
@@ -781,11 +815,11 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     if (!mod.HasPatchXml)
                     {
-                        modLog.Debug($@"This mod has no XML patch files", mod.Directory);
+                        modLog.Debug("This mod has no XML patch files", mod.Directory);
                         continue;
                     }
 
-                    modLog.Debug($"Performing XML patch operations...", mod.BuildPatchDirectory);
+                    modLog.Debug("Performing XML patch operations...", mod.BuildPatchDirectory);
 
                     // Create mod patch dir:
                     if (!await IOUtils.TryCreateDirectoryAsync(mod.BuildPatchDirectory, modLog, CT))
@@ -808,6 +842,15 @@ public sealed class ModBuilder : IAsyncDisposable
                             modLog.Error($@"Unable to detect target XML file of patches in file ""{modPatchXmlFile}""", modPatchXmlFile.Path);
                             return false;
                         }
+
+                        // Check for unsupported target patch file:
+                        if (!SupportedXmlPatchFileTypes.Contains(targetXmlType))
+                        {
+                            modLog.Error($@"Patching '{targetXmlType}' with ""{modPatchXmlFile.Path}"" is not supported", modPatchXmlFile.Path);
+                            return false;
+                        }
+
+                        // Get target file:
                         if (!Build.XmlFile.TryGetValue(targetXmlType, out XmlFile spaceHavenXmlFile))
                         {
                             modLog.Error($@"Unable to get target XML file of type '{targetXmlType}'", Paths.BuildStageDirectory);
@@ -833,31 +876,31 @@ public sealed class ModBuilder : IAsyncDisposable
                             // Skip if disabled by patch logic:
                             if (!patch.IsEnabled)
                             {
-                                modLog.Info($"Skipping DISABLED patch node\n{patch}", modPatchXmlFile.Path);
+                                modLog.Info($@"Skipping DISABLED patch node {Environment.NewLine}{patch}", modPatchXmlFile.Path);
                                 continue;
                             }
 
                             // Validate XPATH unevaluated variables:
                             if (patch.XPath.ContainsAny('{', '}'))
-                                modLog.Warn($"The evaluated XPATH '{patch.XPath}' could still contain undefined variables. \n{patch}", modPatchXmlFile.Path);
+                                modLog.Warn($@"The evaluated XPATH '{patch.XPath}' could still contain undefined variables. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
 
                             // Execute XPATH:
                             if (!spaceHavenXmlFile.TryRunXPath(patch.XPath, out List<XElement> targetNodes, modLog))
                             {
-                                modLog.Error($"Failed to execute the evaluated xpath='{patch.XPath}'. \n{patch}", modPatchXmlFile.Path);
+                                modLog.Error($@"Failed to execute the evaluated xpath='{patch.XPath}'. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
                                 return false;
                             }
 
                             // No target nodes?
                             if (targetNodes.Count <= 0)
                             {
-                                modLog.Warn($"The evaluated XPATH returned ZERO RESULTS => This could be an ERROR \n{patch}", modPatchXmlFile.Path);
+                                modLog.Warn($@"The evaluated XPATH returned ZERO RESULTS => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
                                 continue; // Nothing else to do...
                             }
 
                             // Too many target nodes?
                             if (targetNodes.Count > 25)
-                                modLog.Warn($"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR \n{patch}", modPatchXmlFile.Path);
+                                modLog.Warn($@"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
 
                             // Mark special nodes with additional modding metadata:
                             // (1) Attribute Operation
@@ -921,19 +964,26 @@ public sealed class ModBuilder : IAsyncDisposable
                             // Perform patch operation:
                             if (!patch.TryRun(targetNodes, modLog))
                             {
-                                modLog.Error($"Patch operation has FAILED. \n{patch}", modPatchXmlFile.Path);
+                                modLog.Error($@"Patch operation has FAILED. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
                                 return false;
                             }
 
                             // Done with this patch operation.
-                            modLog.Debug($"Patch operation applied to {targetNodes.Count} target node(s). \n{patch}", modPatchXmlFile.Path);
+                            modLog.Debug($@"Patch operation applied to {targetNodes.Count} target node(s). {Environment.NewLine}{patch}", modPatchXmlFile.Path);
                         }
                     }
 
                     // Save Space Haven XML files modified by this mod, for debugging:
                     foreach (XmlFile spaceHavenXmlFile in spaceHavenModifiedFiles)
-                        if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildPatchDirectory, spaceHavenXmlFile.FileName), Log, CT))
-                            return false;
+                    {
+                        // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
+
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //    return false;
+                        // Save and reload to update line numbers of XML nodes:
+                        //if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
+                        //    return false;
+                    }
                 }
                 finally
                 {
@@ -941,16 +991,25 @@ public sealed class ModBuilder : IAsyncDisposable
                 }
             }
 
+            foreach (XmlFile spaceHavenXmlFile in Build.XmlFile.Values)
+            {
+                if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                    return false;
+                // Save and Reload all Space Haven files to update line numbers!
+                if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
+                    return false;
+            }
+
             // Done.
             PatchXmlFiles?.Complete();
             Log.Debug($"{PatchXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildPatchDirectory);
-            Log.Success($"XML patches completed", Paths.BuildPatchDirectory);
+            Log.Success("XML patch completed", Paths.BuildPatchDirectory);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to patch XML files: {ex}", Paths.BuildPatchDirectory);
+            Log.Error($@"Unable to patch XML files: {ex}", Paths.BuildPatchDirectory);
             return false;
         }
     }
@@ -959,6 +1018,78 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+
+
+    private async Task<bool> TryFixTexts()
+    {
+        try
+        {
+            Log.Info($@"Fixing TEXT entries...", Paths.BuildAudioDirectory);
+
+            // Get texts document:
+            XmlFile spaceHavenTextsXmlFile = Build.XmlFile[EXmlFileType.Texts];
+
+            // Also save here, for debugging:
+            if (!await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsFile, Log, CT))
+                return false;
+
+            // Supported "languages
+            string[] languages = Enum.GetNames<ELanguage>();
+            const string emptyContent = " ";
+
+            // Text entries, sorted descending by line number:
+            // (since we will add nodes, the line number information shifts)
+            try
+            {
+                (XElement t, int)[] nodes = spaceHavenTextsXmlFile.Root.Descendants("t").Select(t => (t, t.Line())).OrderByDescending(tuple => tuple.Item2).ToArray();
+                foreach ((XElement t, int line) in nodes)
+                {
+                    if (!int.TryParse(t.Attribute("id")?.Value ?? "-1", out int id) || id <= 0)
+                    {
+                        Log.Error($"Invalid text entry with missing or invalid attribute id='{t.Attribute("id")?.Value}' in texts file at {line}", Paths.BuildTextsFile);
+                        return false;
+                    }
+
+                    // Get content to be replicated:
+                    XElement master = t.Element("EN") ?? t.Elements().FirstOrDefault();
+                    string textContent = master?.Value ?? emptyContent;
+
+                    // Add missing translations:
+                    foreach (string language in languages)
+                    {
+                        XElement languageNode = t.Element(language);
+                        if (languageNode == null)
+                        {
+                            Log.Debug($"Fixing text entry <t> id={id} with missing translation to language '{language}'", Paths.BuildTextsFile);
+                            t.Add(languageNode = new XElement(language, textContent));
+                        }
+                        else if (languageNode.Value.IsNullOrEmpty())
+                        {
+                            Log.Debug($"Fixing text entry <t> id={id} with missing text content for translation to language '{language}'", Paths.BuildTextsFile);
+                            languageNode.Value = textContent;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // Save texts document, for debugging:
+                await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsFile, Log, CT);
+
+                // Save and Reload all Space Haven file to update line numbers!
+                await spaceHavenTextsXmlFile.TrySaveAndReloadAsync(Log, CT);
+            }
+
+            // Done.
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
+            return false;
+        }
+    }
 
 
 
@@ -1454,48 +1585,46 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Creating {SpaceHavenConstants.CONFIG_JSON}...", Paths.CacheDirectory);
+            Log.Info($"Generating {SpaceHavenConstants.CONFIG_JSON}...", Paths.CacheDirectory);
             Clock.Restart();
 
             // Create modified config.json:
-            ConfigJsonFile config = await ConfigJsonFile.GetTemplateAsync(Paths.TemplateConfigJsonPath, Log, CT);
+            ConfigJsonFile config = await ConfigJsonFile.TryLoadAsync(Paths.TemplateConfigJsonPath, Log, CT);
             if (config == null || config.ClassPath == null || config.VMArgs == null || config.MainClass.IsNullOrWhiteSpace())
             {
-                Log.Error($@"Invalid template {SpaceHavenConstants.CONFIG_JSON} in ""{Paths.TemplateConfigJsonPath}"", please repair the game by reinstalling it");
+                Log.Error($@"Invalid template {SpaceHavenConstants.CONFIG_JSON} in ""{Paths.TemplateConfigJsonPath}"", please repair the game by reinstalling it", Paths.TemplateDirectory);
                 return false;
-            }
-
-            if (Build.HasXmlMods)
-            {
-                config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR);
-                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
-                config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
             }
 
             // Add JARs from mods:
             if (Build.HasJavaMods)
             {
+                Log.Debug($@"Preparing ""{SpaceHavenConstants.CONFIG_JSON}"" for a JAVA modified game...", Paths.CacheConfigJsonPath);
                 List<ModBuildData> mods = Build.Mods.Where(mod => mod.HasJava).ToList();
                 PrepareJavaFiles.Max = mods.Count;
 
                 // Clear javaagent entries:
+                Log.Debug($@"Clearing -javaagent entries from {nameof(config.VMArgs)}...", Paths.CacheConfigJsonPath);
                 string[] javaAgentEntries = config.VMArgs.Where(entry => entry.StartsWith("-javaagent", StringComparison.OrdinalIgnoreCase)).ToArray();
                 foreach (string javaAgentEntry in javaAgentEntries)
                     config.VMArgs.Remove(javaAgentEntry);
 
                 // Insert javaagent entry:
+                Log.Debug($@"Adding -javaagent entry to {nameof(config.VMArgs)}...", Paths.CacheConfigJsonPath);
                 config.VMArgs.Insert(config.VMArgs.Count - 1, $"-javaagent:{Path.Combine(Paths.SpaceHavenJarDir, ModdingConstants.ASPECTJWEAVER).AsStdPath()}");
 
                 // Clear AOP entries:
+                Log.Debug($@"Clearing JAVA AOP libraries from {nameof(config.ClassPath)}...", Paths.CacheConfigJsonPath);
                 string[] aspectjEntries = config.ClassPath.Where(entry => entry.Contains("aspectj", StringComparison.OrdinalIgnoreCase)).ToArray();
                 foreach (string aspectjEntry in aspectjEntries)
                     config.ClassPath.Remove(aspectjEntry);
 
                 // Add AOP entries:
-                config.ClassPath.Insert(0, ModdingConstants.ASPECTJWEAVER);
-                config.ClassPath.Insert(1, ModdingConstants.ASPECTJ);
+                Log.Debug($@"Adding JAVA AOP libraries to {nameof(config.ClassPath)}...", Paths.CacheConfigJsonPath);
+                config.ClassPath.Insert(0, ModdingConstants.ASPECTJWEAVER); // it must be the 1st entry
+                config.ClassPath.Insert(1, ModdingConstants.ASPECTJ);  // it must be the 2nd entry
 
-                // Add mod JARs to classPath:
+                // Add mod JARs to classPath, considering the mod load order:
                 foreach (ModBuildData mod in mods)
                 {
                     CT.ThrowIfCancellationRequested();
@@ -1505,10 +1634,9 @@ public sealed class ModBuilder : IAsyncDisposable
                         foreach (string path in mod.JavaFilePaths.Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)).OrderBy(path => path))
                         {
                             string stdPath = path.AsStdPath();
-                            modLog.Debug($"Adding JAR file to classPath: {stdPath}", mod.Directory);
-                            // Check for duplicate:
-                            if (!config.ClassPath.Any(str => str.Equals(stdPath, StringComparison.OrdinalIgnoreCase)))
-                                config.ClassPath.Insert(config.ClassPath.Count - 1, stdPath);
+                            modLog.Debug($@"Adding JAR file to classPath: ""{stdPath}""", Paths.CacheConfigJsonPath);
+                            config.ClassPath.Remove(stdPath); // avoid duplicates
+                            config.ClassPath.Add(stdPath); // append
                         }
                     }
                     finally
@@ -1517,6 +1645,20 @@ public sealed class ModBuilder : IAsyncDisposable
                         PrepareJavaFiles.Increment();
                     }
                 }
+
+                // Add spacehavenjar at the end:
+                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
+                config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
+            }
+
+            if (Build.HasXmlMods)
+            {
+                Log.Debug($@"Preparing ""{SpaceHavenConstants.CONFIG_JSON}"" for a XML modified game...", Paths.CacheConfigJsonPath);
+
+                Log.Debug($@"Replacing {SpaceHavenConstants.SPACEHAVEN_JAR} with {ModdingConstants.MODIFIED_SPACEHAVEN_JAR} in {nameof(config.ClassPath)}", Paths.CacheConfigJsonPath);
+                config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR); // remove original
+                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
+                config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // append
             }
 
             // Write config.json to cache directory:
@@ -1528,13 +1670,14 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Done.
+            Log.Debug($"Generation of {SpaceHavenConstants.CONFIG_JSON} was successful", Paths.CacheConfigJsonPath);
             PrepareJavaFiles.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log?.Error($"Unable to create {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDirectory);
+            Log?.Error($"Unable to generate {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDirectory);
             return false;
         }
     }
@@ -1600,5 +1743,4 @@ public sealed class ModBuilder : IAsyncDisposable
     }
     #endregion
 
-    public override string ToString() => "Build";
 }

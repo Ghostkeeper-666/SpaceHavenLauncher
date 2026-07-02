@@ -21,15 +21,12 @@ public sealed class BuildService
     {
         try
         {
-            Log.Info($"Starting {this}...", Paths.BuildDir);
-
             // Build!
             ModBuilder builder = new(paths, settings, Log);
             if (!await builder.TryBuildAsync())
                 return false;
 
             // Done.
-            Log.Success($"{this} has completed", Paths.BuildDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -39,6 +36,4 @@ public sealed class BuildService
             return false;
         }
     }
-
-    public override string ToString() => "Build";
 }

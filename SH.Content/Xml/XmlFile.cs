@@ -85,7 +85,7 @@ public sealed class XmlFile
     public EXmlFileType Type { get; }
     public string Path { get; set; }
     public string BaseDir { get; set; }
-    public string RelativePath => Path.RemovePrefix(BaseDir).TrimStart('/' ,'\\');
+    public string RelativePath => Path.RemovePrefix(BaseDir).TrimStart('/', '\\');
 
     public string FileName => System.IO.Path.GetFileName(Path);
 
@@ -101,11 +101,23 @@ public sealed class XmlFile
     public IEnumerable<XElement> GetNodes(NodeType nodeType) =>
         Xml.XPathSelectElements(nodeType.XPath) ?? [];
 
+    public async Task<bool> TrySaveAndReloadAsync(ILogger logger, CancellationToken ct)
+    {
+        // Save:
+        if(!await IOUtils.TrySaveXDocumentAsync(Path, Xml, logger, ct))
+            return false;
+        // Reload:
+        if((Xml = await IOUtils.TryLoadXDocumentAsync(Path, logger, ct)) == null)
+            return false;
+        // Done.
+        return true;
+    }
+
     public async Task<bool> TrySaveAsync(ILogger logger, CancellationToken ct) =>
         await IOUtils.TrySaveXDocumentAsync(Path, Xml, logger, ct);
 
-    public async Task<bool> TrySaveToAsync(string alternativePath, ILogger logger, CancellationToken ct) =>
-        await IOUtils.TrySaveXDocumentAsync(alternativePath, Xml, logger, ct);
+    public async Task<bool> TrySaveToAsync(string path, ILogger logger, CancellationToken ct) =>
+        await IOUtils.TrySaveXDocumentAsync(path, Xml, logger, ct);
 
     public bool TryRunXPath(string xpath, out List<XElement> targetNodes, ILogger logger)
     {

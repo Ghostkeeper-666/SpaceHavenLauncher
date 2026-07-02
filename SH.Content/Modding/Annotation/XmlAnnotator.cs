@@ -156,21 +156,21 @@ public sealed class XmlAnnotator
     private async Task<bool> SaveAllAsync(string baseDir)
     {
         string outputHavenXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.HAVEN}{ANNOTATED_FILE_SUFFIX}");
-        //string outputTextsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTS}{ANNOTATED_FILE_SUFFIX}");
-        //string outputAudioXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.AUDIO}{ANNOTATED_FILE_SUFFIX}");
-        //string outputTexturesXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTURES}{ANNOTATED_FILE_SUFFIX}");
-        //string outputAnimationsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.ANIMATIONS}{ANNOTATED_FILE_SUFFIX}");
+        string outputTextsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTS}{ANNOTATED_FILE_SUFFIX}");
+        string outputAudioXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.AUDIO}{ANNOTATED_FILE_SUFFIX}");
+        string outputTexturesXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTURES}{ANNOTATED_FILE_SUFFIX}");
+        string outputAnimationsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.ANIMATIONS}{ANNOTATED_FILE_SUFFIX}");
 
         if (!await HavenXml.TrySaveToAsync(outputHavenXmlPath, Log, CT))
             return false;
-        //if (!await TextsXml.TrySaveToAsync(outputTextsXmlPath, Log, CT))
-        //    return false;
-        //if (!await AudioXml.TrySaveToAsync(outputAudioXmlPath, Log, CT))
-        //    return false;
-        //if (!await TexturesXml.TrySaveToAsync(outputTexturesXmlPath, Log, CT))
-        //    return false;
-        //if (!await AnimationsXml.TrySaveToAsync(outputAnimationsXmlPath, Log, CT))
-        //    return false;
+        if (!await TextsXml.TrySaveToAsync(outputTextsXmlPath, Log, CT))
+            return false;
+        if (!await AudioXml.TrySaveToAsync(outputAudioXmlPath, Log, CT))
+            return false;
+        if (!await TexturesXml.TrySaveToAsync(outputTexturesXmlPath, Log, CT))
+            return false;
+        if (!await AnimationsXml.TrySaveToAsync(outputAnimationsXmlPath, Log, CT))
+            return false;
 
         return true;
     }

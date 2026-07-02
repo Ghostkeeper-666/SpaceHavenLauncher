@@ -182,4 +182,8 @@ public partial class SystemCoreView : UserControl
 
     private void CreateWindowsShortcut(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         State.DispatchQueue.TryEnqueue(() => new IconService(Log).CreateSpaceHavenLauncherWindowsDesktopIcon());
+
+    private async void CollectDebuggingInformation(object sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await (DataContext as SystemCoreViewModel)?.CollectDebuggingInformation();
+
 }

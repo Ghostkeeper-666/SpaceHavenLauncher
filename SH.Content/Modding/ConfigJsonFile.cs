@@ -38,9 +38,9 @@ public sealed class ConfigJsonFile
         return config;
     }
 
-    public static async Task<ConfigJsonFile> GetTemplateAsync(string templateConfigJsonPath, ILogger log, CancellationToken ct)
+    public static async Task<ConfigJsonFile> TryLoadAsync(string configJsonPath, ILogger log, CancellationToken ct)
     {
-        string content = await IOUtils.TryReadAllTextAsync(templateConfigJsonPath, log, ct);
+        string content = await IOUtils.TryReadAllTextAsync(configJsonPath, log, ct);
         if (content == null)
         {
             log?.Error($"Unable to read template config.json file");

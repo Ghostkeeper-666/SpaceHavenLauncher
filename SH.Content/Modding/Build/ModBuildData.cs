@@ -105,22 +105,6 @@ internal sealed class ModBuildData : IAsyncDisposable
         [EXmlFileType.SpaceHavenSettings] = new(),
     };
 
-    // Merge:
-    public string MergedHavenXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.HAVEN}.xml");
-    public string MergedTextsXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.TEXTS}.xml");
-    public string MergedAudioXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.AUDIO}.xml");
-    public string MergedTexturesXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.TEXTURES}.xml");
-    public string MergedAnimationsXmlPath => Path.Combine(BuildMergeDirectory, $"{SpaceHavenConstants.ANIMATIONS}.xml");
-    public string MergedSpaceHavenSettingsXmlPath => Path.Combine(BuildMergeDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
-
-    // Patch:
-    public string PatchedHavenXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.HAVEN}.xml");
-    public string PatchedTextsXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.TEXTS}.xml");
-    public string PatchedAudioXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.AUDIO}.xml");
-    public string PatchedTexturesXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.TEXTURES}.xml");
-    public string PatchedAnimationsXmlPath => Path.Combine(BuildPatchDirectory, $"{SpaceHavenConstants.ANIMATIONS}.xml");
-    public string PatchedSpaceHavenSettingsXmlPath => Path.Combine(BuildPatchDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
-
     public string XmlHash { get; private set; } = string.Empty;
     public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new SortedDictionary<string, string>();
 

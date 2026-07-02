@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SH.Framework.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -24,28 +25,25 @@ public sealed class ProgressInfo : IProgressInfo
         }
     }
 
-    public ProgressInfo(string name) =>
-        Name = name;
+    public ProgressInfo(string name = null) =>
+        Name = name ?? string.Empty;
 
-    public ProgressInfo(string name, IEnumerable<IProgressInfo> weightlessChildren)
+    public ProgressInfo(string name, IEnumerable<IProgressInfo> weightlessChildren) : this(name)
     {
-        Name = name;
         if (weightlessChildren == null) return;
         foreach (IProgressInfo c in weightlessChildren)
             AddChild(c, 1.0);
     }
 
-    public ProgressInfo(string name, IEnumerable<(IProgressInfo, double)> weightedChildren)
+    public ProgressInfo(string name, IEnumerable<(IProgressInfo, double)> weightedChildren) : this(name)
     {
-        Name = name;
         if (weightedChildren == null) return;
         foreach ((IProgressInfo p, double weight) in weightedChildren)
             AddChild(p, weight);
     }
 
-    public ProgressInfo(string name, IReadOnlyDictionary<IProgressInfo, double> weightedChildren)
+    public ProgressInfo(string name, IReadOnlyDictionary<IProgressInfo, double> weightedChildren) : this(name)
     {
-        Name = name;
         if (weightedChildren == null) return;
         foreach (KeyValuePair<IProgressInfo, double> kvp in weightedChildren)
             AddChild(kvp.Key, kvp.Value);
@@ -245,7 +243,8 @@ public sealed class ProgressInfo : IProgressInfo
     }
 
 
-    public override string ToString() => $"{Name} {NormalizedValue.ToString("0.0%")}";
+    public override string ToString() =>
+        $"{(Name.IsNullOrEmpty() ? string.Empty : $"{Name} ")}{NormalizedValue.ToString("0.0%")}";
 
 
     #region IDisposable

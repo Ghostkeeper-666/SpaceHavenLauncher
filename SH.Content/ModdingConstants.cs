@@ -42,7 +42,6 @@ public static class ModdingConstants
 
     public static IReadOnlyList<string> PathsForModding => new string[]
     {
-        $"{SpaceHavenConstants.VERSION_TXT}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.HAVEN}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.TEXTS}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.AUDIO}",
@@ -51,6 +50,8 @@ public static class ModdingConstants
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.FILES}/{SpaceHavenConstants.SPACEHAVENSETTINGS_XML}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.MUSIC}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.SOUND}",
+        $"{SpaceHavenConstants.VERSION_TXT}",
+        $"{SpaceHavenConstants.CRD1}",
         $".cim"
     };
 }

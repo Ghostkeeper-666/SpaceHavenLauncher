@@ -332,6 +332,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
         
+        runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
         CentralScreen.ShowLaunchOriginalOnMonitor();
@@ -373,8 +374,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 await Task.Yield();
                 State.IsSpaceHavenRunning = true;
                 if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
-                    Log.Success($"{Paths.SpaceHavenName} has completed successfully");
-                else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
+                    Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
+                else Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
                 await Task.Yield();
             }
             else
@@ -476,6 +477,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         javaBuild.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
         initialization.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
 
+        runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
         CentralScreen.ShowLaunchModifiedOnMonitor();
@@ -508,7 +510,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             if (mods.Count <= 0)
             {
-                Log.Error(State.StatusBarText = "Please include at least one mod");
+                Log.Error(State.StatusBarText = "Please INSTALL and ENABLE at least one mod for launching a modified game!", "tab://LearningComputer");
                 CentralScreen.RightLeverState = EControlState.Error;
                 return;
             }
@@ -572,8 +574,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 await Task.Yield();
                 State.IsSpaceHavenRunning = true;
                 if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
-                    Log.Success($"{Paths.SpaceHavenName} has completed successfully");
-                else Log.Error($"{Paths.SpaceHavenName} has completed with errors");
+                    Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
+                else Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
                 await Task.Yield();
             }
             else
