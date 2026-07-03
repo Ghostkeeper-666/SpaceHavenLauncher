@@ -1,7 +1,7 @@
-﻿using SH.Content.Modding;
-using SH.Framework.IO;
+﻿using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +27,9 @@ public sealed class ModValuesRepositoryService
         Log = logger ?? new VoidLogger();
     }
 
-    public async Task<bool> TryLoadCurrentModValuesAsync(ModData mod, CancellationToken ct)
+    public async Task<bool> TryLoadCurrentModValuesAsync(ModData mod, CancellationToken ct) =>
+        await Task.Run(() => TryLoadCurrentModValuesInternalAsync(mod, ct));
+    private async Task<bool> TryLoadCurrentModValuesInternalAsync(ModData mod, CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct);
         try
@@ -86,7 +88,9 @@ public sealed class ModValuesRepositoryService
         }
     }
 
-    public async Task<bool> TryLoadPreviousModValuesAsync(ModData mod, bool setToCurrentValue, CancellationToken ct)
+    public async Task<bool> TryLoadPreviousModValuesAsync(ModData mod, bool setToCurrentValue, CancellationToken ct) =>
+        await Task.Run(() => TryLoadPreviousModValuesInternalAsync(mod, setToCurrentValue, ct));
+    private async Task<bool> TryLoadPreviousModValuesInternalAsync(ModData mod, bool setToCurrentValue, CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct);
         try
@@ -161,7 +165,9 @@ public sealed class ModValuesRepositoryService
         }
     }
 
-    public async Task<bool> TrySaveModValuesAsync(ModData mod, bool onlyModified, CancellationToken ct)
+    public async Task<bool> TrySaveModValuesAsync(ModData mod, bool onlyModified, CancellationToken ct) =>
+        await Task.Run(() => TrySaveModValuesInternalAsync(mod, onlyModified, ct));
+    private async Task<bool> TrySaveModValuesInternalAsync(ModData mod, bool onlyModified, CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct);
         try
@@ -221,7 +227,7 @@ public sealed class ModValuesRepositoryService
             mod.IsModified = false;
 
             // Save file:
-            if (!await IOUtils.TrySaveXDocumentAsync(modValuesPath, doc, Log, ct))
+            if (!await IOUtils.TrySaveXDocumentAsync(modValuesPath, doc, null, Log, ct))
                 return false;
 
             // Done.
@@ -240,7 +246,9 @@ public sealed class ModValuesRepositoryService
         }
     }
 
-    public async Task<OrderedDictionary<string, ModData>> TryLoadModSorting(OrderedDictionary<string, ModData> original, CancellationToken ct)
+    public async Task<OrderedDictionary<string, ModData>> TryLoadModSortingAsync(OrderedDictionary<string, ModData> original, CancellationToken ct) =>
+        await Task.Run(() => TryLoadModSortingInternalAsync(original, ct));
+    private async Task<OrderedDictionary<string, ModData>> TryLoadModSortingInternalAsync(OrderedDictionary<string, ModData> original, CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct);
         try
@@ -295,7 +303,9 @@ public sealed class ModValuesRepositoryService
         }
     }
 
-    public async Task<bool> TrySaveModSorting(IEnumerable<ModData> mods, CancellationToken ct)
+    public async Task<bool> TrySaveModSortingAsync(IEnumerable<ModData> mods, CancellationToken ct) =>
+        await Task.Run(() => TrySaveModSortingInternalAsync(mods, ct));
+    private async Task<bool> TrySaveModSortingInternalAsync(IEnumerable<ModData> mods, CancellationToken ct)
     {
         await Semaphore.WaitAsync(ct);
         try
@@ -327,7 +337,7 @@ public sealed class ModValuesRepositoryService
                 rootNode.Add(modNode);
             }
 
-            if (!await IOUtils.TrySaveXDocumentAsync(Paths.ModListPath, doc, Log, ct))
+            if (!await IOUtils.TrySaveXDocumentAsync(Paths.ModListPath, doc, null, Log, ct))
                 return false;
 
             // Done.

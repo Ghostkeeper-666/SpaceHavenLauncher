@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls.Shapes;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Framework.IO;
 using SH.Framework.Logging;
@@ -116,7 +115,7 @@ public partial class MainWindowViewModel : ViewModelBase
             bool success = repo.ResolveAll(pathData);
             if (!success)
                 Log.Error("Unable to locate all required paths. Please set them on System Core. Afterwards, re-initialize the Navigation Console");
-            if (!await repo.TrySave(pathData, ct))
+            if (!await repo.TrySaveAsync(pathData, ct))
                 Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
             State.Paths = new PathViewModel(pathData);
             Paths.PropertyChanged += Paths_PropertyChanged;
@@ -197,7 +196,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (State.SelectedLeftPaneItem.Mod == mod)
                 State.Mods.MoveUp(State.SelectedLeftPaneItem.Mod);
             ModValuesRepositoryService repo = new(Paths.Data, Log);
-            await repo.TrySaveModSorting(State.Mods.Select(m => m.Data), default);
+            await repo.TrySaveModSortingAsync(State.Mods.Select(m => m.Data), default);
         }
         catch (Exception ex) { Log.Error(ex); }
     }
@@ -211,7 +210,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (State.SelectedLeftPaneItem.Mod == mod)
                 State.Mods.MoveDown(State.SelectedLeftPaneItem.Mod);
             ModValuesRepositoryService repo = new(Paths.Data, Log);
-            await repo.TrySaveModSorting(State.Mods.Select(m => m.Data), default);
+            await repo.TrySaveModSortingAsync(State.Mods.Select(m => m.Data), default);
         }
         catch (Exception ex) { Log.Error(ex); }
     }

@@ -1,7 +1,6 @@
 ﻿using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using SH.Content.Extensions;
 using SH.Content.Xml.Animations;
 using System;
 using System.Collections.Generic;

@@ -101,23 +101,32 @@ public sealed class XmlFile
     public IEnumerable<XElement> GetNodes(NodeType nodeType) =>
         Xml.XPathSelectElements(nodeType.XPath) ?? [];
 
-    public async Task<bool> TrySaveAndReloadAsync(ILogger logger, CancellationToken ct)
+    public bool TrySetXmlContent(string content, ILogger logger)
     {
-        // Save:
-        if(!await IOUtils.TrySaveXDocumentAsync(Path, Xml, logger, ct))
+        XDocument x = XDocument.Parse(content, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
+        if(x == null)
+        {
+            logger?.Error($@"Unable to parse new XML content");
             return false;
-        // Reload:
-        if((Xml = await IOUtils.TryLoadXDocumentAsync(Path, logger, ct)) == null)
+        }
+        Xml = x;
+        return true;
+    }
+
+    public async Task<bool> TryReparse(ILogger logger, CancellationToken ct)
+    {
+        XDocument reparsed = await IOUtils.TryReparseAsync(Xml, null, logger, ct);
+        if(reparsed == null)
             return false;
-        // Done.
+        Xml = reparsed;
         return true;
     }
 
     public async Task<bool> TrySaveAsync(ILogger logger, CancellationToken ct) =>
-        await IOUtils.TrySaveXDocumentAsync(Path, Xml, logger, ct);
+        await IOUtils.TrySaveXDocumentAsync(Path, Xml, null, logger, ct);
 
     public async Task<bool> TrySaveToAsync(string path, ILogger logger, CancellationToken ct) =>
-        await IOUtils.TrySaveXDocumentAsync(path, Xml, logger, ct);
+        await IOUtils.TrySaveXDocumentAsync(path, Xml, null, logger, ct);
 
     public bool TryRunXPath(string xpath, out List<XElement> targetNodes, ILogger logger)
     {
@@ -225,6 +234,7 @@ public sealed class XmlFile
             !rest.StartsWith("apos;") &&
             !rest.StartsWith("#");
     }
+
 
 
     public override string ToString() => Path;

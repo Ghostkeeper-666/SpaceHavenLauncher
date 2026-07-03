@@ -3,7 +3,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using ICSharpCode.SharpZipLib.Zip;
-using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,22 +10,20 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using SH.Content;
+using SH.Modding;
 
 namespace SH.Launcher.Core.Services;
 
 public sealed class JarRepositoryService
 {
-    private readonly PathData Paths;
     private readonly ILogger Log;
-    private IProgressInfo Progress;
 
-    public JarRepositoryService(PathData paths, ILogger logger)
-    {
-        Paths = paths ?? throw new ArgumentNullException(nameof(paths));
+    public JarRepositoryService(ILogger logger) =>
         Log = logger ?? new VoidLogger();
-    }
 
-    public async Task<VersionInfo> TryReadVersionAsync(string jarPath, ILogger logger)
+    public async Task<VersionInfo> TryReadVersionAsync(string jarPath, ILogger logger) =>
+        await Task.Run(() => TryReadVersionInternalAsync(jarPath, logger));
+    private async Task<VersionInfo> TryReadVersionInternalAsync(string jarPath, ILogger logger)
     {
         string parent = null;
         try { parent = Path.GetDirectoryName(jarPath); } catch { }
@@ -61,7 +58,9 @@ public sealed class JarRepositoryService
         }
     }
 
-    public async Task<bool> TryExportLibraryAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progressInfo)
+    public async Task<bool> TryExportLibraryAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryExportLibraryInternalAsync(jarPath, outputDirectory, ct, progress));
+    private async Task<bool> TryExportLibraryInternalAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress)
     {
         int fileCount = 0;
         string jarDir = null;
@@ -71,8 +70,7 @@ public sealed class JarRepositoryService
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(nameof(jarPath));
 
-            Progress = progressInfo;
-            Progress?.Start();
+            progress?.Start();
 
             if (!File.Exists(jarPath))
             {
@@ -153,11 +151,11 @@ public sealed class JarRepositoryService
                 ++fileCount;
                 sumCompressedSize += entry.CompressedSize;
                 sumUncompressedSize += entry.Size;
-                Progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
+                progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
             }
 
             // Done.
-            Progress?.Complete();
+            progress?.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -172,7 +170,9 @@ public sealed class JarRepositoryService
         }
     }
 
-    public async Task<bool> TryExportAllAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progressInfo)
+    public async Task<bool> TryExportAllAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryExportAllInternalAsync(jarPath, outputDirectory, ct, progress));
+    private async Task<bool> TryExportAllInternalAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress)
     {
         int fileCount = 0;
         string parent = null;
@@ -180,8 +180,7 @@ public sealed class JarRepositoryService
 
         try
         {
-            Progress = progressInfo;
-            Progress?.Start();
+            progress?.Start();
 
             if (!File.Exists(jarPath))
             {
@@ -255,11 +254,11 @@ public sealed class JarRepositoryService
                 ++fileCount;
                 sumCompressedSize += entry.CompressedSize;
                 sumUncompressedSize += entry.Size;
-                Progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
+                progress?.SetNormalized((sumCompressedSize + sumUncompressedSize) / (totalCompressedSize + totalUncompressedSize));
             }
 
             // Done.
-            Progress?.Complete();
+            progress?.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }

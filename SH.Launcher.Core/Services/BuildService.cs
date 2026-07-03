@@ -1,6 +1,6 @@
-﻿using SH.Content.Modding.Build;
-using SH.Framework.Logging;
+﻿using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
+using SH.Modding.Build;
 using System;
 using System.Threading.Tasks;
 
@@ -23,7 +23,9 @@ public sealed class BuildService
         {
             // Build!
             ModBuilder builder = new(paths, settings, Log);
-            if (!await builder.TryBuildAsync())
+
+            // A cancellation token is already passed using build settings:
+            if (!await Task.Run(() => builder.TryBuildAsync()))
                 return false;
 
             // Done.

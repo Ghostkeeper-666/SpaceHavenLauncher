@@ -1,17 +1,15 @@
 ﻿using ICSharpCode.SharpZipLib.Zip;
 using SH.Content;
-using SH.Content.Modding;
 using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
+using SH.Modding;
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,12 +31,14 @@ public sealed class DeploymentService
 
     private async Task<bool> IsModifiedJar(string jarPath)
     {
-        JarRepositoryService repo = new(Paths, Log);
+        JarRepositoryService repo = new(Log);
         VersionInfo version = await repo.TryReadVersionAsync(jarPath, Log);
         return version.ToString().Contains("MODIFIED", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<bool> TryBackupOriginal(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> TryBackupOriginalAsync(CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryBackupOriginalInternalAsync(ct, progress));
+    private async Task<bool> TryBackupOriginalInternalAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
@@ -98,7 +98,9 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> TryPrepareTemplateAsync(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> TryPrepareTemplateAsync(CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryPrepareTemplateInternalAsync(ct, progress));
+    private async Task<bool> TryPrepareTemplateInternalAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
@@ -131,7 +133,9 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> TryValidateModifiedCache(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> TryValidateModifiedCacheAsync(CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryValidateModifiedCacheInternalAsync(ct, progress));
+    private async Task<bool> TryValidateModifiedCacheInternalAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
@@ -170,7 +174,7 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> TryRebuildTemplateAsync(CancellationToken ct, IProgressInfo progress)
+    private async Task<bool> TryRebuildTemplateAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
@@ -305,10 +309,13 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> RestoreOriginalGameAsync(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> RestoreOriginalGameAsync(CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => RestoreOriginalGameInternalAsync(ct, progress));
+    public async Task<bool> RestoreOriginalGameInternalAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
+            progress.Start();
             Log.Info($"Restoring ORIGINAL game...");
 
             // Restore original config.json file to space haven directory:
@@ -338,21 +345,25 @@ public sealed class DeploymentService
             config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // remove modified
             config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR); // avoids duplicate
             config.ClassPath.Add(SpaceHavenConstants.SPACEHAVEN_JAR); // as last JAR
+            progress.SetNormalized(0.20);
 
             // Deploy restored config.json file:
             Log.Info($@"Deploying ""{SpaceHavenConstants.CONFIG_JSON}""...");
             if (!await IOUtils.TryWriteAllTextAsync(Paths.SpaceHavenConfigJsonPath, config.ToJsonString(), Log, ct))
                 return false;
+            progress.SetNormalized(0.40);
 
             // Try to delete modifiedspacehaven.jar, but do not stop on errors:
             Log.Info($@"Removing ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}""...");
             if (File.Exists(Paths.SpaceHavenModifiedJarPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenModifiedJarPath, Log, ct);
+            progress.SetNormalized(0.60);
 
             // Try to delete mods.json, but do not stop on errors:
             Log.Info($@"Removing ""{ModdingConstants.MODS_JSON}""...");
             if (File.Exists(Paths.SpaceHavenModsJsonPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenModsJsonPath, Log, ct);
+            progress.SetNormalized(0.80);
 
             // Try to delete AOP libraries, but do not stop on error:
             Log.Info($@"Removing ""{ModdingConstants.ASPECTJ}""...");
@@ -363,6 +374,7 @@ public sealed class DeploymentService
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenAspectJWeaverPath, Log, ct);
 
             // Done.
+            progress.Complete();
             Log.Success($@"ORIGINAL game was successfully restored");
             return true;
         }
@@ -374,7 +386,9 @@ public sealed class DeploymentService
         }
     }
 
-    public async Task<bool> DeployModifiedGameAsync(bool hasXmlMods, bool hasJavaMods, CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> DeployModifiedGameAsync(bool hasXmlMods, bool hasJavaMods, CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => DeployModifiedGameInternalAsync(hasXmlMods, hasJavaMods, ct, progress));
+    private async Task<bool> DeployModifiedGameInternalAsync(bool hasXmlMods, bool hasJavaMods, CancellationToken ct, IProgressInfo progress)
     {
         try
         {

@@ -5,8 +5,6 @@ using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using SH.Content;
 using SH.Content.Art;
-using SH.Content.Modding;
-using SH.Content.Modding.Build;
 using SH.Content.Xml;
 using SH.Framework.IO;
 using SH.Framework.Logging;
@@ -16,6 +14,8 @@ using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
+using SH.Modding;
+using SH.Modding.Build;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -133,7 +133,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // There must be an original JAR file in order to proceed:
             Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
-            if (!await svc.TryBackupOriginal(State.InitializeCTS.Token, backup))
+            if (!await svc.TryBackupOriginalAsync(State.InitializeCTS.Token, backup))
             {
                 Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
                 LeftScreen.SetError(ELeftScreenStep.BackupOriginal);
@@ -173,7 +173,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // The cached mod jar must match the current original jar:
             Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
-            if (!await Task.Run(() => svc.TryValidateModifiedCache(State.InitializeCTS.Token, cache)))
+            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(State.InitializeCTS.Token, cache)))
             {
                 Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
                 LeftScreen.SetError(ELeftScreenStep.ValidateCache);
@@ -241,7 +241,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, progress);
             if (mods == null)
                 return false;
-            mods = await valuesRepoSvc.TryLoadModSorting(mods, ct);
+            mods = await valuesRepoSvc.TryLoadModSortingAsync(mods, ct);
 
             // Load mod values:
             foreach (ModData mod in mods.Values)
@@ -721,7 +721,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     // Export ORIGINAL Library:
                     Log.Info($@"Extracting ORIGINAL library...", exportOriginalFilesDir);
-                    JarRepositoryService repo = new(Paths.Data, Log);
+                    JarRepositoryService repo = new(Log);
                     if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalFilesDir, ct, extractOriginalFiles))
                     {
                         Log.Error($@"Unable to extract ORIGINAL library", exportDir);
@@ -775,7 +775,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     // Export MODIFIED Library:
                     Log.Info($@"Exporting MODIFIED library...", exportModifiedFilesDir);
-                    JarRepositoryService repo = new(Paths.Data, Log);
+                    JarRepositoryService repo = new(Log);
                     if (!await repo.TryExportLibraryAsync(modifiedJarPath, exportModifiedFilesDir, ct, extractModifiedFiles))
                     {
                         Log.Error($@"Unable to export MODIFIED library", exportDir);

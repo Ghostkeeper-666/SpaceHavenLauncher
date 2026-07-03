@@ -23,19 +23,6 @@ public sealed class DebugService
 
     private readonly List<string> FilePaths = [];
 
-    private void Add(string filePath)
-    {
-        if (IOUtils.FileExists(filePath))
-            FilePaths.Add(filePath.AsOSPath());
-    }
-
-    private void AddMany(IEnumerable<string> filePaths)
-    {
-        foreach (string filePath in filePaths ?? [])
-            if (IOUtils.FileExists(filePath))
-                FilePaths.Add(filePath.AsOSPath());
-    }
-
     private void SelectFiles()
     {
         FilePaths.Clear();
@@ -97,45 +84,9 @@ public sealed class DebugService
         Log = new LoggerCollection(logger);
     }
 
-    private async Task<bool> TryGenerateOSInfoAsync(CancellationToken ct)
-    {
-        try
-        {
-            Log.Info($@"Generating ""{Path.GetFileName(Paths.SystemInformationFilePath)}""...", Paths.BuildDir);
-
-            // Try to delete existing file:
-            if (!await IOUtils.TryDeleteFileAsync(Paths.SystemInformationFilePath, Log, ct))
-            {
-                Log.Error($@"Unable to delete file ""{Paths.SystemInformationFilePath}"", please check whether a program is holding this file");
-                return false;
-            }
-            ct.ThrowIfCancellationRequested();
-
-            // Generate content:
-            StringBuilder sb = new();
-            sb.AppendLine($"OS:            {RuntimeInformation.OSDescription}");
-            sb.AppendLine($"OS Arch:       {RuntimeInformation.OSArchitecture}");
-            sb.AppendLine($"Process Arch:  {RuntimeInformation.ProcessArchitecture}");
-            sb.AppendLine($"64-bit OS:     {Environment.Is64BitOperatingSystem}");
-            sb.AppendLine($"64-bit Proc:   {Environment.Is64BitProcess}");
-            sb.AppendLine($"Processors:    {Environment.ProcessorCount}");
-            sb.AppendLine($"Available RAM: {GC.GetGCMemoryInfo().TotalAvailableMemoryBytes}");
-            sb.AppendLine($"Is Windows:    {OS.IsWin}");
-            sb.AppendLine($"Is Linux:      {OS.IsLnx}");
-            sb.AppendLine($"Is macOS:      {OS.IsMac}");
-
-            // Write file:
-            return await IOUtils.TryWriteAllTextAsync(Paths.SystemInformationFilePath, sb.ToString(), Log, ct);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log.Error($@"Unable to generate a debug file: {ex}", Paths.WorkDir);
-            return false;
-        }
-    }
-
-    public async Task<bool> TryGenerateDebugFileAsync(CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> TryGenerateDebugFileAsync(CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryGenerateDebugFileInternalAsync(ct, progress));
+    private async Task<bool> TryGenerateDebugFileInternalAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
@@ -236,5 +187,56 @@ public sealed class DebugService
             Log.Error($@"Unable to generate a debug file: {ex}", Paths.WorkDir);
             return false;
         }
+    }
+
+    private async Task<bool> TryGenerateOSInfoAsync(CancellationToken ct)
+    {
+        try
+        {
+            Log.Info($@"Generating ""{Path.GetFileName(Paths.SystemInformationFilePath)}""...", Paths.BuildDir);
+
+            // Try to delete existing file:
+            if (!await IOUtils.TryDeleteFileAsync(Paths.SystemInformationFilePath, Log, ct))
+            {
+                Log.Error($@"Unable to delete file ""{Paths.SystemInformationFilePath}"", please check whether a program is holding this file");
+                return false;
+            }
+            ct.ThrowIfCancellationRequested();
+
+            // Generate content:
+            StringBuilder sb = new();
+            sb.AppendLine($"OS:            {RuntimeInformation.OSDescription}");
+            sb.AppendLine($"OS Arch:       {RuntimeInformation.OSArchitecture}");
+            sb.AppendLine($"Process Arch:  {RuntimeInformation.ProcessArchitecture}");
+            sb.AppendLine($"64-bit OS:     {Environment.Is64BitOperatingSystem}");
+            sb.AppendLine($"64-bit Proc:   {Environment.Is64BitProcess}");
+            sb.AppendLine($"Processors:    {Environment.ProcessorCount}");
+            sb.AppendLine($"Available RAM: {GC.GetGCMemoryInfo().TotalAvailableMemoryBytes}");
+            sb.AppendLine($"Is Windows:    {OS.IsWin}");
+            sb.AppendLine($"Is Linux:      {OS.IsLnx}");
+            sb.AppendLine($"Is macOS:      {OS.IsMac}");
+
+            // Write file:
+            return await IOUtils.TryWriteAllTextAsync(Paths.SystemInformationFilePath, sb.ToString(), Log, ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error($@"Unable to generate a debug file: {ex}", Paths.WorkDir);
+            return false;
+        }
+    }
+
+    private void Add(string filePath)
+    {
+        if (IOUtils.FileExists(filePath))
+            FilePaths.Add(filePath.AsOSPath());
+    }
+
+    private void AddMany(IEnumerable<string> filePaths)
+    {
+        foreach (string filePath in filePaths ?? [])
+            if (IOUtils.FileExists(filePath))
+                FilePaths.Add(filePath.AsOSPath());
     }
 }

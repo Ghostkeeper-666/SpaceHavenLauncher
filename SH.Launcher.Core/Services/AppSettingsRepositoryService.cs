@@ -136,7 +136,7 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));
 
             // Save to file:
-            if (!await IOUtils.TrySaveXDocumentAsync(Paths.ApplicationSettingsPath, doc, Log, ct))
+            if (!await IOUtils.TrySaveXDocumentAsync(Paths.ApplicationSettingsPath, doc, null, Log, ct))
                 return false;
 
             // Done.

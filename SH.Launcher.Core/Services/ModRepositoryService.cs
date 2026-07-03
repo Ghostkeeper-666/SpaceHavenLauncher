@@ -1,8 +1,8 @@
-﻿using SH.Content.Modding;
-using SH.Framework.Extensions;
+﻿using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,7 +38,8 @@ public sealed class ModRepositoryService
 
             // Load:
             ModRepository modRepository = new(Log);
-            OrderedDictionary<string, ModData> mods = await modRepository.TryLoadMods(modRootDirectories, ct, progress);
+            OrderedDictionary<string, ModData> mods =
+                await Task.Run(() => modRepository.TryLoadMods(modRootDirectories, ct, progress));
 
             // Done.
             return mods;

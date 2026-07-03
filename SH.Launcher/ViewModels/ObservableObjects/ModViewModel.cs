@@ -11,9 +11,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using SH.Content.Modding;
-using SH.Content;
 using SH.Launcher.Extensions;
+using SH.Modding;
 
 namespace SH.Launcher.ViewModels;
 

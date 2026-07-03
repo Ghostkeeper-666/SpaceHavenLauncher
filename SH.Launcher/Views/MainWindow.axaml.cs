@@ -90,7 +90,7 @@ public partial class MainWindow : Window
         try
         {
             PathSettingsRepositoryService repo = new(Log);
-            await repo.TrySave(Paths.Data, default);
+            await repo.TrySaveAsync(Paths.Data, default);
         }
         catch { }
 

@@ -101,6 +101,55 @@ public static class IOUtils
     }
 
 
+    public static async Task<XDocument> TryReparseAsync(XDocument doc, XmlWriterSettings writeSettings, ILogger logger, CancellationToken ct)
+    {
+        writeSettings = writeSettings == null ?
+            new()
+            {
+                OmitXmlDeclaration = true,
+                Encoding = new UTF8Encoding(false),
+                ConformanceLevel = ConformanceLevel.Document,
+
+                Indent = true,
+                IndentChars = "  ",
+                CheckCharacters = true,
+
+                NewLineChars = "\n",
+                NewLineOnAttributes = false,
+                NewLineHandling = NewLineHandling.Replace,
+
+                DoNotEscapeUriAttributes = true,
+                NamespaceHandling = NamespaceHandling.Default,
+
+                WriteEndDocumentOnClose = true,
+                CloseOutput = true,
+            } :
+            writeSettings.Clone();
+
+        writeSettings.Async = true;
+
+        // Serialize to memory:
+        string content;
+        using (StringWriter sw = new())
+        {
+            using (XmlWriter writer = XmlWriter.Create(sw, writeSettings))
+            {
+                ct.ThrowIfCancellationRequested();
+                await doc.SaveAsync(writer, ct).ConfigureAwait(false);
+                await writer.FlushAsync().ConfigureAwait(false);
+            }
+
+            content = sw.ToString();
+        }
+
+        ct.ThrowIfCancellationRequested();
+
+        // Parse:
+        return
+            await Task.Run(() => XDocument.Parse(content, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo), ct)
+            .ConfigureAwait(false);
+    }
+
     public static async Task<XDocument> TryLoadXDocumentAsync(string path, ILogger logger, CancellationToken ct)
     {
         try
@@ -114,7 +163,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             string xml = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
-            return XDocument.Parse(xml, LoadOptions.SetLineInfo | LoadOptions.SetLineInfo);
+            return XDocument.Parse(xml, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -125,7 +174,8 @@ public static class IOUtils
             return null;
         }
     }
-    public static async Task<bool> TrySaveXDocumentAsync(string path, XDocument doc, ILogger logger, CancellationToken ct)
+
+    public static async Task<bool> TrySaveXDocumentAsync(string path, XDocument doc, XmlWriterSettings writeSettings, ILogger logger, CancellationToken ct)
     {
         try
         {
@@ -134,25 +184,33 @@ public static class IOUtils
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
                 return false;
 
-            XmlWriterSettings settings = new()
-            {
-                Async = true,
+            writeSettings = writeSettings == null ?
+                new()
+                {
+                    OmitXmlDeclaration = true,
+                    Encoding = new UTF8Encoding(false),
+                    ConformanceLevel = ConformanceLevel.Document,
 
-                OmitXmlDeclaration = true,
-                Encoding = new UTF8Encoding(false),
-                ConformanceLevel = ConformanceLevel.Document,
+                    Indent = true,
+                    IndentChars = "  ",
+                    CheckCharacters = true,
 
-                Indent = true,
-                IndentChars = "  ",
-                CheckCharacters = true,
+                    NewLineChars = "\n",
+                    NewLineOnAttributes = false,
+                    NewLineHandling = NewLineHandling.Replace,
 
-                NewLineChars = "\n",
-                NewLineOnAttributes = false,
-                NewLineHandling = NewLineHandling.Replace,
-            };
+                    DoNotEscapeUriAttributes = true,
+                    NamespaceHandling = NamespaceHandling.Default,
+
+                    WriteEndDocumentOnClose = true,
+                    CloseOutput = true,
+                } :
+                writeSettings.Clone();
+
+            writeSettings.Async = true;
 
             await using FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.None);
-            await using XmlWriter writer = XmlWriter.Create(stream, settings);
+            await using XmlWriter writer = XmlWriter.Create(stream, writeSettings);
             ct.ThrowIfCancellationRequested();
             await doc.SaveAsync(writer, ct);
 
@@ -174,8 +232,8 @@ public static class IOUtils
     {
         try
         {
-            directory = directory.AsOSPath();
-            DirectoryInfo dir = Directory.CreateDirectory(directory);
+            string fullPath = Path.GetFullPath(directory.AsOSPath()).AsOSPath();
+            DirectoryInfo dir = Directory.CreateDirectory(fullPath);
             error = null;
             return dir.Exists;
         }
@@ -195,38 +253,63 @@ public static class IOUtils
         logger?.Error(error, parent);
         return false;
     }
-    public static Task<bool> TryCreateDirectoryAsync(string directory, ILogger logger, CancellationToken ct) =>
-        Task.Run(() => TryCreateDirectory(directory, logger), ct);
+    public static async Task<bool> TryCreateDirectoryAsync(string directory, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            return await Task.Run(() => TryCreateDirectory(directory, logger), ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            string parent = null;
+            try { parent = Path.GetDirectoryName(directory).AsOSPath(); } catch { }
+            logger?.Error(ex, parent);
+            return false;
+        }
+    }
 
 
 
-
-    public static async Task<bool> TryDeleteDirectoryAsync(string directory, ILogger logger, CancellationToken ct)
+    public static async Task<bool> TryDeleteDirectoryAsync(string directory, ILogger logger, CancellationToken ct) =>
+        await TryDeleteDirectoryAsync(directory, true, logger, ct);
+    public static async Task<bool> TryDeleteDirectoryContentAsync(string directory, ILogger logger, CancellationToken ct) =>
+        await TryDeleteDirectoryAsync(directory, false, logger, ct);
+    public static async Task<bool> TryDeleteDirectoryAsync(string directory, bool deleteRootDirectory, ILogger logger, CancellationToken ct)
     {
         return await Task.Run(() =>
         {
             try
             {
+                if (directory.IsNullOrWhiteSpace())
+                {
+                    logger?.Error("The provided directory path is empty");
+                    return false;
+                }
+
                 string root = Path.GetFullPath(directory.AsOSPath()).AsOSPath();
                 if (!Directory.Exists(root))
                     return true;
 
                 DeleteDirectoryContents(root, root, ct);
-                Directory.Delete(root);
+
+                if (deleteRootDirectory)
+                    try { Directory.Delete(root); }
+                    catch (DirectoryNotFoundException) { }
+
                 return true;
             }
-            catch (DirectoryNotFoundException)
-            {
-                return true;
-            }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                logger?.Error(ex);
+                string parent = null;
+                try { parent = Path.GetDirectoryName(directory).AsOSPath(); }
+                catch { }
+                logger?.Error(ex, parent);
                 return false;
             }
         }, ct);
     }
-
     private static void DeleteDirectoryContents(string root, string current, CancellationToken ct)
     {
         foreach (string file in Directory.EnumerateFiles(current))
@@ -235,7 +318,8 @@ public static class IOUtils
             string fullPath = Path.GetFullPath(file).AsOSPath();
             EnsureInsideRoot(root, fullPath);
             File.SetAttributes(fullPath, FileAttributes.Normal);
-            File.Delete(fullPath);
+            try { File.Delete(fullPath); }
+            catch (DirectoryNotFoundException) { }
         }
 
         foreach (string directory in Directory.EnumerateDirectories(current))
@@ -243,17 +327,16 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             string fullPath = Path.GetFullPath(directory).AsOSPath();
             EnsureInsideRoot(root, fullPath);
-            DirectoryInfo info = new(fullPath);
-            bool isLink = info.LinkTarget != null || info.Attributes.HasFlag(FileAttributes.ReparsePoint);
-            if (isLink)
-            {
-                // Junction/symlink: delete only the link itself.
-                info.Delete();
-                continue;
-            }
-            DeleteDirectoryContents(root, fullPath, ct);
-            info.Attributes = FileAttributes.Normal;
-            info.Delete();
+            DirectoryInfo di = new(fullPath);
+
+            // Junction/symlink: do not delete the link target’s content, just the link itself
+            bool isLink = di.LinkTarget != null || di.Attributes.HasFlag(FileAttributes.ReparsePoint);
+            if (!isLink)
+                DeleteDirectoryContents(root, fullPath, ct);
+
+            di.Attributes = FileAttributes.Normal;
+            try { di.Delete(); }
+            catch (DirectoryNotFoundException) { }
         }
     }
 
@@ -294,8 +377,21 @@ public static class IOUtils
         logger?.Error(error, parent);
         return false;
     }
-    public static Task<bool> TryDeleteFileAsync(string path, ILogger logger, CancellationToken ct) =>
-        Task.Run(() => TryDeleteFile(path, logger), ct);
+    public static async Task<bool> TryDeleteFileAsync(string path, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            return await Task.Run(() => TryDeleteFile(path, logger), ct);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            string parent = null;
+            try { parent = Path.GetDirectoryName(path).AsOSPath(); } catch { }
+            logger?.Error(ex, parent);
+            return false;
+        }
+    }
 
 
 

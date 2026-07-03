@@ -1,7 +1,7 @@
 ﻿using SH.Content.Enums;
-using SH.Content.Modding.Annotation;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Modding.Annotation;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +17,9 @@ public sealed class XmlAnnotationService
         Log = logger ?? new VoidLogger();
     }
 
-    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress)
+    public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress) =>
+        await Task.Run(() => TryRunInternalAsync(baseDir, language, ct, progress));
+    private async Task<bool> TryRunInternalAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress)
     {
         try
         {

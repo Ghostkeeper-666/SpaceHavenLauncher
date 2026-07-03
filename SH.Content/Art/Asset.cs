@@ -1,5 +1,4 @@
-﻿using SH.Content.Extensions;
-using SH.Content.Xml.Animations;
+﻿using SH.Content.Xml.Animations;
 using SH.Framework.Extensions;
 using System;
 using System.Collections.Generic;

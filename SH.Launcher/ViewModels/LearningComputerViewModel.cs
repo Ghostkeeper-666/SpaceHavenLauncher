@@ -1,5 +1,4 @@
-﻿using Avalonia.Media;
-using Avalonia.Media.Imaging;
+﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.IO;
 using SH.Framework.Logging;

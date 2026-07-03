@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls.Shapes;
-using Avalonia.Media;
+﻿using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Logging;
 using SH.Framework.Progress;

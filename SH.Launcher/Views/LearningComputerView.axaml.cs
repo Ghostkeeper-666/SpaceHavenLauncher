@@ -3,11 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
-using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Launcher.ViewModels;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace SH.Launcher.Views;

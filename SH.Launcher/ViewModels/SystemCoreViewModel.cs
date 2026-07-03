@@ -8,7 +8,6 @@ using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;

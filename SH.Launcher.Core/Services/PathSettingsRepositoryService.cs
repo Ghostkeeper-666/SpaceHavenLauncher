@@ -13,12 +13,88 @@ using System.Xml.Linq;
 namespace SH.Launcher.Core.Services;
 
 #warning TODO: Create a new path finding system which combines diverse possible paths!
+
 public sealed class PathSettingsRepositoryService
 {
     public PathSettingsRepositoryService(ILogger logger) =>
         Log = logger ?? new VoidLogger();
 
     private readonly ILogger Log;
+
+    public async Task<bool> TrySaveAsync(PathData data, CancellationToken ct) =>
+        await Task.Run(() => TrySaveInternalAsync(data, ct));
+    private async Task<bool> TrySaveInternalAsync(PathData data, CancellationToken ct)
+    {
+        try
+        {
+            XDocument doc = new();
+            XElement rootNode = new("PathSettings");
+
+            // TODO: Improve serialization of settings by using version:
+            rootNode.SetAttributeValue("version", "1.0.0.0");
+
+            doc.Add(rootNode);
+            rootNode.Add(new XElement(nameof(PathData.SteamDir), data.SteamDir));
+            rootNode.Add(new XElement(nameof(PathData.SpaceHavenDir), data.SpaceHavenDir));
+            rootNode.Add(new XElement(nameof(PathData.SpaceHavenJarDir), data.SpaceHavenJarDir));
+            rootNode.Add(new XElement(nameof(PathData.SteamModsDir), data.SteamModsDir));
+            rootNode.Add(new XElement(nameof(PathData.ClassicModsDir), data.ClassicModsDir));
+            rootNode.Add(new XElement(nameof(PathData.ModValuesDir), data.ModValuesDir));
+
+            if (!await IOUtils.TrySaveXDocumentAsync(data.PathSettingsPath, doc, null, Log, ct))
+                return false;
+
+            // Done.
+            Log.Debug($"Path settings were successfully saved", data.PathSettingsPath);
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex, data?.WorkDir);
+            return false;
+        }
+    }
+
+    public PathData TryLoad()
+    {
+        try
+        {
+            PathData data = new();
+            data.AppDir = ResolveAppDir(); // force
+            data.WorkDir = ResolveWorkDir(); // force
+
+            if (data.PathSettingsPath.IsNullOrWhiteSpace() || !File.Exists(data.PathSettingsPath))
+                return null;
+
+            XDocument doc = XDocument.Load(data.PathSettingsPath);
+            XElement rootNode = doc.Element("PathSettings");
+            if (rootNode == null)
+            {
+                Log.Error($"Invalid root node, <PathSettings> is expected", data.PathSettingsPath);
+                return null;
+            }
+
+            // TODO: Improve deserialization of settings by using version:
+            string version = rootNode.Attribute("version")?.Value;
+
+            data.SteamDir = rootNode.Element(nameof(PathData.SteamDir))?.Value?.Trim();
+            data.SpaceHavenDir = rootNode.Element(nameof(PathData.SpaceHavenDir))?.Value?.Trim();
+            data.SpaceHavenJarDir = rootNode.Element(nameof(PathData.SpaceHavenJarDir))?.Value?.Trim();
+            data.SteamModsDir = rootNode.Element(nameof(PathData.SteamModsDir))?.Value?.Trim();
+            data.ClassicModsDir = rootNode.Element(nameof(PathData.ClassicModsDir))?.Value?.Trim();
+            data.ModValuesDir = rootNode.Element(nameof(PathData.ModValuesDir))?.Value?.Trim();
+
+            // Done.
+            Log.Success($"Path settings were successfully loaded", data.PathSettingsPath);
+            return data;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return null;
+        }
+    }
 
     public bool ResolveAll(PathData data)
     {
@@ -393,105 +469,6 @@ public sealed class PathSettingsRepositoryService
         }
     }
 
-    private string ResolveTempDir()
-    {
-        //// Default temp directory -> Path.GetTempPath():
-        //// Windows	C:\Users\<User>\AppData\Local\Temp\
-        //// Linux	/tmp/ (or $TMPDIR if set)
-        //// macOS	/var/folders/... (system-managed temp path)
-        //Paths.SH.LauncherTempDir = Path.TrimEndingDirectorySeparator(Path.Combine(Path.GetTempPath(), "SpaceHavenSH.Launcher"));
-        //if (!Directory.Exists(Paths.SH.LauncherTempDir))
-        //{
-        //    try { Directory.CreateDirectory(Paths.SH.LauncherTempDir); }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.Info(ex);
-        //        return false;
-        //    }
-        //}
-        return null;
-    }
-
-
-
-    public PathData TryLoad()
-    {
-        try
-        {
-            PathData data = new();
-            data.AppDir = ResolveAppDir(); // force
-            data.WorkDir = ResolveWorkDir(); // force
-
-            if (data.PathSettingsPath.IsNullOrWhiteSpace() || !File.Exists(data.PathSettingsPath))
-                return null;
-
-            XDocument doc = XDocument.Load(data.PathSettingsPath);
-            XElement rootNode = doc.Element("PathSettings");
-            if (rootNode == null)
-            {
-                Log.Error($"Invalid root node, <PathSettings> is expected", data.PathSettingsPath);
-                return null;
-            }
-
-            // TODO: Improve deserialization of settings by using version:
-            string version = rootNode.Attribute("version")?.Value;
-
-            data.SteamDir = rootNode.Element(nameof(PathData.SteamDir))?.Value?.Trim();
-            data.SpaceHavenDir = rootNode.Element(nameof(PathData.SpaceHavenDir))?.Value?.Trim();
-            data.SpaceHavenJarDir = rootNode.Element(nameof(PathData.SpaceHavenJarDir))?.Value?.Trim();
-            data.SteamModsDir = rootNode.Element(nameof(PathData.SteamModsDir))?.Value?.Trim();
-            data.ClassicModsDir = rootNode.Element(nameof(PathData.ClassicModsDir))?.Value?.Trim();
-            data.ModValuesDir = rootNode.Element(nameof(PathData.ModValuesDir))?.Value?.Trim();
-
-            // Done.
-            Log.Success($"Path settings were successfully loaded", data.PathSettingsPath);
-            return data;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex);
-            return null;
-        }
-    }
-
-
-
-    public async Task<bool> TrySave(PathData data, CancellationToken ct)
-    {
-        try
-        {
-            XDocument doc = new();
-            XElement rootNode = new("PathSettings");
-
-            // TODO: Improve serialization of settings by using version:
-            rootNode.SetAttributeValue("version", "1.0.0.0");
-
-            doc.Add(rootNode);
-            rootNode.Add(new XElement(nameof(PathData.SteamDir), data.SteamDir));
-            rootNode.Add(new XElement(nameof(PathData.SpaceHavenDir), data.SpaceHavenDir));
-            rootNode.Add(new XElement(nameof(PathData.SpaceHavenJarDir), data.SpaceHavenJarDir));
-            rootNode.Add(new XElement(nameof(PathData.SteamModsDir), data.SteamModsDir));
-            rootNode.Add(new XElement(nameof(PathData.ClassicModsDir), data.ClassicModsDir));
-            rootNode.Add(new XElement(nameof(PathData.ModValuesDir), data.ModValuesDir));
-
-            if (!await IOUtils.TrySaveXDocumentAsync(data.PathSettingsPath, doc, Log, ct))
-                return false;
-
-            // Done.
-            Log.Debug($"Path settings were successfully saved", data.PathSettingsPath);
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log.Error(ex, data?.WorkDir);
-            return false;
-        }
-    }
-
-
-
-
     #region Possible Space Haven Locations
 
     private readonly IReadOnlyList<string> PossibleSpaceHavenPaths =
@@ -609,62 +586,61 @@ public sealed class PathSettingsRepositoryService
     OS.IsLnx ?
     [
         // Steam:
-        @"~/.steam/steam/steamapps/common/SpaceHaven/spacehaven",
-        @"~/.steam/steam/steamapps/common/spacehaven/spacehaven",
-        @"~/.steam/steam/steamapps/common/Space Haven/spacehaven",
+        "~/.steam/steam/steamapps/common/SpaceHaven/spacehaven",
+        "~/.steam/steam/steamapps/common/spacehaven/spacehaven",
+        "~/.steam/steam/steamapps/common/Space Haven/spacehaven",
 
-        @"~/.local/share/Steam/steamapps/common/SpaceHaven/spacehaven",
-        @"~/.local/share/Steam/steamapps/common/spacehaven/spacehaven",
-        @"~/.local/share/Steam/steamapps/common/Space Haven/spacehaven",
+        "~/.local/share/Steam/steamapps/common/SpaceHaven/spacehaven",
+        "~/.local/share/Steam/steamapps/common/spacehaven/spacehaven",
+        "~/.local/share/Steam/steamapps/common/Space Haven/spacehaven",
 
-        @"~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/SpaceHaven/spacehaven",
-        @"~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/spacehaven/spacehaven",
-        @"~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Space Haven/spacehaven",
+        "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/SpaceHaven/spacehaven",
+        "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/spacehaven/spacehaven",
+        "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Space Haven/spacehaven",
 
         // User-Defined:
-        @"../SpaceHaven/spacehaven",
-        @"../spacehaven/spacehaven",
-        @"../Space Haven/spacehaven",
+        "../SpaceHaven/spacehaven",
+        "../spacehaven/spacehaven",
+        "../Space Haven/spacehaven",
 
-        @"../../SpaceHaven/spacehaven",
-        @"../../spacehaven/spacehaven",
-        @"../../Space Haven/spacehaven",
+        "../../SpaceHaven/spacehaven",
+        "../../spacehaven/spacehaven",
+        "../../Space Haven/spacehaven",
 
-        @"~/Games/SpaceHaven/spacehaven",
-        @"~/Games/spacehaven/spacehaven",
-        @"~/Games/Space Haven/spacehaven",
+        "~/Games/SpaceHaven/spacehaven",
+        "~/Games/spacehaven/spacehaven",
+        "~/Games/Space Haven/spacehaven",
 
-        @"~/.local/share/SpaceHaven/spacehaven",
-        @"~/.local/share/spacehaven/spacehaven",
-        @"~/.local/share/Space Haven/spacehaven",
+        "~/.local/share/SpaceHaven/spacehaven",
+        "~/.local/share/spacehaven/spacehaven",
+        "~/.local/share/Space Haven/spacehaven",
 
-        @"~/.local/share/applications/SpaceHaven/spacehaven",
-        @"~/.local/share/applications/spacehaven/spacehaven",
-        @"~/.local/share/applications/Space Haven/spacehaven",
+        "~/.local/share/applications/SpaceHaven/spacehaven",
+        "~/.local/share/applications/spacehaven/spacehaven",
+        "~/.local/share/applications/Space Haven/spacehaven",
 
-        @"/opt/SpaceHaven/spacehaven",
-        @"/opt/spacehaven/spacehaven",
-        @"/opt/Space Haven/spacehaven",
+        "/opt/SpaceHaven/spacehaven",
+        "/opt/spacehaven/spacehaven",
+        "/opt/Space Haven/spacehaven",
 
         // GOG:
-        @"~/GOG Games/SpaceHaven/spacehaven",
-        @"~/GOG Games/spacehaven/spacehaven",
-        @"~/GOG Games/Space Haven/spacehaven",
+        "~/GOG Games/SpaceHaven/spacehaven",
+        "~/GOG Games/spacehaven/spacehaven",
+        "~/GOG Games/Space Haven/spacehaven",
 
-        @"~/GOG Games/SpaceHaven/game/spacehaven",
-        @"~/GOG Games/spacehaven/game/spacehaven",
-        @"~/GOG Games/Space Haven/game/spacehaven",
+        "~/GOG Games/SpaceHaven/game/spacehaven",
+        "~/GOG Games/spacehaven/game/spacehaven",
+        "~/GOG Games/Space Haven/game/spacehaven",
 
-        @"~/GOG Games/SpaceHaven/Game/spacehaven",
-        @"~/GOG Games/spacehaven/Game/spacehaven",
-        @"~/GOG Games/Space Haven/Game/spacehaven",
+        "~/GOG Games/SpaceHaven/Game/spacehaven",
+        "~/GOG Games/spacehaven/Game/spacehaven",
+        "~/GOG Games/Space Haven/Game/spacehaven",
     ] :
     [];
 
     #endregion
 
-
-    #region Possible Steam Loactions
+    #region Possible Steam Locations
 
     private readonly IReadOnlyList<string> PossibleSteamDirs =
 
@@ -682,19 +658,19 @@ public sealed class PathSettingsRepositoryService
 
     OS.IsMac ?
     [
-        @"~/Library/Application Support/Steam",
+        "~/Library/Application Support/Steam",
     ] :
 
     OS.IsLnx ?
     [
-        @"~/.steam/steam",
-        @"~/.steam/Steam",
+        "~/.steam/steam",
+        "~/.steam/Steam",
 
-        @"~/.local/share/steam",
-        @"~/.local/share/Steam",
+        "~/.local/share/steam",
+        "~/.local/share/Steam",
 
-        @"~/.var/app/com.valvesoftware.Steam/.local/share/Steam",
-        @"~/.var/app/com.valvesoftware.Steam/.local/share/Steam",
+        "~/.var/app/com.valvesoftware.Steam/.local/share/Steam",
+        "~/.var/app/com.valvesoftware.Steam/.local/share/Steam",
     ] :
     [];
 

@@ -2,6 +2,7 @@
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Services;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.IO;
