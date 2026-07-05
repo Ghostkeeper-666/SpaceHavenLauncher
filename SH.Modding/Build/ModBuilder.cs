@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -202,6 +203,11 @@ public sealed class ModBuilder : IAsyncDisposable
                 foreach (XmlFile xmlFile in Build.XmlFile.Values)
                     if (!await xmlFile.TrySaveAsync(Log, CT))
                         return false;
+
+                // Add mod authors and modding tools developers to credits section
+                // Only for XML builds, since we don't want to unnecessarily touch spacehaven.jar
+                // Also, ignore errors
+                await TryComposeGameCredits();
 
                 // Build JAR:
                 if (!await TryCreateSpaceHavenJarFile())
@@ -1075,7 +1081,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     }
                 }
             }
-            catch(OperationCanceledException) { throw; }
+            catch (OperationCanceledException) { throw; }
             catch
             {
                 // Save texts document, for debugging:
@@ -1503,19 +1509,51 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+    private async Task<bool> TryComposeGameCredits()
+    {
+        try
+        {
+            Log.Debug($"Adding mod authors to '{SpaceHavenConstants.EXTRA_CREDITS_TXT}' file...", Paths.CacheDirectory);
 
+            StringBuilder sb = new();
 
+            // Mod authors:
+            List<string> authors = [];
+            foreach (string author in Build.Mods.Select(m => m.Author).Distinct())
+                if (!authors.Any(a => a.Equals(author, StringComparison.OrdinalIgnoreCase)))
+                    authors.Add(author);
+            authors = authors.OrderBy(s => s.ToLowerInvariant()).ToList();
+            if (authors.Count > 0)
+            {
+                sb.AppendLine("[Topic]Mod Authors");
+                foreach (string author in authors)
+                    sb.AppendLine(author);
+                sb.AppendLine();
+            }
 
+            // Space Haven Launcher devs and maintainers:
+            sb.AppendLine("[Topic]Space Haven Launcher");
+            sb.AppendLine("Ghostkeeper666");
+            sb.AppendLine("KaiserManny");
+            sb.AppendLine();
 
+            // Add original content now:
+            sb.AppendLine(await IOUtils.TryReadAllTextAsync(Paths.TemplateExtraCreditsTxtPath, Log, CT) ?? string.Empty);
 
+            // Save File:
+            if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildStageExtraCreditsTxtPath, sb.ToString(), Log, CT))
+                return false;
 
-
-
-
-
-
-
-
+            // Done.
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDirectory);
+            return false;
+        }
+    }
 
 
 
@@ -1750,5 +1788,4 @@ public sealed class ModBuilder : IAsyncDisposable
         try { await FileLogger.DisposeAsync(); } catch { }
     }
     #endregion
-
 }

@@ -52,7 +52,7 @@ public static class ModdingConstants
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.MUSIC}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.SOUND}",
         $"{SpaceHavenConstants.VERSION_TXT}",
-        $"{SpaceHavenConstants.CRD1}",
+        $"{SpaceHavenConstants.EXTRA_CREDITS_TXT}",
         $".cim"
     };
 }

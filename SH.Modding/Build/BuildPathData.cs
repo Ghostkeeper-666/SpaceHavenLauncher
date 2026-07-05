@@ -24,6 +24,7 @@ public sealed class BuildPathData
     public string TemplateJarPath => Path.Combine(TemplateDirectory, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
     public string TemplateJarHashPath => Path.Combine(TemplateDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
     public string TemplateConfigJsonPath => Path.Combine(TemplateDirectory, SpaceHavenConstants.CONFIG_JSON);
+    public string TemplateExtraCreditsTxtPath => Path.Combine(TemplateDirectory, ModdingConstants.STAGE, SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
 
     public string BuildDirectory => Path.Combine(WorkDir, ModdingConstants.BUILD);
@@ -54,6 +55,7 @@ public sealed class BuildPathData
     public string BuildStageTexturesXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.TEXTURES);
     public string BuildStageAnimationsXmlPath => Path.Combine(BuildStageLibraryDirectory, SpaceHavenConstants.ANIMATIONS);
     public string BuildStageSpaceHavenSettingsXmlPath => Path.Combine(BuildStageLibraryFilesDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+    public string BuildStageExtraCreditsTxtPath => Path.Combine(BuildStageDirectory, SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
 
 

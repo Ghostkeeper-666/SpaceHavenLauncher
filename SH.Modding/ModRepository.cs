@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SH.Modding;
 
@@ -226,7 +227,21 @@ public sealed class ModRepository
 
             // AUTHOR
             mod.Author =
-                root.Element("author")?.Value?.Trim() ?? "(unknown)";
+                root.Element("author")?.Value?.Trim();
+
+            // TODO: First make mod author mandatory, then remove this code:
+            if (mod.Author.IsNullOrWhiteSpace())
+            {
+                if (mod.Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+                    mod.Author = "Gravelyn";
+                else if (mod.Name.Contains("CustomizerPlus"))
+                    mod.Author = "r4v4g3 (r0xx0r3r)";
+                else
+                {
+                    mod.Author = string.Empty;
+                    Log.Warn($@"Missing mod author in mod ""{mod.Name}""");
+                }
+            }
 
             // DESCRIPTION
             mod.InfoXmlDescription = root.Element("description")?.Value?.TrimStart(' ', '\t', '\r', '\n', '~');

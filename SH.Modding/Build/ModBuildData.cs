@@ -37,6 +37,7 @@ internal sealed class ModBuildData : IAsyncDisposable
 
     public string Name => Data.Name;
     public VersionInfo Version => Data.Version;
+    public string Author => Data.Author;
     public string Directory => Data.Directory;
     public int ID => Data.ID;
 

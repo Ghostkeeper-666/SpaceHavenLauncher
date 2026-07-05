@@ -95,10 +95,10 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             ForegroundColor ??= new SolidColorBrush(Color.Parse("#7FBF3F"));
         else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
             ForegroundColor ??= Brushes.LightCoral;
-        else if (Name.Contains("Bikini", StringComparison.OrdinalIgnoreCase))
-            ForegroundColor ??= Brushes.LightPink;
         else if (Author.Contains("Kaiser", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= Brushes.DeepSkyBlue;
+        else if (Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+            ForegroundColor ??= Brushes.LightPink;
 
         // Fallback:
         ForegroundColor ??= Brushes.Gold;
@@ -121,7 +121,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Chewday.jpg");
         else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Ravage.jpg");
-        else if (Name.Contains("Bikini", StringComparison.OrdinalIgnoreCase))
+        else if (Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Bikini.jpg");
     }
 

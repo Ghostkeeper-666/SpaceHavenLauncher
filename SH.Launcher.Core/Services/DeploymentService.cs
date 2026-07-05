@@ -254,8 +254,6 @@ public sealed class DeploymentService
                             return false;
                         using Stream inStream = zin.GetInputStream(ein);
                         using FileStream outStream = File.Create(extractPath);
-                        if(ein.Name == SpaceHavenConstants.CRD1)
-                            outStream.Write(SpaceHavenConstants.CRD2.Select(b => (byte)(b ^ 0xFF)).ToArray(), 0, SpaceHavenConstants.CRD2.Length);
                         await inStream.CopyToAsync(outStream, ct);
                         File.SetLastWriteTime(extractPath, ein.DateTime);
                     }

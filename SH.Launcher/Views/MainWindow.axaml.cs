@@ -217,29 +217,31 @@ public partial class MainWindow : Window
 
         string[] backgroundUris = new string[]
         {
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game1.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt1.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game2.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt2.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game3.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt3.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game4.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt4.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game5.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt5.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game6.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt6.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game7.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt7.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game8.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt8.jpg",
-            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt9.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game01.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt01.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game02.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt02.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game03.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt03.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game04.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt04.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game05.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt05.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game06.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt06.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game07.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt07.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game08.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt08.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game09.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt09.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game10.jpg",
         };
 
         Bitmap forcedBackground = null;
 
         Bitmap[] backgroundImages =
-            backgroundUris.Select(LoadBitmap).ToArray();
+            backgroundUris.Select(LoadBitmap).Where(bg => bg != null).ToArray();
 
         Image curr = BackgroundA;
         Image next = BackgroundB;
@@ -314,8 +316,16 @@ public partial class MainWindow : Window
 
     private Bitmap LoadBitmap(string uri)
     {
-        using (Stream stream = AssetLoader.Open(new(uri)))
-            return new Bitmap(stream);
+        try
+        {
+            using (Stream stream = AssetLoader.Open(new(uri)))
+                return new Bitmap(stream);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return null;
+        }
     }
 
     private void OnEmptyAreaClicked(object sender, TappedEventArgs e)
