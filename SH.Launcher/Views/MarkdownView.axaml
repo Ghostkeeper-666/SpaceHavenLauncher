@@ -4,7 +4,7 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 x:Class="SH.Launcher.Views.MarkdownView" >
 
   <ScrollViewer x:Name="MarkDownScrollViewer" PointerWheelChanged="OnWheel" >
-    <StackPanel x:Name="PART_Content" Spacing="0" />
+    <StackPanel x:Name="PART_Content" Spacing="0" Margin="0" AreVerticalSnapPointsRegular="True" />
   </ScrollViewer>
 
 </UserControl>

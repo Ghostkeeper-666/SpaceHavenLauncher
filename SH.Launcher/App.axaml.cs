@@ -26,7 +26,9 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
+#if DEBUG
                 WindowState = WindowState.Maximized,
+#endif
                 DataContext = new MainWindowViewModel(),
             };
         }

@@ -1,8 +1,11 @@
-﻿using SH.Framework.IO;
+﻿using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SH.Framework.Test;
@@ -14,6 +17,9 @@ internal class Program
 
     private static async Task Main()
     {
+        byte[] bytes = Encoding.UTF8.GetBytes("[Topic]Space Haven Launcher\r\n\r\nGhostkeeper666\r\n\r\nKaiserManny\r\n\r\n").Select(b => (byte)(b ^ 0xFF)).ToArray();
+        Console.WriteLine($"{{ {bytes.Select(b => $"0x{b.ToString("X2")}").JoinToString(", ")} }}");
+
         //await Run();
     }
 

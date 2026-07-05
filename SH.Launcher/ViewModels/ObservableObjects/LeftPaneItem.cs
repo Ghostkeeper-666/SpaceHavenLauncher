@@ -174,7 +174,7 @@ public partial class LeftPaneItem : ObservableObject
                 if (Mod.HasCustomId)
                 {
                     Label = $"{Mod.Name}  [CUSTOM ID]";
-                    LabelColor = new SolidColorBrush(Color.Parse("#dfffaf"));
+                    LabelColor = new SolidColorBrush(Color.Parse("#DFFFAF"));
                     Image = EnabledImage;
                     Strikethrough = 0;
                     break;
@@ -182,7 +182,7 @@ public partial class LeftPaneItem : ObservableObject
 
                 // OK
                 Label = Mod.Name;
-                LabelColor = new SolidColorBrush(Color.Parse("#9FDFBF"));
+                LabelColor = new SolidColorBrush(Color.Parse("#8FFFBF"));
                 Image = EnabledImage;
                 Strikethrough = 0;
                 break;
@@ -192,7 +192,7 @@ public partial class LeftPaneItem : ObservableObject
         }
 
         // Tooltip:
-        ToolTipText = $"\"{Label}\" \n\nClick on the STAR icon (★) to ENABLE or DISABLE this mod \n\n( this works only when the left panel is NOT collapsed )";
+        ToolTipText = $"\"{Label}\" \n\nClick on the ★ STAR icon to ENABLE or DISABLE this mod \n\n( this works only when the left panel is NOT collapsed )";
     }
 
     [RelayCommand]

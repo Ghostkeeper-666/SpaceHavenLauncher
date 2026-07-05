@@ -29,10 +29,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _SearchText;
 
     [ObservableProperty]
-    private string _ToolTipText_EnableModsButton = "This button ENABLES the mods which are visible in the list below &#10;&#10;To individually ENABLE or DISABLE a mod, click on the mod's STAR icon, OR click on it's title in the mod page &#10;&#10;You may also selectively ENABLE just a subset of the mods by using the search box, and then clicking on this button";
+    private string _ToolTipText_EnableModsButton = "HOW TO ENABLE MODS: \n\nThis button ENABLES the mods which are visible in the list below \n\nTo individually ENABLE or DISABLE a mod, click on the mod's ★ STAR icon, OR click on the mod's TITLE in the mod page \n\nYou may also restrict the visible mods using the SEARCH BOX and then clicking on THIS BUTTON to ENABLE them all";
 
     [ObservableProperty]
-    private string _ToolTipText_DisableModsButton = "This button DISABLES the mods which are visible in the list below &#10;&#10;To individually ENABLE or DISABLE a mod, click on the mod's STAR icon, OR click on it's title in the mod page &#10;&#10;You may also selectively DISABLE just a subset of the mods by using the search box, and then clicking on this button";
+    private string _ToolTipText_DisableModsButton = "HOW TO DISABLE MODS: \n\nThis button DISABLES the mods which are visible in the list below \n\nTo individually ENABLE or DISABLE a mod, click on the mod's ★ STAR icon, OR click on the mod's TITLE in the mod page \n\nYou may also restrict the visible mods using the SEARCH BOX and then clicking on THIS BUTTON to DISABLE them all";
 
 
     public MainWindowViewModel()
@@ -80,9 +80,10 @@ public partial class MainWindowViewModel : ViewModelBase
             catch (Exception ex) { Log?.Debug(ex); }
 
             // Try to maximize the window:
+#if DEBUG
             try { MainWindow.Window.WindowState = Avalonia.Controls.WindowState.Maximized; }
             catch (Exception ex) { Log?.Debug(ex); }
-
+#endif
             // Also automatically initialize build system:
             State.DispatchQueue.TryEnqueue(() => State.NavigationConsolePage.InitializeBuildSystemAsync(false));
         }

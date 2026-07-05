@@ -48,7 +48,9 @@ public sealed class ModValuesRepositoryService
                 return false;
 
             // TODO: Improve deserialization of settings by using version:
-            string currentVersion = rootNode.Attribute("version")?.Value;
+            string schemaVersion = rootNode.Attribute("schemaVersion")?.Value;
+
+            string currentModVersion = rootNode.Attribute("currentModVersion")?.Value;
 
             mod.IsEnabled = bool.TryParse(rootNode.Attribute("enabled")?.Value ?? "true", out bool enabled) && enabled;
             mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value ?? "0", out int customID) ? customID : 0;
@@ -108,8 +110,13 @@ public sealed class ModValuesRepositoryService
             if (rootNode == null)
                 return false;
 
-            // TODO: Improve deserialization of settings by using version:
-            string oldVersion = rootNode.Attribute("version")?.Value;
+            string schemaVersion = rootNode.Attribute("schemaVersion")?.Value;
+
+            // Get last used version:
+            string oldVersion = rootNode.Attribute("currentModVersion")?.Value;
+            if (oldVersion == null)
+                return false;
+
             if (setToCurrentValue)
             {
                 Log.Info($@"[{mod.Name}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
@@ -140,7 +147,10 @@ public sealed class ModValuesRepositoryService
             {
                 ct.ThrowIfCancellationRequested();
 
-                XElement variableNode = variableNodes.FirstOrDefault(variableNode => variableNode.Attribute("name")?.Value == variable.Name);
+                XElement variableNode =
+                    variableNodes
+                    .FirstOrDefault(variableNode =>
+                        variable.Name.Equals(variableNode.Attribute("name")?.Value, StringComparison.OrdinalIgnoreCase));
 
                 variable.PreviousValue =
                     variableNode == null ? string.Empty :
@@ -187,9 +197,8 @@ public sealed class ModValuesRepositoryService
             rootNode.SetAttributeValue("name", mod.Name);
             rootNode.SetAttributeValue("enabled", mod.IsEnabled);
             rootNode.SetAttributeValue("customID", mod.CustomId);
-
-            // TODO: Improve serialization of settings by using version:
-            rootNode.SetAttributeValue("version", "1.0.0.0");
+            rootNode.SetAttributeValue("currentModVersion", mod.Version.ToString());
+            rootNode.SetAttributeValue("schemaVersion", "1");
 
             // Read or create version node:
             XElement versionNode =
@@ -267,8 +276,7 @@ public sealed class ModValuesRepositoryService
                 return original;
             }
 
-            // TODO: Improve deserialization of settings by using version:
-            string version = rootNode.Attribute("version")?.Value;
+            string schemaVersion = rootNode.Attribute("schemaVersion")?.Value;
 
             // Add existing ones:
             OrderedDictionary<string, ModData> sorted = new();
@@ -325,8 +333,7 @@ public sealed class ModValuesRepositoryService
             XDocument doc = new();
             XElement rootNode = new("mods");
 
-            // TODO: Improve serialization of settings by using version:
-            rootNode.SetAttributeValue("version", "1.0.0.0");
+            rootNode.SetAttributeValue("schemaVersion", "1");
 
             doc.Add(rootNode);
 

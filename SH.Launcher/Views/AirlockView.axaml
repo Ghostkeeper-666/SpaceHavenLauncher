@@ -13,7 +13,8 @@ x:DataType="vm:AirlockViewModel" >
   x:Name="RootGrid"
   ColumnDefinitions="8,*"
   Background="Transparent"
-  RowDefinitions="*" >
+  RowDefinitions="*"
+  PointerPressed="Background_PointerPressed" >
     <!-- LEFT VERTICAL SEPARATOR STRIPES -->
     <Border
     x:Name="VerticalGridSplitter"

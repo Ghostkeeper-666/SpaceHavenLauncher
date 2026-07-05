@@ -102,10 +102,18 @@ public sealed class DebugService
             ct.ThrowIfCancellationRequested();
 
             // Try to delete existing file:
-            if (!await IOUtils.TryDeleteFileAsync(Paths.DebugFilePath, Log, ct))
+            string debugZipDir = Path.GetDirectoryName(Paths.DebugFilePath);
+            string[] debugZipPaths =
+                Directory.GetFiles(debugZipDir, "*.*", SearchOption.TopDirectoryOnly)
+                .Where(path => Path.GetFileName(path).Equals(PathData.DebugFilename, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            foreach (string debugZipPath in debugZipPaths)
             {
-                Log.Error($@"Unable to delete file ""{Paths.DebugFilePath}"", please check whether a program is holding this file");
-                return false;
+                if (!await IOUtils.TryDeleteFileAsync(Paths.DebugFilePath, Log, ct))
+                {
+                    Log.Error($@"Unable to delete file ""{Paths.DebugFilePath}"", please check whether a program is holding this file");
+                    return false;
+                }
             }
             ct.ThrowIfCancellationRequested();
 

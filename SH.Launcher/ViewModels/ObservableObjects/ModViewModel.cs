@@ -84,13 +84,13 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         if (Author.StartsWith("ghostkeeper", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= Brushes.MediumSpringGreen;
         else if (Author.StartsWith("paperfox", StringComparison.OrdinalIgnoreCase))
-            ForegroundColor ??= Brushes.Orange;
+            ForegroundColor ??= new SolidColorBrush(Color.Parse("#FF9F1F"));
         else if (Author.Equals("sub", StringComparison.OrdinalIgnoreCase)
             || Author.Equals("subzero", StringComparison.OrdinalIgnoreCase)
             || Author.Equals("sub-zero", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= Brushes.Cyan;
         else if (Author.Contains("fuklaw", StringComparison.OrdinalIgnoreCase))
-            ForegroundColor ??= Brushes.Yellow;
+            ForegroundColor ??= new SolidColorBrush(Color.Parse("#FFBF00"));
         else if (Author.Contains("chewday", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= new SolidColorBrush(Color.Parse("#7FBF3F"));
         else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))

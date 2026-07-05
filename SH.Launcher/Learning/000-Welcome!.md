@@ -27,10 +27,20 @@ The mod list presents the mods and sets the mod build order too:
 - These tags give you a clue what the mod does
 - If you see a LIBRARY tag or a PATCH tag, it means this is a XML mod
 
+# How do I install mods ?
+
+- **Reliable Method**: Download mods from [Nexus Mods](https://www.nexusmods.com/games/spacehaven/mods?sort=createdAt&timeRange=allTime) webpage and extract them to the classic mods directory
+- **Alternative Way**: Subcribe them on [Steam Workshop](https://steamcommunity.com/app/979110/workshop/) - You must do it from the Steam application, otherwise it may not sync correctly!
+- Make sure you don't download the same mod from both sources, since duplicate mods will cause issues
+- The **Classic Mods Directory** and the **Steam Directory** must be correctly defined on [System Core](tab://SystemCore) tab
+- Use the mods from the [My Series](https://www.nexusmods.com/games/spacehaven/mods?sort=uniqueDownloads&timeRange=allTime&author=Ghostkeeper666) to adjust basic game settings and much more
+
 # How do I enable or disable mods ?
 
-- Click on the corresponding STAR symbol in the mod list
-- Click on the mod title on the mod page (at the right side of the screen)
+- Click on the corresponding **★** STAR icon in the mod list (at the **left side of the screen**)
+- Click on the **MOD TITLE** on the mod page (at the **right side of the screen**)
+- To **enable/disable several mods**, use the two **★** STAR icons on the **top left area of the screen** 
+- To restrict the mods you want to enable/disable, use the **search box** (at the **top left area of the screen**)
 
 # How do I start a modified game ?
 

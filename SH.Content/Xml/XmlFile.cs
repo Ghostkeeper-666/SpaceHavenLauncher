@@ -103,7 +103,7 @@ public sealed class XmlFile
 
     public bool TrySetXmlContent(string content, ILogger logger)
     {
-        XDocument x = XDocument.Parse(content, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
+        XDocument x = XDocument.Parse(content, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         if(x == null)
         {
             logger?.Error($@"Unable to parse new XML content");

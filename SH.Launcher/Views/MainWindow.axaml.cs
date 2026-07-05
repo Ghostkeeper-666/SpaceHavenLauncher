@@ -7,8 +7,9 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
-using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Services;
+using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SH.Launcher.Core.Services;
 
 namespace SH.Launcher.Views;
 
@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private Task SearchTask;
     private SemaphoreSlim SearchSignal;
     private volatile string SearchText;
+
 
     public MainWindow()
     {
@@ -145,7 +146,7 @@ public partial class MainWindow : Window
     private async Task SearchLoopAsync()
     {
         string previousSearchText = string.Empty;
-        
+
         while (true)
         {
             try
@@ -231,6 +232,8 @@ public partial class MainWindow : Window
             $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game7.jpg",
             $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt7.jpg",
             $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/Game8.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt8.jpg",
+            $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/FanArt9.jpg",
         };
 
         Bitmap forcedBackground = null;
@@ -256,13 +259,23 @@ public partial class MainWindow : Window
             curr.Source = next.Source;
             curr.Opacity = 1.0;
             next.Opacity = 0.0;
-            next.Source = backgroundImages[++backgroundIdx % backgroundImages.Length];
+
+            backgroundIdx += State.MoveToPrevBackgroundImage ? -1 : 1;
+            backgroundIdx =
+                backgroundIdx < 0 ? backgroundImages.Length - 1 :
+                backgroundIdx >= backgroundImages.Length ? 0 :
+                backgroundIdx;
+
+            next.Source = backgroundImages[backgroundIdx];
+
+            State.MoveToNextBackgroundImage = false;
+            State.MoveToPrevBackgroundImage = false;
 
             // Wait:
-            for (int i = 0; i < 25 && forcedBackground == State.ForcedBackground && AppSettings.IsBackgroundEnabled; ++i)
+            for (int i = 0; i < 80 && forcedBackground == State.ForcedBackground && AppSettings.IsBackgroundEnabled && !State.MoveToNextBackgroundImage && !State.MoveToPrevBackgroundImage; ++i)
             {
                 await Task.Yield();
-                await Task.Delay(200);
+                await Task.Delay(100);
                 await Task.Yield();
             }
 
@@ -276,11 +289,13 @@ public partial class MainWindow : Window
                 await Task.Yield();
                 await Task.Delay(200);
                 await Task.Yield();
+                if (State.MoveToNextBackgroundImage)
+                    break;
             }
             forcedBackground = null;
 
-            // Cross fade (2 seconds):
-            const int steps = 40;
+            // Cross fade (2 second):
+            int steps = State.MoveToNextBackgroundImage || State.MoveToPrevBackgroundImage ? 5 : 20;
             for (int i = 0; i < steps && forcedBackground == State.ForcedBackground && AppSettings.IsBackgroundEnabled; ++i)
             {
                 double progress = i / (double)steps;
@@ -443,4 +458,5 @@ public partial class MainWindow : Window
         SearchText = tb.Text;
         SearchSignal?.Release();
     }
+
 }

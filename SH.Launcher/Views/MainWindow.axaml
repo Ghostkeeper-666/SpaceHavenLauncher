@@ -47,8 +47,7 @@ HorizontalAlignment="Stretch"
     Grid.ColumnSpan="2"
     Stretch="UniformToFill"
     Opacity="0.0"
-    IsHitTestVisible="False"
-    />
+    IsHitTestVisible="True" />
     <Image
     x:Name="BackgroundB"
     Grid.Row="0"
@@ -57,8 +56,7 @@ HorizontalAlignment="Stretch"
     Grid.ColumnSpan="2"
     Stretch="UniformToFill"
     Opacity="0.0"
-    IsHitTestVisible="False"
-    />
+    IsHitTestVisible="True" />
 
 
 
@@ -69,8 +67,7 @@ HorizontalAlignment="Stretch"
     Grid.Column="0"
     Grid.ColumnSpan="2"
     Fill="Black"
-    Opacity="{Binding AppSettings.BackgroundDarkness}"
-    />
+    Opacity="{Binding AppSettings.BackgroundDarkness}" />
 
 
 

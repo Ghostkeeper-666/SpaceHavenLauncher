@@ -71,7 +71,7 @@ public sealed class PathData
     public string ApplicationSettingsPath => Path.Combine(WorkDir, "app.xml");
     public string SystemInformationFilePath => Path.Combine(WorkDir, "system.txt");
 
-    public static readonly string DebugFilename = "debug.zip";
+    public static readonly string DebugFilename = "DEBUG.ZIP";
     public string DebugFilePath => Path.Combine(WorkDir, DebugFilename);
 
     public string SpaceHavenPath =>

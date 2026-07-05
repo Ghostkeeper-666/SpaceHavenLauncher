@@ -152,9 +152,16 @@ public partial class MarkdownView : UserControl
                     1 => 24,
                     2 => 20,
                     3 => 18,
-                    _ => 15,
+                    _ => 16,
                 },
-                Margin = new Thickness(0, 32, 0, 12),
+                Margin = headingBlock.Level switch
+                {
+                    1 => new Thickness(0, 12, 0, 6),
+                    2 => new Thickness(0, 10, 0, 5),
+                    3 => new Thickness(0, 9, 0, 4),
+                    _ => new Thickness(0, 8, 0, 3),
+                },
+                
                 Foreground = GetValue(HeaderColorProperty),
                 FontFamily = NormalFont,
                 FontWeight = FontWeight.Bold,

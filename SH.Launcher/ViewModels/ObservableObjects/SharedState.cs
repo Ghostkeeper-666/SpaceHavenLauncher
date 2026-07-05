@@ -66,6 +66,9 @@ public partial class SharedState : ObservableObject
     [ObservableProperty]
     private Bitmap _ForcedBackground = null;
 
+    public bool MoveToNextBackgroundImage { get; set; }
+    public bool MoveToPrevBackgroundImage { get; set; }
+
 
     // EXECUTION STATE:
     public bool IsProcessing => IsInitializing || IsLaunching || IsExporting || IsSpaceHavenRunning;
@@ -123,7 +126,7 @@ public partial class SharedState : ObservableObject
     private GridLength _LeftPaneWidth;
 
     [ObservableProperty]
-    private IBrush _LeftPaneBackgroundColor = Brushes.Transparent;
+    private IBrush _LeftPaneBackgroundColor = new SolidColorBrush(Color.Parse("#3F000000"));
 
     [ObservableProperty]
     private int _CollapseIconRotation;

@@ -79,9 +79,9 @@ public partial class ModVariableViewModel : ObservableObject
     [ObservableProperty]
     private IBrush _NormalBrush = new SolidColorBrush(Color.Parse("#00ffbf"));
     [ObservableProperty]
-    private IBrush _LightBrush = new SolidColorBrush(Color.Parse("#ffffff"));
+    private IBrush _CustomBrush = new SolidColorBrush(Color.Parse("#ffffff"));
     [ObservableProperty]
-    private IBrush _DarkBrush = Brushes.Silver;
+    private IBrush _DarkBrush = new SolidColorBrush(Color.Parse("#8f8f8f"));
 
 
 
@@ -126,9 +126,8 @@ public partial class ModVariableViewModel : ObservableObject
         bool equalsSuggested = string.Equals(currentValue, SuggestedValue, StringComparison.Ordinal);
         bool equalsPrevious = string.Equals(currentValue, PreviousValue, StringComparison.Ordinal);
         return
-            equalsPrevious && !equalsOriginal && !equalsSuggested ? LightBrush :
             equalsOriginal || equalsSuggested || equalsPrevious ? NormalBrush :
-            LightBrush;
+            CustomBrush;
     }
 
     public IBrush GetOriginalValueForeground()
@@ -153,7 +152,6 @@ public partial class ModVariableViewModel : ObservableObject
         bool equalsSuggested = string.Equals(CurrentValue, SuggestedValue, StringComparison.Ordinal);
         bool equalsPrevious = string.Equals(CurrentValue, PreviousValue, StringComparison.Ordinal);
         return
-            equalsPrevious && !equalsOriginal && !equalsSuggested ? LightBrush :
             equalsPrevious ? NormalBrush :
             DarkBrush;
     }

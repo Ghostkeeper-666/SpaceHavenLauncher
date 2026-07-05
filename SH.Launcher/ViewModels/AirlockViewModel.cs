@@ -28,7 +28,7 @@ public partial class AirlockViewModel : ViewModelBase
 
     public void Stop()
     {
-        State.LeftPaneBackgroundColor = Brushes.Transparent;
+        State.LeftPaneBackgroundColor = new SolidColorBrush(Color.Parse("#3F000000"));
         AppSettings.BackgroundDarkness = PreviousBackgroundDarkness;
         AppSettings.IsLeftPaneCollapsed = AppSettings.IsLeftPaneCollapsed && PreviousIsLeftPaneCollapsed;
         AppSettings.IsBackgroundEnabled = PreviousIsBackgroundEnabled;

@@ -50,6 +50,30 @@ public partial class ModPageView : UserControl
         SubscribeEvents();
         SyncColumnWidths();
         SetModPageSplitterHeight();
+
+        DataGridColumnHeadersPresenter headersPresenter =
+            VariableValuesGrid
+            .GetVisualDescendants()
+            .OfType<DataGridColumnHeadersPresenter>()
+            .FirstOrDefault();
+
+        if (headersPresenter == null)
+            return;
+
+        string[] headerDescriptions =
+        [
+            "MOD VARIABLES: \n\nThe mod uses these variables to customize your game experience \n\nYou may adjust the mod variables as you prefer, just pay attention to the variable description",
+            "CHOSEN VALUE: \n\nThese are the values that you have chosen for each mod variable \n\nClick on any cell in this column to manually enter another value",
+            "ORIGINAL GAME: \n\nThese values match those used in the original game \n\nIn case of new stuff, these values make the mod feel more like vanilla \n\nClick on any cell in this column to use its value as the CHOSEN VALUE",
+            "SUGGESTED BY MODDER: \n\nThese are the values suggested by the mod owner \n\nClick on any cell in this column to use its value as the CHOSEN VALUE",
+            "OLD MOD VERSION: \n\nThese are the values you have last used for the previous version of this same mod \n\nClick on any cell in this column to use its value as the CHOSEN VALUE",
+        ];
+        DataGridColumnHeader[] headers = headersPresenter.GetVisualChildren().OfType<DataGridColumnHeader>().ToArray();
+        for (int i = 0; i < headers.Length && i < headerDescriptions.Length; ++i)
+        {
+            DataGridColumnHeader header = headers[i];
+            ToolTip.SetTip(header, headerDescriptions[i]);
+        }
     }
 
     private void SetModPageSplitterHeight()

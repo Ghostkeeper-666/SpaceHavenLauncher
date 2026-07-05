@@ -831,7 +831,8 @@ x:DataType="vm:ModPageViewModel"
         FontWeight="ExtraBold"
         FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
         Command="{Binding UseOriginalCommand}"
-        Content="USE ORIGINAL" >
+        Content="USE ORIGINAL"
+        ToolTip.Tip="Click on this button to set -ALL- ORIGINAL VALUES as your CHOSEN VALUES" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
               <Setter Property="Foreground" Value="Black" />
@@ -863,7 +864,8 @@ x:DataType="vm:ModPageViewModel"
         FontWeight="ExtraBold"
         FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
         Command="{Binding UseSuggestedCommand}"
-        Content="USE SUGGESTED" >
+        Content="USE SUGGESTED"
+        ToolTip.Tip="Click on this button to set -ALL- SUGGESTED VALUES as your CHOSEN VALUES" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
               <Setter Property="Foreground" Value="Black" />
@@ -879,7 +881,7 @@ x:DataType="vm:ModPageViewModel"
 
 
 
-        <!-- USE PRVIOUS BUTTON -->
+        <!-- USE OLD VALUES BUTTON -->
         <Button
         x:Name="UsePreviousButton"
         Grid.Column="4"
@@ -896,7 +898,8 @@ x:DataType="vm:ModPageViewModel"
         FontWeight="ExtraBold"
         FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
         Command="{Binding UseOriginalCommand}"
-        Content="USE PREVIOUS" >
+        Content="USE OLD VALUES" 
+        ToolTip.Tip="Click on this button to set -ALL- OLD VARIABLE VALUES as your CHOSEN VALUES" >
           <Button.Styles>
             <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter" >
               <Setter Property="Foreground" Value="Black" />
@@ -1056,12 +1059,12 @@ x:DataType="vm:ModPageViewModel"
 
           <!-- Hovered row: red background, yellow 1px border -->
           <Style Selector="DataGridRow:pointerover" >
-            <Setter Property="Background" Value="#bf00070f" />
+            <Setter Property="Background" Value="#FF000000" />
           </Style>
 
           <!-- Selected row: yellow background, yellow 1px border -->
           <Style Selector="DataGridRow:selected" >
-            <Setter Property="Background" Value="#bf00070f" />
+            <Setter Property="Background" Value="#FF000000" />
           </Style>
 
           <!-- VALUE column display cells: center text -->
@@ -1127,7 +1130,7 @@ x:DataType="vm:ModPageViewModel"
                 <TextBlock
                 Margin="0"
                 Padding="4"
-                Background="Transparent"
+                Background="#01000000"
                 Foreground="LightCyan"
                 FontSize="13"
                 FontWeight="Regular"
@@ -1145,7 +1148,7 @@ x:DataType="vm:ModPageViewModel"
 
           <!-- CURRENT VALUE -->
           <DataGridTemplateColumn
-          Header="CURRENT&#10;  VALUE"
+          Header="CHOSEN&#10;  VALUE"
           CanUserResize="True"
           MinWidth="110"
           Width="Auto" >
@@ -1155,7 +1158,7 @@ x:DataType="vm:ModPageViewModel"
                 <TextBlock
                 Margin="0"
                 Padding="4"
-                Background="Transparent"
+                Background="#01000000"
                 FontSize="15"
                 FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
                 FontWeight="Regular"
@@ -1175,7 +1178,7 @@ x:DataType="vm:ModPageViewModel"
                 Margin="0"
                 Padding="4"
                 CornerRadius="0"
-                Background="Transparent"
+                Background="#01000000"
                 FontSize="15"
                 FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
                 FontWeight="Regular"
@@ -1194,7 +1197,7 @@ x:DataType="vm:ModPageViewModel"
 
           <!-- ORIGINAL VALUE -->
           <DataGridTemplateColumn
-          Header="ORIGINAL&#10;   VALUE"
+          Header="ORIGINAL&#10;   GAME"
           CanUserResize="True"
           IsReadOnly="True"
           MinWidth="110"
@@ -1205,7 +1208,7 @@ x:DataType="vm:ModPageViewModel"
                 Margin="0"
                 Padding="4"
                 CornerRadius="0"
-                Background="Transparent"
+                Background="#01000000"
                 Foreground="{Binding OriginalValueForeground}"
                 FontSize="15"
                 FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
@@ -1226,7 +1229,7 @@ x:DataType="vm:ModPageViewModel"
 
           <!-- SUGGESTED VALUE -->
           <DataGridTemplateColumn
-          Header="SUGGESTED&#10;     VALUE"
+          Header="SUGGESTED&#10;BY MODDER"
           CanUserResize="True"
           IsReadOnly="True"
           MinWidth="110"
@@ -1236,7 +1239,7 @@ x:DataType="vm:ModPageViewModel"
                 <Button
                 Margin="0"
                 Padding="4"
-                Background="Transparent"
+                Background="#01000000"
                 Foreground="{Binding SuggestedValueForeground}"
                 FontSize="15"
                 FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"
@@ -1267,7 +1270,7 @@ x:DataType="vm:ModPageViewModel"
                 <Button
                 Margin="0"
                 Padding="4"
-                Background="Transparent"
+                Background="#01000000"
                 Foreground="{Binding PreviousValueForeground}"
                 FontSize="15"
                 FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Cascadia Mono/#Cascadia Mono"

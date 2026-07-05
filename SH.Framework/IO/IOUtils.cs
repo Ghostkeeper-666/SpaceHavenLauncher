@@ -146,7 +146,7 @@ public static class IOUtils
 
         // Parse:
         return
-            await Task.Run(() => XDocument.Parse(content, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo), ct)
+            await Task.Run(() => XDocument.Parse(content, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo), ct)
             .ConfigureAwait(false);
     }
 
@@ -163,7 +163,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             string xml = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
-            return XDocument.Parse(xml, LoadOptions.PreserveWhitespace | LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
+            return XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

@@ -30,8 +30,7 @@ public sealed class PathSettingsRepositoryService
             XDocument doc = new();
             XElement rootNode = new("PathSettings");
 
-            // TODO: Improve serialization of settings by using version:
-            rootNode.SetAttributeValue("version", "1.0.0.0");
+            rootNode.SetAttributeValue("schemaVersion", "1");
 
             doc.Add(rootNode);
             rootNode.Add(new XElement(nameof(PathData.SteamDir), data.SteamDir));
@@ -75,8 +74,7 @@ public sealed class PathSettingsRepositoryService
                 return null;
             }
 
-            // TODO: Improve deserialization of settings by using version:
-            string version = rootNode.Attribute("version")?.Value;
+            string version = rootNode.Attribute("schemaVersion")?.Value;
 
             data.SteamDir = rootNode.Element(nameof(PathData.SteamDir))?.Value?.Trim();
             data.SpaceHavenDir = rootNode.Element(nameof(PathData.SpaceHavenDir))?.Value?.Trim();
