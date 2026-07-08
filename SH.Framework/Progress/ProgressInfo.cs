@@ -112,6 +112,7 @@ public sealed class ProgressInfo : IProgressInfo
     public double RemainingValue =>
         Max - Value;
     public bool HasStarted { get; private set; }
+    public bool HasCompleted => HasStarted && NormalizedValue >= 1.0;
 
     /// <summary>
     /// This method only serves to signal that a process has started, for UI display purpose.

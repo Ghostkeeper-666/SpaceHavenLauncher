@@ -20,6 +20,8 @@ public sealed class AppSettingsData
         ExportXmlAnnotationLanguage = ELanguage.EN,
         ExportTextures = true,
         ExportOption = EExportOption.Both,
+        JavaVMArgs = string.Empty,
+        JavaMainClass = string.Empty,
     };
 
     public AppSettingsData() { }
@@ -35,4 +37,6 @@ public sealed class AppSettingsData
     public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }
     public EExportOption ExportOption { get; set; }
+    public string JavaVMArgs { get; set; }
+    public string JavaMainClass { get; set; }
 }

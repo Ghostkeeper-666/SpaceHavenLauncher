@@ -87,12 +87,12 @@ internal sealed class ModBuildData : IAsyncDisposable
     public bool HasJava => Data.HasJava;
 
     // Mod Build Paths:
-    public string FullLogPath => Path.Combine(Paths.BuildLogsDirectory, $"{BuildName} (full log).txt");
-    public string ErrorLogPath => Path.Combine(Paths.BuildLogsDirectory, $"{BuildName} (error log).txt");
-    public string BuildAudioDirectory => Path.Combine(Paths.BuildAudioDirectory, BuildName);
-    public string BuildTexturesDirectory => Path.Combine(Paths.BuildTexturesDirectory, BuildName);
-    public string BuildMergeDirectory => Path.Combine(Paths.BuildMergeDirectory, BuildName);
-    public string BuildPatchDirectory => Path.Combine(Paths.BuildPatchDirectory, BuildName);
+    public string FullLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDirectory, $"{BuildName} (full log).txt");
+    public string ErrorLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDirectory, $"{BuildName} (error log).txt");
+    public string BuildAudioDirectory => IOUtils.CombineAsOSPath(Paths.BuildAudioDirectory, BuildName);
+    public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, BuildName);
+    public string BuildMergeDirectory => IOUtils.CombineAsOSPath(Paths.BuildMergeDirectory, BuildName);
+    public string BuildPatchDirectory => IOUtils.CombineAsOSPath(Paths.BuildPatchDirectory, BuildName);
 
     public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> XmlFiles { get; } = new()
     {
@@ -147,7 +147,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 xmlFilesPath.Sort();
                 foreach (string path in xmlFilesPath)
                 {
-                    if(!File.Exists(path))
+                    if(!IOUtils.FileExists(path))
                         continue;
                     string relativePath = path.Substring(Directory.Length + 1);
                     xmlHashes[$@"XmlFile:{relativePath}"""] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT);
@@ -166,7 +166,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 resourceFilePaths.Sort();
                 foreach (string path in resourceFilePaths)
                 {
-                    if(!File.Exists(path))
+                    if(!IOUtils.FileExists(path))
                         continue;
                     FileInfo fi = new(path);
                     Array.Clear(buffer, 0, buffer.Length);
@@ -263,7 +263,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                     return false;
                 }
 
-                string evaluatedPath = Path.Combine(BuildMergeDirectory, "mod", xmlFile.RelativePath);
+                string evaluatedPath = IOUtils.CombineAsOSPath(BuildMergeDirectory, "mod", xmlFile.RelativePath);
                 if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
                     Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
@@ -285,7 +285,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                     return false;
                 }
 
-                string evaluatedPath = Path.Combine(BuildPatchDirectory, "mod", xmlFile.RelativePath);
+                string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDirectory, "mod", xmlFile.RelativePath);
                 if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
                     Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
@@ -338,7 +338,7 @@ internal sealed class ModBuildData : IAsyncDisposable
         {
             logger?.Debug($@"Loading evaluated XML document: ""{xmlFile.Path}""", xmlFile.Path);
 
-            if (xmlFile.Path.IsNullOrWhiteSpace() || !File.Exists(xmlFile.Path))
+            if (xmlFile.Path.IsNullOrWhiteSpace() || !IOUtils.FileExists(xmlFile.Path))
             {
                 logger?.Error($@"XML document could not be found at ""{xmlFile.Path}""", xmlFile.Path);
                 return false;

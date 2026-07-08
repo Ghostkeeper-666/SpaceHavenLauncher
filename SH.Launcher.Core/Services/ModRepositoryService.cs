@@ -1,11 +1,10 @@
-﻿using SH.Framework.Extensions;
+﻿using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
 using SH.Modding;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,9 +30,9 @@ public sealed class ModRepositoryService
         {
             // Mod Root Paths:
             List<string> modRootDirectories = [];
-            if (!Paths.SteamModsDir.IsNullOrWhiteSpace() && Directory.Exists(Paths.SteamModsDir))
+            if (IOUtils.DirectoryExists(Paths.SteamModsDir))
                 modRootDirectories.Add(Paths.SteamModsDir);
-            if (!Paths.ClassicModsDir.IsNullOrWhiteSpace() && Directory.Exists(Paths.ClassicModsDir))
+            if (IOUtils.DirectoryExists(Paths.ClassicModsDir))
                 modRootDirectories.Add(Paths.ClassicModsDir);
 
             // Load:

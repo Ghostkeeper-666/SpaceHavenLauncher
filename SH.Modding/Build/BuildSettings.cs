@@ -1,4 +1,5 @@
-﻿using SH.Framework.IO;
+﻿using SH.Content.Enums;
+using SH.Framework.IO;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ public sealed class BuildSettings : IAsyncDisposable
     public VersionInfo AppVersion { get; set; }
     public VersionInfo SpaceHavenVersion { get; set; }
     public bool SkipRebuilding { get; set; }
+    public EGamePlatform GamePlatform { get; set; }
 
     public List<ModData> Mods { get; } = [];
     private CancellationToken ExternalCT { get; }

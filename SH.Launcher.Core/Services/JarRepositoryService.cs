@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using SH.Content;
 using SH.Modding;
+using SH.Content.Enums;
 
 namespace SH.Launcher.Core.Services;
 
@@ -21,18 +22,16 @@ public sealed class JarRepositoryService
     public JarRepositoryService(ILogger logger) =>
         Log = logger ?? new VoidLogger();
 
-    public async Task<VersionInfo> TryReadVersionAsync(string jarPath, ILogger logger) =>
-        await Task.Run(() => TryReadVersionInternalAsync(jarPath, logger));
-    private async Task<VersionInfo> TryReadVersionInternalAsync(string jarPath, ILogger logger)
+    public async Task<VersionInfo> TryReadVersionAsync(string jarPath) =>
+        await Task.Run(() => TryReadVersionInternalAsync(jarPath));
+    private async Task<VersionInfo> TryReadVersionInternalAsync(string jarPath)
     {
         string parent = null;
         try { parent = Path.GetDirectoryName(jarPath); } catch { }
 
         try
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(nameof(jarPath));
-
-            if (!File.Exists(jarPath))
+            if (!IOUtils.FileExists(jarPath))
             {
                 Log.Error($@"Could not find ""{jarPath}""", parent);
                 return null;
@@ -53,10 +52,55 @@ public sealed class JarRepositoryService
         }
         catch (Exception ex)
         {
-            logger?.Error(ex, parent);
+            Log?.Error(ex, parent);
             return null;
         }
     }
+
+    public async Task<EGamePlatform?> TryReadGamePlatformAsync(string jarPath) =>
+    await Task.Run(() => TryReadGamePlatformInternalAsync(jarPath));
+    private async Task<EGamePlatform?> TryReadGamePlatformInternalAsync(string jarPath)
+    {
+        string parent = null;
+        try { parent = Path.GetDirectoryName(jarPath); } catch { }
+
+        try
+        {
+            if (!IOUtils.FileExists(jarPath))
+            {
+                Log.Error($@"Could not find ""{jarPath}""", parent);
+                return null;
+            }
+
+            using ZipFile zin = new(jarPath);
+            string entryName = "META-INF/MANIFEST.MF";
+            ZipEntry entry = zin.GetEntry(entryName);
+            if (entry == null)
+            {
+                Log.Error($@"Could not find ""{entryName}"" inside: ""{jarPath}""", parent);
+                return null;
+            }
+
+            await using Stream stream = zin.GetInputStream(entry);
+            using StreamReader reader = new(stream);
+            string manifest = await reader.ReadToEndAsync();
+
+            bool isGOG = manifest.Contains("SpacehavenGOG", StringComparison.OrdinalIgnoreCase);
+            bool isSteam = manifest.Contains("SpacehavenSteam", StringComparison.OrdinalIgnoreCase);
+
+            if (isGOG && !isSteam)
+                return EGamePlatform.GOG;
+            if (!isGOG && isSteam)
+                return EGamePlatform.Steam;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log?.Error(ex, parent);
+            return null;
+        }
+    }
+
 
     public async Task<bool> TryExportLibraryAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress) =>
         await Task.Run(() => TryExportLibraryInternalAsync(jarPath, outputDirectory, ct, progress));
@@ -68,11 +112,10 @@ public sealed class JarRepositoryService
 
         try
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(nameof(jarPath));
-
             progress?.Start();
+            outputDirectory = Path.GetFullPath(outputDirectory).AsOSPath();
 
-            if (!File.Exists(jarPath))
+            if (!IOUtils.FileExists(jarPath))
             {
                 Log.Error($@"Could not find ""{jarPath}""", jarDir);
                 return false;
@@ -80,7 +123,7 @@ public sealed class JarRepositoryService
 
             // Clear:
             Log.Info("Clearing export directory...");
-            if (!await IOUtils.TryDeleteDirectoryAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to clear output directory ""{outputDirectory}""", outputDirectory);
                 return false;
@@ -120,8 +163,7 @@ public sealed class JarRepositoryService
 
                 Log.Debug($@"Extracting ""{entryPath}""", outputDirectory);
 
-                string relativePath = entryPath.AsOSPath();
-                string targetPath = Path.GetFullPath(Path.Combine(outputDirectory, relativePath)).AsOSPath();
+                string targetPath = IOUtils.CombineAsOSPath(outputDirectory, entryPath);
                 if (!targetPath.StartsWith(Path.GetFullPath(outputDirectory), StringComparison.OrdinalIgnoreCase))
                 {
                     Log.Error($@"Skipping ZIP entry ""{entryPath}"" because it escapes the output directory", jarDir);
@@ -181,14 +223,15 @@ public sealed class JarRepositoryService
         try
         {
             progress?.Start();
+            outputDirectory = Path.GetFullPath(outputDirectory).AsOSPath();
 
-            if (!File.Exists(jarPath))
+            if (!IOUtils.FileExists(jarPath))
             {
                 Log.Error($@"Could not find ""{jarPath}""", parent);
                 return false;
             }
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to clear output subdirectory ""{outputDirectory}""", outputDirectory);
                 return false;
@@ -224,9 +267,8 @@ public sealed class JarRepositoryService
             {
                 ct.ThrowIfCancellationRequested();
 
-                string path = Path.GetFullPath(Path.Combine(outputDirectory, entry.Name));
-
-                if (!path.StartsWith(Path.GetFullPath(outputDirectory), StringComparison.OrdinalIgnoreCase))
+                string targetPath = IOUtils.CombineAsOSPath(outputDirectory, entry.Name);
+                if (!targetPath.StartsWith(outputDirectory, StringComparison.OrdinalIgnoreCase))
                 {
                     Log.Error($@"Skipping ZIP entry ""{entry.Name}"" because it escapes the output directory", parent);
                     return false;
@@ -234,13 +276,13 @@ public sealed class JarRepositoryService
 
                 if (entry.IsDirectory)
                 {
-                    if (await IOUtils.TryCreateDirectoryAsync(path, Log, ct))
+                    if (await IOUtils.TryCreateDirectoryAsync(targetPath, Log, ct))
                         continue;
-                    Log.Error($@"Unable to create output subdirectory ""{path}""", outputDirectory);
+                    Log.Error($@"Unable to create output subdirectory ""{targetPath}""", outputDirectory);
                     return false;
                 }
 
-                string dir = Path.GetDirectoryName(path);
+                string dir = Path.GetDirectoryName(targetPath);
                 if (!string.IsNullOrEmpty(dir) && !await IOUtils.TryCreateDirectoryAsync(dir, Log, ct))
                 {
                     Log.Error($@"Unable to create output subdirectory ""{dir}""", outputDirectory);
@@ -248,7 +290,7 @@ public sealed class JarRepositoryService
                 }
 
                 using Stream zipStream = zin.GetInputStream(entry);
-                using FileStream outStream = File.Create(path);
+                using FileStream outStream = File.Create(targetPath);
                 await zipStream.CopyToAsync(outStream);
 
                 ++fileCount;

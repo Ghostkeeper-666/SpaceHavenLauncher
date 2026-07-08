@@ -9,7 +9,6 @@ using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using SH.Launcher.Extensions;
 using SH.Modding;
@@ -54,7 +53,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         AllModConflictsText = data.ModConflicts.ToDisplayString() ?? "(none)";
         AllModDependenciesText = data.ModDependencies.ToDisplayString() ?? "(none)";
 
-        if (!data.BackgroundImagePath.IsNullOrWhiteSpace() && File.Exists(data.BackgroundImagePath))
+        if (IOUtils.FileExists(data.BackgroundImagePath))
             try { BackgroundImage = new(data.BackgroundImagePath); }
             catch (Exception ex) { Log.Debug(ex); }
 

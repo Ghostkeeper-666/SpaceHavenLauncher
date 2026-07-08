@@ -6,9 +6,14 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SH.Framework.Progress;
+using SH.Launcher.Core.Models;
+using SH.Launcher.Core.Services;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,6 +35,17 @@ public partial class SharedState : ObservableObject
         AppSettings.PropertyChanged -= UI_PropertyChanged;
         AppSettings.PropertyChanged += UI_PropertyChanged;
         UpdateLeftPanelIsCollapsed();
+        InitializeProgress = new ProgressInfo("Initialization",
+        [
+            (BackupProgress, 10),
+            (TemplateProgress, 50),
+            (CacheProgress, 10),
+            (LoadModsProgress, 30),
+        ]);
+        BackupProgress.Max = 10;
+        TemplateProgress.Max = 10;
+        CacheProgress.Max = 10;
+        LoadModsProgress.Max = 10;
     }
 
     private void UI_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -139,6 +155,20 @@ public partial class SharedState : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<LeftPaneItem> _FilteredLeftPaneItems = [];
+
+    // TEMPLATE INFO:
+    [ObservableProperty]
+    private EGamePlatform _GamePlatform;
+    [ObservableProperty]
+    private string _TemplateJavaVMArgs;
+    [ObservableProperty]
+    private string _TemplateJavaMainClass;
+
+    public IProgressInfo BackupProgress { get; } = new ProgressInfo(nameof(BackupProgress));
+    public IProgressInfo TemplateProgress { get; } = new ProgressInfo(nameof(TemplateProgress));
+    public IProgressInfo CacheProgress { get; } = new ProgressInfo(nameof(CacheProgress));
+    public IProgressInfo LoadModsProgress { get; } = new ProgressInfo(nameof(LoadModsProgress));
+    public IProgressInfo InitializeProgress { get; }
 
     partial void OnSelectedLeftPaneItemChanged(LeftPaneItem value)
     {
@@ -454,6 +484,259 @@ public partial class SharedState : ObservableObject
         foreach (ModViewModel child in current.DirectReferences)
             AddIndirectReferences(mod, child); // add children
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private readonly SemaphoreSlim InitializationSemaphore = new(1, 1);
+
+    public async Task<bool> InitializeAsync(bool forceReset)
+    {
+        if (IsProcessing && !IsInitializing)
+            return false;
+
+        if (IsInitializing)
+        {
+            Log.Warn("Restarting initialization...");
+            try { InitializeCTS?.Cancel(); } catch { }
+        }
+
+        await InitializationSemaphore.WaitAsync();
+
+        try
+        {
+
+            using CancellationTokenSource cts = new();
+            InitializeCTS = cts;
+            CancellationToken ct = cts.Token;
+
+            InitializeProgress.Reset();
+
+            if (forceReset)
+            {
+                Log.Info($"Resetting {SpaceHavenLauncher.Name} files...");
+                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.TemplateDir, Log, ct);
+                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.BuildDir, Log, ct);
+                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.CacheDir, Log, ct);
+            }
+
+            DeploymentService svc = new(Paths.Data, Log);
+
+            // BACKUP:
+            Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
+            if (!await svc.TryBackupOriginalAsync(InitializeCTS.Token, BackupProgress))
+            {
+                Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
+                return false;
+            }
+            BackupProgress?.Complete();
+            Log.Success($"Original files backup is complete");
+
+            // TEMPLATE:
+            Log.Debug($@"Preparing template files...", Paths.Data.TemplateDir);
+            if (!await Task.Run(() => svc.TryPrepareTemplateAsync(InitializeCTS.Token, TemplateProgress)))
+            {
+                Log.Error("Unable to prepare template JAR file", Paths.Data.TemplateDir);
+                return false;
+            }
+
+            Log.Debug($@"Reading game platform...", Paths.Data.TemplateDir);
+            JarRepositoryService jarSvc = new(Log);
+            EGamePlatform? gamePlatform = await Task.Run(() => jarSvc.TryReadGamePlatformAsync(Paths.Data.BackupJarPath));
+            if (gamePlatform == null || !gamePlatform.HasValue)
+            {
+                Log.Error("Unable to read game platform from template JAR file", Paths.Data.TemplateDir);
+                return false;
+            }
+            GamePlatform = gamePlatform.Value;
+
+            TemplateProgress?.Complete();
+            Log.Success($"Template files are ready");
+
+            Log.Debug($@"Reading java arguments from config.json file...", Paths.Data.TemplateDir);
+            ConfigJsonFile configJson = await ConfigJsonFile.TryLoadAsync(Paths.Data.TemplateConfigJsonPath, Log, ct);
+            if (configJson == null)
+            {
+                Log.Error("Unable to read config.json", Paths.Data.TemplateDir);
+                return false;
+            }
+
+            TemplateJavaVMArgs = configJson.VMArgs.JoinToString(" ");
+            AppSettings.JavaVMArgs = TemplateJavaVMArgs; // force update
+
+            TemplateJavaMainClass = configJson.MainClass;
+            AppSettings.JavaMainClass = TemplateJavaMainClass; // force update
+
+            TemplateProgress?.Complete();
+            Log.Success($"Template files are ready");
+
+            // CACHE:
+            Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
+            VersionParserService versionParser = new();
+            if (!await Paths.TryReadSpaceHavenVersion(Log, InitializeCTS.Token))
+            {
+                Log.Error($"Unable to read {Paths.SpaceHavenName} version from template JAR file", Paths.Data.TemplateDir);
+                return false;
+
+            }
+            Log.Success($"Detected {Paths.SpaceHavenName} version {Paths.SpaceHavenVersion}");
+
+            Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
+            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(InitializeCTS.Token, CacheProgress)))
+            {
+                Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
+                return false;
+            }
+            CacheProgress?.Complete();
+            Log.Success($"Cached files are validated");
+
+            // LOAD MODS:
+            Log.Debug($@"Loading mods...");
+            if (!await TryReloadModsAsync(ct, LoadModsProgress))
+            {
+                Log.Error("Unable to all load mods");
+                return false;
+            }
+            LoadModsProgress?.Complete();
+
+            // Done.
+            Log.Success($"{SpaceHavenLauncher.Name} initialization is complete", Paths.WorkDir);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            Log.Error($"{SpaceHavenLauncher.Name} initialization was cancelled");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, Paths.WorkDir);
+            return false;
+        }
+        finally
+        {
+            InitializationSemaphore.Release();
+            InitializeCTS = null;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo progress)
+    {
+        try
+        {
+            progress?.Start();
+
+            // Clear mod items:
+            Mods.Clear();
+            ModPages.Clear();
+
+            // Prepare the list of items to remove, then remove, otherwise we get an exception:
+            List<LeftPaneItem> leftPaneItemsToRemove = LeftPaneItems.Where(item => item.Type == EPageType.Mod).ToList();
+            foreach (LeftPaneItem item in leftPaneItemsToRemove)
+            {
+                LeftPaneItems.Remove(item);
+                FilteredLeftPaneItems.Remove(item);
+            }
+
+            // Load mods, then sort them:
+            ModRepositoryService modRepoSvc = new(Paths.Data, Log);
+            ModValuesRepositoryService valuesRepoSvc = new(Paths.Data, Log);
+            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, progress);
+            if (mods == null)
+                return false;
+            mods = await valuesRepoSvc.TryLoadModSortingAsync(mods, ct);
+
+            // Load mod values:
+            foreach (ModData mod in mods.Values)
+            {
+                if (await valuesRepoSvc.TryLoadCurrentModValuesAsync(mod, ct))
+                {
+                    // Try to also read previous version values:
+                    await valuesRepoSvc.TryLoadPreviousModValuesAsync(mod, false, ct);
+                }
+                else
+                {
+                    // Try to read previous values for using them as current values:
+                    // (defaults to 'suggested value' if no previous value is defined)
+                    await valuesRepoSvc.TryLoadPreviousModValuesAsync(mod, true, ct);
+
+                    // Save current version values:
+                    await valuesRepoSvc.TrySaveModValuesAsync(mod, false, ct);
+                }
+            }
+
+            // Now add the loaded mods:
+            foreach (ModData modData in mods.Values)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                ModViewModel mod = new(modData, mods.Values);
+                Mods.Add(mod);
+                ModPages.Add(mod.Name, new ModPageViewModel(mod));
+                LeftPaneItems.Add(new LeftPaneItem(EPageType.Mod, mod));
+                await Task.Yield();
+            }
+            FilteredLeftPaneItems = new(LeftPaneItems);
+
+            // Update mod conflicts:
+            UpdateModIds();
+            UpdateModConflicts();
+            UpdateModDependencies();
+
+            // Done.
+            progress?.Complete();
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Info(ex);
+            return false;
+        }
+    }
+
+
+
 
     #endregion
 }

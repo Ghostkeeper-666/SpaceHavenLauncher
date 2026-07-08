@@ -32,7 +32,7 @@ public sealed class DeploymentService
     private async Task<bool> IsModifiedJar(string jarPath)
     {
         JarRepositoryService repo = new(Log);
-        VersionInfo version = await repo.TryReadVersionAsync(jarPath, Log);
+        VersionInfo version = await repo.TryReadVersionAsync(jarPath);
         return version.ToString().Contains("MODIFIED", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -44,7 +44,7 @@ public sealed class DeploymentService
         {
             progress?.Start();
 
-            bool spaceHavenJarIsOriginal = File.Exists(Paths.SpaceHavenJarPath) && !await IsModifiedJar(Paths.SpaceHavenJarPath);
+            bool spaceHavenJarIsOriginal = IOUtils.FileExists(Paths.SpaceHavenJarPath) && !await IsModifiedJar(Paths.SpaceHavenJarPath);
 
             if (spaceHavenJarIsOriginal)
             {
@@ -53,9 +53,9 @@ public sealed class DeploymentService
                 progress?.SetNormalized(0.50);
 
                 // Check if it is the same as what we have in 'original' directory:
-                if (File.Exists(Paths.BackupConfigJsonPath) &&
-                    File.Exists(Paths.BackupJarPath) &&
-                    File.Exists(Paths.BackupJarHashPath) &&
+                if (IOUtils.FileExists(Paths.BackupConfigJsonPath) &&
+                    IOUtils.FileExists(Paths.BackupJarPath) &&
+                    IOUtils.FileExists(Paths.BackupJarHashPath) &&
                     jarHash == File.ReadAllText(Paths.BackupJarHashPath))
                 {
                     // Last used original jar file matches the jar file in game's dir.
@@ -80,7 +80,7 @@ public sealed class DeploymentService
             }
 
             // Try to use whatever jar there is in the 'original' directory:
-            else if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath))
+            else if (IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath))
                 return true;
 
             // There is no original/spacehaven.jar, and there is no SpaceHaven/spacehaven.jar file !!!
@@ -107,8 +107,8 @@ public sealed class DeploymentService
             progress?.Start();
 
             // Try to reuse existing template:
-            if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) && File.Exists(Paths.BackupConfigJsonPath) &&
-                File.Exists(Paths.TemplateJarPath) && File.Exists(Paths.TemplateJarHashPath) && File.Exists(Paths.TemplateConfigJsonPath))
+            if (IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath) && IOUtils.FileExists(Paths.BackupConfigJsonPath) &&
+                IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath) && IOUtils.FileExists(Paths.TemplateConfigJsonPath))
             {
                 string originalJarHash = File.ReadAllText(Paths.BackupJarHashPath);
                 string templateJarHash = File.ReadAllText(Paths.TemplateJarHashPath);
@@ -142,9 +142,9 @@ public sealed class DeploymentService
             progress?.Start();
 
             // Try to reuse existing modified:
-            if (File.Exists(Paths.BackupJarPath) && File.Exists(Paths.BackupJarHashPath) &&
-                File.Exists(Paths.TemplateJarPath) && File.Exists(Paths.TemplateJarHashPath) &&
-                File.Exists(Paths.CacheJarPath) && File.Exists(Paths.CacheJarHashPath))
+            if (IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath) &&
+                IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath) &&
+                IOUtils.FileExists(Paths.CacheJarPath) && IOUtils.FileExists(Paths.CacheJarHashPath))
             {
                 string originalJarHash = File.ReadAllText(Paths.BackupJarHashPath);
                 string templateJarHash = File.ReadAllText(Paths.TemplateJarHashPath);
@@ -156,10 +156,12 @@ public sealed class DeploymentService
 
             ct.ThrowIfCancellationRequested();
 
-            // Otherwise clean the cached modified jar:
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.CacheDir, Log, ct))
+            // Otherwise reset the cached modified jar:
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.CacheDir, Log, ct))
                 return false;
+
             ct.ThrowIfCancellationRequested();
+
             return await IOUtils.TryCreateDirectoryAsync(Paths.CacheDir, Log, ct);
         }
         catch (OperationCanceledException) { throw; }
@@ -179,7 +181,7 @@ public sealed class DeploymentService
         try
         {
             // Cleanup:
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.TemplateDir, Log, ct))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.TemplateDir, Log, ct))
                 return false;
             if (!await IOUtils.TryCreateDirectoryAsync(Paths.TemplateDir, Log, ct))
                 return false;
@@ -321,25 +323,15 @@ public sealed class DeploymentService
             ConfigJsonFile config = await ConfigJsonFile.TryLoadAsync(Paths.BackupConfigJsonPath, Log, ct);
             if(config == null)
             {
-                Log.Warn($@"Unable to restore ""{SpaceHavenConstants.CONFIG_JSON}"" from backup, generating a new default one");
-                if(Paths.SteamDir.IsNullOrWhiteSpace())
-                {
-                    Log.Warn($@"Generating a ""{SpaceHavenConstants.CONFIG_JSON}"" for Steam...");
-                    if((config = ConfigJsonFile.GetDefaultForSteam()) == null) // errors should never happen
-                        throw new NotImplementedException($@"Generation of a new Steam ""{SpaceHavenConstants.CONFIG_JSON}""");
-                }
-                else // we assume GOG
-                {
-                    Log.Warn($@"Generating a ""{SpaceHavenConstants.CONFIG_JSON} for GOG""...");
-                    if((config = ConfigJsonFile.GetDefaultForGOG()) == null) // errors should never happen
-                        throw new NotImplementedException($@"Generation of a new GOG ""{SpaceHavenConstants.CONFIG_JSON}""");
-
-                }
-
-                config =
-                    (Paths.SteamDir.IsNullOrWhiteSpace() ? ConfigJsonFile.GetDefaultForGOG() : ConfigJsonFile.GetDefaultForSteam()) // Fallback
-                    ?? throw new NotImplementedException($@"Generation of a new ""{SpaceHavenConstants.CONFIG_JSON}"" file"); // should never happen
+                Log.Error($"Unable to restore original config.json from original backup");
+                return false;
             }
+            
+            // Remove AOP:
+            config.ClassPath.Remove(ModdingConstants.ASPECTJWEAVER);
+            config.ClassPath.Remove(ModdingConstants.ASPECTJ);
+
+            // Remove modifiedspacehaven.jar:
             config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // remove modified
             config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR); // avoids duplicate
             config.ClassPath.Add(SpaceHavenConstants.SPACEHAVEN_JAR); // as last JAR
@@ -353,22 +345,22 @@ public sealed class DeploymentService
 
             // Try to delete modifiedspacehaven.jar, but do not stop on errors:
             Log.Info($@"Removing ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}""...");
-            if (File.Exists(Paths.SpaceHavenModifiedJarPath))
+            if (IOUtils.FileExists(Paths.SpaceHavenModifiedJarPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenModifiedJarPath, Log, ct);
             progress.SetNormalized(0.60);
 
             // Try to delete mods.json, but do not stop on errors:
             Log.Info($@"Removing ""{ModdingConstants.MODS_JSON}""...");
-            if (File.Exists(Paths.SpaceHavenModsJsonPath))
+            if (IOUtils.FileExists(Paths.SpaceHavenModsJsonPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenModsJsonPath, Log, ct);
             progress.SetNormalized(0.80);
 
             // Try to delete AOP libraries, but do not stop on error:
             Log.Info($@"Removing ""{ModdingConstants.ASPECTJ}""...");
-            if (File.Exists(Paths.SpaceHavenAspectJPath))
+            if (IOUtils.FileExists(Paths.SpaceHavenAspectJPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenAspectJPath, Log, ct);
             Log.Info($@"Removing ""{ModdingConstants.ASPECTJWEAVER}""...");
-            if (File.Exists(Paths.SpaceHavenAspectJWeaverPath))
+            if (IOUtils.FileExists(Paths.SpaceHavenAspectJWeaverPath))
                 await IOUtils.TryDeleteFileAsync(Paths.SpaceHavenAspectJWeaverPath, Log, ct);
 
             // Done.
@@ -392,59 +384,59 @@ public sealed class DeploymentService
         {
             Log.Info($"Deploying MODIFIED game...");
 
-            if (hasXmlMods)
-            {
-                // Deploy modified JAR file
+            //if (hasXmlMods)
+            //{
+            //    // Deploy modified JAR file
 
-                // Check if target JAR hash differs:
-                Log.Info($@"Deploying ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}""...");
-                string hash = await XxHash64Calculator.ComputeFromFileAsync(Paths.SpaceHavenModifiedJarPath, Log, ct);
-                if (hash.IsNullOrEmpty() || hash != await IOUtils.TryReadAllTextAsync(Paths.CacheModifiedJarHashPath, Log, ct))
-                {
-                    // Copy modified JAR to space haven directory:
-                    if (!await IOUtils.TryCopyFileAsync(Paths.CacheJarPath, Paths.SpaceHavenModifiedJarPath, true, Log, ct))
-                        return false;
-                    Log.Debug($@"Deployment of ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}"" to ""{Paths.SpaceHavenModifiedJarPath}"" was successful");
-                }
-                else Log.Info($@"Deployment of ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}"" was skipped, since it is up-to-date");
-            }
+            //    // Check if target JAR hash differs:
+            //    Log.Info($@"Deploying ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}""...");
+            //    string hash = await XxHash64Calculator.ComputeFromFileAsync(Paths.SpaceHavenModifiedJarPath, Log, ct);
+            //    if (hash.IsNullOrEmpty() || hash != await IOUtils.TryReadAllTextAsync(Paths.CacheModifiedJarHashPath, Log, ct))
+            //    {
+            //        // Copy modified JAR to space haven directory:
+            //        if (!await IOUtils.TryCopyFileAsync(Paths.CacheJarPath, Paths.SpaceHavenModifiedJarPath, true, Log, ct))
+            //            return false;
+            //        Log.Debug($@"Deployment of ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}"" to ""{Paths.SpaceHavenModifiedJarPath}"" was successful");
+            //    }
+            //    else Log.Info($@"Deployment of ""{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}"" was skipped, since it is up-to-date");
+            //}
 
-            if (hasJavaMods)
-            {
-                // Forcefully deploy AOP libraries:
-                Log.Info($@"Deploying JAVA AOP libraries...");
+            //if (hasJavaMods)
+            //{
+            //    // Forcefully deploy AOP libraries:
+            //    Log.Info($@"Deploying JAVA AOP libraries...");
     
-                if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJPath, Paths.SpaceHavenAspectJPath, true, Log, ct))
-                {
-                    Log.Error($@"Unable to deploy ""{ModdingConstants.ASPECTJ}""");
-                    return false;
-                }
-                else Log.Debug($@"Deployment of ""{ModdingConstants.ASPECTJ}"" to ""{Paths.SpaceHavenAspectJPath}"" was successful");
+            //    if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJPath, Paths.SpaceHavenAspectJPath, true, Log, ct))
+            //    {
+            //        Log.Error($@"Unable to deploy ""{ModdingConstants.ASPECTJ}""");
+            //        return false;
+            //    }
+            //    else Log.Debug($@"Deployment of ""{ModdingConstants.ASPECTJ}"" to ""{Paths.SpaceHavenAspectJPath}"" was successful");
 
-                if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJWeaverPath, Paths.SpaceHavenAspectJWeaverPath, true, Log, ct))
-                {
-                    Log.Error($@"Unable to deploy ""{ModdingConstants.ASPECTJWEAVER}""");
-                    return false;
-                }
-                else Log.Debug($@"Deployment of ""{ModdingConstants.ASPECTJWEAVER}"" to ""{Paths.SpaceHavenAspectJWeaverPath}"" was successful");
-            }
+            //    if (!await IOUtils.TryCopyFileAsync(Paths.AppAspectJWeaverPath, Paths.SpaceHavenAspectJWeaverPath, true, Log, ct))
+            //    {
+            //        Log.Error($@"Unable to deploy ""{ModdingConstants.ASPECTJWEAVER}""");
+            //        return false;
+            //    }
+            //    else Log.Debug($@"Deployment of ""{ModdingConstants.ASPECTJWEAVER}"" to ""{Paths.SpaceHavenAspectJWeaverPath}"" was successful");
+            //}
 
             // Copy config.json file to space haven directory:
-            Log.Info($@"Deploying ""{SpaceHavenConstants.CONFIG_JSON}""...");
-            if (!await IOUtils.TryCopyFileAsync(Paths.CacheConfigJsonPath, Paths.SpaceHavenConfigJsonPath, true, Log, ct))
-            {
-                Log.Error($@"Unable to deploy ""{SpaceHavenConstants.CONFIG_JSON}"" to ""{Paths.SpaceHavenConfigJsonPath}""");
-                return false;
-            }
-            else Log.Debug($@"Deployment of ""{SpaceHavenConstants.CONFIG_JSON}"" to ""{Paths.SpaceHavenConfigJsonPath}"" was successful");
+            //Log.Info($@"Deploying ""{SpaceHavenConstants.CONFIG_JSON}""...");
+            //if (!await IOUtils.TryCopyFileAsync(Paths.CacheConfigJsonPath, Paths.SpaceHavenConfigJsonPath, true, Log, ct))
+            //{
+            //    Log.Error($@"Unable to deploy ""{SpaceHavenConstants.CONFIG_JSON}"" to ""{Paths.SpaceHavenConfigJsonPath}""");
+            //    return false;
+            //}
+            //else Log.Debug($@"Deployment of ""{SpaceHavenConstants.CONFIG_JSON}"" to ""{Paths.SpaceHavenConfigJsonPath}"" was successful");
 
             // Copy mods.json file to space haven directory:
-            if (!await IOUtils.TryCopyFileAsync(Paths.CacheModsJsonPath, Paths.SpaceHavenModsJsonPath, true, Log, ct))
-            {
-                Log.Error($@"Unable to deploy ""{ModdingConstants.MODS_JSON}"" to ""{Paths.SpaceHavenModsJsonPath}""");
-                return false;
-            }
-            else Log.Debug($@"Deployment of ""{ModdingConstants.MODS_JSON}"" to ""{Paths.SpaceHavenModsJsonPath}"" was successful");
+            //if (!await IOUtils.TryCopyFileAsync(Paths.CacheModsJsonPath, Paths.SpaceHavenModsJsonPath, true, Log, ct))
+            //{
+            //    Log.Error($@"Unable to deploy ""{ModdingConstants.MODS_JSON}"" to ""{Paths.SpaceHavenModsJsonPath}""");
+            //    return false;
+            //}
+            //else Log.Debug($@"Deployment of ""{ModdingConstants.MODS_JSON}"" to ""{Paths.SpaceHavenModsJsonPath}"" was successful");
 
             // Done.
             Log.Success($"MODIFIED game was successfully deployed");

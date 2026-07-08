@@ -1,7 +1,6 @@
 ﻿using SH.Framework.Logging;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -86,7 +85,7 @@ public static class OS
         }
         catch (OperationCanceledException)
         {
-            logger?.Error($@"Process ""path"" was cancelled");
+            logger?.Error($@"Process ""{path}"" was cancelled");
             return false;
         }
         catch (Exception ex)
@@ -100,7 +99,7 @@ public static class OS
 
     public static Task OpenDirectoryAsync(string directoryPath, ILogger log)
     {
-        if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
+        if (!IOUtils.DirectoryExists(directoryPath))
             return Task.CompletedTask;
 
         // Fire and forget:
@@ -160,7 +159,7 @@ public static class OS
 
     public static Task OpenFileAsync(string filePath, ILogger log)
     {
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        if (!IOUtils.FileExists(filePath))
             return Task.CompletedTask;
 
         // Fire and forget:
@@ -279,12 +278,12 @@ public static class OS
             if (link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return OpenHttpAsync(link, log);
 
-            string absolute = Path.Combine(baseDir, link).AsStdPath().TrimEnd('/').AsOSPath();
+            string absolute = IOUtils.CombineAsOSPath(baseDir, link);
 
-            if (Directory.Exists(absolute))
+            if (IOUtils.DirectoryExists(absolute))
                 return OpenDirectoryAsync(absolute, log);
 
-            if (File.Exists(absolute))
+            if (IOUtils.FileExists(absolute))
                 return OpenFileAsync(absolute, log);
         }
         catch (Exception ex)

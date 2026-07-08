@@ -36,7 +36,7 @@ public sealed class ModValuesRepositoryService
         {
             string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
 
-            if (!File.Exists(modValuesPath))
+            if (!IOUtils.FileExists(modValuesPath))
                 return false;
 
             XDocument doc = await IOUtils.TryLoadXDocumentAsync(modValuesPath, Log, ct);
@@ -99,7 +99,7 @@ public sealed class ModValuesRepositoryService
         {
             string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
 
-            if (!File.Exists(modValuesPath))
+            if (!IOUtils.FileExists(modValuesPath))
                 return false;
 
             XDocument doc = await IOUtils.TryLoadXDocumentAsync(modValuesPath, Log, ct);
@@ -185,7 +185,7 @@ public sealed class ModValuesRepositoryService
             string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
 
             // Read or create document:
-            XDocument doc = File.Exists(modValuesPath) ? await IOUtils.TryLoadXDocumentAsync(modValuesPath, Log, ct) ?? new() : new();
+            XDocument doc = IOUtils.FileExists(modValuesPath) ? await IOUtils.TryLoadXDocumentAsync(modValuesPath, Log, ct) ?? new() : new();
 
             // Read or create root node:
             XElement rootNode = doc.Element("mod");
@@ -262,7 +262,7 @@ public sealed class ModValuesRepositoryService
         await Semaphore.WaitAsync(ct);
         try
         {
-            XDocument doc = File.Exists(Paths.ModListPath) ? await IOUtils.TryLoadXDocumentAsync(Paths.ModListPath, Log, ct) : null;
+            XDocument doc = IOUtils.FileExists(Paths.ModListPath) ? await IOUtils.TryLoadXDocumentAsync(Paths.ModListPath, Log, ct) : null;
             if (doc == null)
             {
                 await TrySaveModSortingInternal(original.Values, ct);

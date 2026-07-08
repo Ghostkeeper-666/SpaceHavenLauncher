@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/JAVA/">
+    <File Path="JAVA/LauncherAgent.java" />
+    <File Path="JAVA/MANIFEST.MF" />
+    <File Path="JAVA/README.md" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
@@ -6,11 +11,11 @@
     <File Path="LICENSE.txt" />
   </Folder>
   <Project Path="SH.Content.Test/SH.Content.Test.csproj" Id="76bb90bc-ca07-487b-866d-3358b12c6da2">
-    <Build Solution="Debug|*" Project="false" />
+    <Build Project="false" />
   </Project>
   <Project Path="SH.Content/SH.Content.csproj" />
   <Project Path="SH.Framework.Test/SH.Framework.Test.csproj">
-    <Build Solution="Debug|*" Project="false" />
+    <Build Project="false" />
   </Project>
   <Project Path="SH.Framework/SH.Framework.csproj" />
   <Project Path="SH.Launcher.Core/SH.Launcher.Core.csproj" Id="402170b2-5486-4ce9-a4bd-ad672d4f84be" />

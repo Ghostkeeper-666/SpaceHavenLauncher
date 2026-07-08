@@ -105,11 +105,11 @@ public partial class LeftScreen : ObservableObject
     }
 
     public async void OnBackupOriginalProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.BackupOriginal, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Backup, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
     public async void OnCreateTemplateProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.CreateTemplate, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Template, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
     public async void OnValidateCacheProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.ValidateCache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Cache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
     public async void OnLoadModsProgressAsync(object _, ProgressEventArgs e) =>
         DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 

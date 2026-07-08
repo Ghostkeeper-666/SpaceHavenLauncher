@@ -1,6 +1,8 @@
-﻿using Avalonia.Media.Imaging;
+﻿using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Content.Enums;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
@@ -25,8 +27,6 @@ public partial class SystemCoreViewModel : ViewModelBase
     public PathViewModel Paths => State.Paths;
     public AppSettingsViewModel AppSettings => State.AppSettings;
 
-    public void SetBackgroundImage() =>
-        State.ForcedBackground = BackgroundImage;
 
     [ObservableProperty]
     private bool _IsWin = OS.IsWin;
@@ -35,7 +35,7 @@ public partial class SystemCoreViewModel : ViewModelBase
     private ELogVerbosity[] _LogVerbosityValues = Enum.GetValues<ELogVerbosity>().ToArray();
 
     [ObservableProperty]
-    private ELanguage[] _ExportXmlAnnotationLanguages = Enum.GetValues<ELanguage>().OrderByDescending(v => v).ToArray();
+    private ELanguage[] _ExportXmlAnnotationLanguages = Enum.GetValues<ELanguage>().OrderBy(v => v).ToArray();
 
     [ObservableProperty]
     private EExportOption[] _ExportOptions = Enum.GetValues<EExportOption>().ToArray();
@@ -49,10 +49,92 @@ public partial class SystemCoreViewModel : ViewModelBase
     [ObservableProperty]
     private string _DebugProgressText = string.Empty;
 
+    [ObservableProperty]
+    private IBrush _SpaceHavenDir_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _SpaceHavenJarDir_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _SteamDir_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _SteamModsDir_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _ClassicModsDir_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _JREPath_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _JavaVMArgs_ForeColor = Brushes.OrangeRed;
+    [ObservableProperty]
+    private IBrush _JavaMainClass_ForeColor = Brushes.OrangeRed;
 
     private CancellationTokenSource DebugCTS;
-    
+
     private IProgressInfo DebugProgress;
+
+
+    public void OnDeactivated()
+    {
+        Paths.PropertyChanged -= ExternalPropertyChanged;
+        AppSettings.PropertyChanged -= ExternalPropertyChanged;
+        State.PropertyChanged -= ExternalPropertyChanged;
+    }
+
+    public void OnActivated()
+    {
+        SetBackgroundImage();
+        UpdateColors();
+        Paths.PropertyChanged -= ExternalPropertyChanged;
+        Paths.PropertyChanged += ExternalPropertyChanged;
+        AppSettings.PropertyChanged -= ExternalPropertyChanged;
+        AppSettings.PropertyChanged += ExternalPropertyChanged;
+        State.PropertyChanged -= ExternalPropertyChanged;
+        State.PropertyChanged += ExternalPropertyChanged;
+    }
+
+    private void AppSettingsPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        UpdateColors();
+
+    private void ExternalPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        UpdateColors();
+
+    public void SetBackgroundImage() =>
+        State.ForcedBackground = BackgroundImage;
+
+    public void UpdateColors()
+    {
+        SpaceHavenDir_ForeColor =
+            IOUtils.DirectoryExists(Paths.SpaceHavenDir) ? Brushes.LightCyan : Brushes.OrangeRed;
+        
+        SpaceHavenJarDir_ForeColor =
+            IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) ? Brushes.LightCyan : Brushes.OrangeRed;
+        
+        SteamDir_ForeColor =
+            IOUtils.DirectoryExists(Paths.SteamDir) ? Brushes.LightCyan : Brushes.Gold;
+
+        SteamModsDir_ForeColor =
+            !IOUtils.DirectoryExists(Paths.SteamDir) ? Brushes.Gold :
+            !IOUtils.DirectoryExists(Paths.SteamModsDir) ? Brushes.OrangeRed :
+            Brushes.LightCyan;
+
+        ClassicModsDir_ForeColor =
+            IOUtils.DirectoryExists(Paths.ClassicModsDir) ? Brushes.LightCyan :
+            IOUtils.DirectoryExists(Paths.SteamDir) && IOUtils.DirectoryExists(Paths.SteamModsDir) ? Brushes.Gold :
+            Brushes.OrangeRed;
+
+        JREPath_ForeColor =
+            !IOUtils.FileExists(Paths.JREPath) ? Brushes.OrangeRed :
+            !Paths.JREPath.StartsWith(Paths.SpaceHavenJarDir, StringComparison.OrdinalIgnoreCase) ? Brushes.Gold :
+            Brushes.LightCyan;
+
+        JavaVMArgs_ForeColor =
+            AppSettings.JavaVMArgs.IsNullOrWhiteSpace() ? Brushes.OrangeRed :
+            AppSettings.JavaVMArgs.Equals(State.TemplateJavaVMArgs) ? Brushes.LightCyan :
+            Brushes.Gold;
+
+        JavaMainClass_ForeColor =
+            AppSettings.JavaMainClass.IsNullOrWhiteSpace() ? Brushes.OrangeRed :
+            AppSettings.JavaMainClass.Equals(State.TemplateJavaMainClass) ? Brushes.LightCyan :
+            Brushes.Gold;
+    }
 
     public async Task CollectDebuggingInformation()
     {
@@ -78,7 +160,7 @@ public partial class SystemCoreViewModel : ViewModelBase
             DebugService svc = new(Paths.Data, Log);
             if (await Task.Run(async () => await svc.TryGenerateDebugFileAsync(DebugCTS.Token, DebugProgress)))
                 DebugProgressText = $@"{PathData.DebugFilename} is ready!";
-            else if(IOUtils.FileExists(Paths.Data.DebugFilePath))
+            else if (IOUtils.FileExists(Paths.Data.DebugFilePath))
                 DebugProgressText = $@"{PathData.DebugFilename} was generated with some errors, check the log on Navigation Console";
             else DebugProgressText = $@"Unable to generate {PathData.DebugFilename}, check the log on Navigation Console";
         }

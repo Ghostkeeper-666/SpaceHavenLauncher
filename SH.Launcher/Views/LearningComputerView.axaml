@@ -131,7 +131,7 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
 		SelectedItem="{Binding SelectedItem}"
 		VerticalAlignment="Stretch"
 		HorizontalAlignment="Stretch"
-		ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+		ScrollViewer.HorizontalScrollBarVisibility="Auto"
 		ScrollViewer.VerticalScrollBarVisibility="Auto" >
       <ListBox.Styles>
         <Style Selector="ListBoxItem" >

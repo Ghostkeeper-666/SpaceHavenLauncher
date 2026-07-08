@@ -16,6 +16,7 @@ public interface IProgressInfo : IDisposable
     public double TotalWeight { get; }
     public int Value { get; }
     public bool HasStarted { get; }
+    public bool HasCompleted { get; }
 
     public void Start();
     public IProgressInfo CreateChild(string childName, double weight = 1.0);

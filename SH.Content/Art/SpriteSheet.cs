@@ -1,4 +1,5 @@
 ﻿using SH.Content.Xml.Textures;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
@@ -57,7 +58,7 @@ public sealed class SpriteSheet
                     bool isSameImage = spriteSheet.SpritesByName[name].Equals(sprite);
                     string comparisonText = isSameImage ? "identical" : "DIFFERENT";
                     string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION NAME=""{name}"": it was reused for {comparisonText} sprite image content";
-                    
+
                     if (isSameImage) logger?.Debug(message);
                     else logger?.Warn(message);
                 }
@@ -148,13 +149,13 @@ public sealed class SpriteSheet
         {
             logger?.Debug($"[{FileName}] Exporting individual sprites to PNG");
 
-            exportDir = Path.Combine(exportDir, Name.ToString());
-            if (!Directory.Exists(exportDir))
+            exportDir = IOUtils.CombineAsOSPath(exportDir, Name.ToString());
+            if (!IOUtils.DirectoryExists(exportDir))
                 try { Directory.CreateDirectory(exportDir); } catch { }
 
             foreach (Sprite sprite in SpritesByName.Values)
             {
-                string exportPath = Path.Combine(exportDir, $"{sprite.Name}.png");
+                string exportPath = IOUtils.CombineAsOSPath(exportDir, $"{sprite.Name}.png");
                 await sprite.TryExportToPngAsync(exportPath, logger, ct);
             }
 
@@ -172,7 +173,7 @@ public sealed class SpriteSheet
     {
         try
         {
-            if (!Directory.Exists(exportDir))
+            if (!IOUtils.DirectoryExists(exportDir))
                 try { Directory.CreateDirectory(exportDir); } catch { }
 
             using Image<Rgba32> image = new(Width, Height, new Rgba32(0, 0, 0, 0));
@@ -198,7 +199,7 @@ public sealed class SpriteSheet
                 TransparentColorMode = PngTransparentColorMode.Preserve,
             };
 
-            await image.SaveAsync(Path.Combine(exportDir, $"{Name}.png"), encoder, ct);
+            await image.SaveAsync(IOUtils.CombineAsOSPath(exportDir, $"{Name}.png"), encoder, ct);
             return true;
         }
         catch (OperationCanceledException) { throw; }

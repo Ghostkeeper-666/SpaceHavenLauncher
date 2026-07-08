@@ -2,8 +2,8 @@
 
 public enum ELeftScreenStep
 {
-    BackupOriginal,
-    CreateTemplate,
-    ValidateCache,
+    Backup,
+    Template,
+    Cache,
     LoadMods,
 }

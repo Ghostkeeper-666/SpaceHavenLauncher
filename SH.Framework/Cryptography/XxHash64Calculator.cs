@@ -1,4 +1,5 @@
-﻿using SH.Framework.Logging;
+﻿using SH.Framework.IO;
+using SH.Framework.Logging;
 using System;
 using System.IO;
 using System.IO.Hashing;
@@ -66,7 +67,7 @@ public static class XxHash64Calculator
     {
         try
         {
-            if(!File.Exists(path))
+            if(!IOUtils.FileExists(path))
                 return null;
             await using FileStream sourceStream = File.OpenRead(path);
             return await ComputeFromStreamAsync(sourceStream, logger, ct).ConfigureAwait(false);

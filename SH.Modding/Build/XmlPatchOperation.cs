@@ -215,7 +215,7 @@ internal sealed class XmlPatchOperation
             return false;
         }
         foreach (XElement targetNode in targetNodes)
-            targetNode.AddBeforeSelf(nodes);
+            targetNode.AddBeforeSelf(nodes.CloneXElements());
         return true;
     }
 

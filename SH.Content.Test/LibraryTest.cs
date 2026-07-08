@@ -51,21 +51,21 @@ public sealed class LibraryTest
             Log.Info("=============================================================================");
 
             string localAppDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string laucherDir = Path.Combine(localAppDataDir, @"SpaceHavenLauncher");
+            string laucherDir = IOUtils.CombineAsOSPath(localAppDataDir, @"SpaceHavenLauncher");
 
-            string originalDir = Path.Combine(laucherDir, @"template\base\library");
-            string modifiedDir = Path.Combine(laucherDir, @"build\output\library");
+            string originalDir = IOUtils.CombineAsOSPath(laucherDir, @"template\base\library");
+            string modifiedDir = IOUtils.CombineAsOSPath(laucherDir, @"build\output\library");
 
             string inputDir = modifiedDir;
-            string exportDir = Path.Combine(laucherDir, "exported");
-            string texturesExportDir = Path.Combine(exportDir, "textures");
-            string animationsExportDir = Path.Combine(laucherDir, "animations");
+            string exportDir = IOUtils.CombineAsOSPath(laucherDir, "exported");
+            string texturesExportDir = IOUtils.CombineAsOSPath(exportDir, "textures");
+            string animationsExportDir = IOUtils.CombineAsOSPath(laucherDir, "animations");
 
-            string animationsXmlPath = Path.Combine(inputDir, "animations");
-            string audioXmlPath = Path.Combine(inputDir, "audio");
-            string havenXmlPath = Path.Combine(inputDir, "haven");
-            string textsXmlPath = Path.Combine(inputDir, "texts");
-            string texturesXmlPath = Path.Combine(inputDir, "textures");
+            string animationsXmlPath = IOUtils.CombineAsOSPath(inputDir, "animations");
+            string audioXmlPath = IOUtils.CombineAsOSPath(inputDir, "audio");
+            string havenXmlPath = IOUtils.CombineAsOSPath(inputDir, "haven");
+            string textsXmlPath = IOUtils.CombineAsOSPath(inputDir, "texts");
+            string texturesXmlPath = IOUtils.CombineAsOSPath(inputDir, "textures");
 
             CancellationTokenSource cts = new();
             CancellationToken ct = cts.Token;
@@ -150,7 +150,7 @@ public sealed class LibraryTest
             ProgressInfo renderAnimations = new("Render Animations");
             renderAnimations.ProgressChanged += ProgressChanged;
             AnimationRenderer = new(ArtRepository.AnimationsByName, ArtRepository.SpritesByName, Log);
-            await RenderAllAnimationsAsync(Path.Combine(exportDir, "animations"), ct, renderAnimations);
+            await RenderAllAnimationsAsync(IOUtils.CombineAsOSPath(exportDir, "animations"), ct, renderAnimations);
 
 
             // Render just a specific animation:
@@ -184,8 +184,8 @@ public sealed class LibraryTest
 
         foreach (string animationName in ArtRepository.AnimationsByName.Keys)
         {
-            string filename = Path.Combine(renderedAnimationsDir, $"{animationName}.webp");
-            if (File.Exists(filename))
+            string filename = IOUtils.CombineAsOSPath(renderedAnimationsDir, $"{animationName}.webp");
+            if (IOUtils.FileExists(filename))
                 continue;
             try
             {

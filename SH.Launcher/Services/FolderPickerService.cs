@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using SH.Framework.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ public class FolderPickerService
                 Title = "Select Folder",
                 AllowMultiple = false,
             });
-        return folders.FirstOrDefault()?.Path.LocalPath;
+        return folders.FirstOrDefault()?.Path?.LocalPath.AsOSPath();
     }
 
     public async Task<string> PickFileAsync(string filter)
@@ -33,6 +34,6 @@ public class FolderPickerService
                 AllowMultiple = false,
                 SuggestedFileName = filter,
             });
-        return folders.FirstOrDefault()?.Path.LocalPath;
+        return folders.FirstOrDefault()?.Path?.LocalPath.AsOSPath();
     }
 }

@@ -31,10 +31,10 @@ internal class Program
         Stopwatch sw = Stopwatch.StartNew();
 
         string localAppDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        string laucherDir = Path.Combine(localAppDataDir, @"SpaceHavenLauncher");
-        string templateSpaceHavenJar = Path.Combine(laucherDir, @"template\spacehaven.jar");
-        string modifiedSpaceHavenJar = Path.Combine(laucherDir, @"modified\spacehaven.jar");
-        string buildStageDir = Path.Combine(laucherDir, @"build\output");
+        string laucherDir = IOUtils.CombineAsOSPath(localAppDataDir, @"SpaceHavenLauncher");
+        string templateSpaceHavenJar = IOUtils.CombineAsOSPath(laucherDir, @"template\spacehaven.jar");
+        string modifiedSpaceHavenJar = IOUtils.CombineAsOSPath(laucherDir, @"modified\spacehaven.jar");
+        string buildStageDir = IOUtils.CombineAsOSPath(laucherDir, @"build\output");
         DirectoryInfo di = new(buildStageDir);
         FileInfo[] fis = di.GetFiles("*.*", SearchOption.AllDirectories);
         JarAppender j = new();

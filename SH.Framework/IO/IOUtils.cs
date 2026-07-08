@@ -14,23 +14,63 @@ namespace SH.Framework.IO;
 
 public static class IOUtils
 {
-    public static string CombinePath(string basePath, string relativePath)
+    public static string CombineAsStdPath(string basePath, params string[] relativePaths)
     {
-        try { return Path.Combine(basePath ?? string.Empty, relativePath ?? string.Empty); }
-        catch { return relativePath ?? basePath; }
+        try
+        {
+            basePath ??= string.Empty;
+            basePath = Environment.ExpandEnvironmentVariables(basePath).AsStdPath();
+
+            if (relativePaths is null || relativePaths.Length <= 0)
+                return Path.GetFullPath(basePath);
+
+            string[] paths = relativePaths
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => ExpandHome(Environment.ExpandEnvironmentVariables(p)).AsStdPath())
+                .ToArray();
+
+            return Path.GetFullPath(Path.Combine(new[] { basePath }.Concat(paths).ToArray()));
+        }
+        catch
+        {
+            return (relativePaths?.LastOrDefault(p => !string.IsNullOrWhiteSpace(p)) ?? basePath).AsStdPath();
+        }
     }
 
-    public static string CombineAsOSPath(string basePath, string relativePath)
+    public static string CombineAsOSPath(string basePath, params string[] relativePaths)
     {
-        try { return Path.Combine(basePath.AsOSPath(), relativePath.AsOSPath()).AsOSPath(); }
-        catch { return relativePath ?? basePath; }
+        try
+        {
+            basePath ??= string.Empty;
+            basePath = Environment.ExpandEnvironmentVariables(basePath).AsOSPath();
+
+            if (relativePaths is null || relativePaths.Length <= 0)
+                return Path.GetFullPath(basePath);
+
+            string[] paths = relativePaths
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => ExpandHome(Environment.ExpandEnvironmentVariables(p)).AsOSPath())
+                .ToArray();
+
+            return Path.GetFullPath(Path.Combine(new[] { basePath }.Concat(paths).ToArray()));
+        }
+        catch
+        {
+            return (relativePaths?.LastOrDefault(p => !string.IsNullOrWhiteSpace(p)) ?? basePath).AsOSPath();
+        }
     }
 
-    public static string CombineAsStdPath(string basePath, string relativePath)
+    private static string ExpandHome(string path)
     {
-        try { return Path.Combine(basePath.AsStdPath(), relativePath.AsStdPath()).AsStdPath(); }
-        catch { return relativePath ?? basePath; }
+        if (string.IsNullOrEmpty(path) || !path.StartsWith('~'))
+            return path;
+
+        string home =
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        return Path.Combine(home, path[1..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
     }
+
 
     public static bool FileExists(string path)
     {
@@ -46,16 +86,14 @@ public static class IOUtils
 
     public static void ThrowIfFileNotExists(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (!File.Exists(path))
-            throw new FileNotFoundException($@"File does not exist: ""{path}""", path);
+        if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            throw new FileNotFoundException($@"File does not exist: ""{path}""");
     }
 
-    public static void ThrowIfDirectoryNotExists(string path)
+    public static void ThrowIfDirectoryNotExists(string dir)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        if (!Directory.Exists(path))
-            throw new FileNotFoundException($@"Directory does not exist: ""{path}""", path);
+        if (dir.IsNullOrWhiteSpace() || !Directory.Exists(dir))
+            throw new DirectoryNotFoundException($@"Directory does not exist: ""{dir}""");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -155,7 +193,7 @@ public static class IOUtils
         try
         {
             path = path.AsOSPath();
-            if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            if (!FileExists(path))
             {
                 logger?.Error($@"XML document could not be found: ""{path}""", Path.GetDirectoryName(path));
                 return null;
@@ -356,7 +394,7 @@ public static class IOUtils
         {
             path = path.AsOSPath();
             error = null;
-            if (!File.Exists(path))
+            if (!FileExists(path))
                 return true;
             File.Delete(path);
             return true;
@@ -439,7 +477,7 @@ public static class IOUtils
         try
         {
             path = path.AsOSPath();
-            if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            if (!FileExists(path))
             {
                 error = $@"Unable to read text file, invalid path: ""{path}""";
                 text = null;
@@ -471,7 +509,7 @@ public static class IOUtils
         try
         {
             path = path.AsOSPath();
-            if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            if (!FileExists(path))
                 return null;
             return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
         }
@@ -569,7 +607,7 @@ public static class IOUtils
         try
         {
             path = path.AsOSPath();
-            if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            if (!FileExists(path))
             {
                 error = $@"Unable to read file, invalid path: ""{path}""";
                 bytes = null;
@@ -601,7 +639,7 @@ public static class IOUtils
         try
         {
             path = path.AsOSPath();
-            if (path.IsNullOrWhiteSpace() || !File.Exists(path))
+            if (!FileExists(path))
                 return null;
             return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
         }
@@ -741,7 +779,7 @@ public static class IOUtils
         {
             // Source Dir:
             source = source.AsOSPath();
-            if (source.IsNullOrWhiteSpace() || !Directory.Exists(source))
+            if (!DirectoryExists(source))
             {
                 logger?.Error($@"Source directory not found: ""{source}""");
                 return false;
@@ -764,7 +802,7 @@ public static class IOUtils
 
             // Create subdirectories:
             foreach (DirectoryInfo sourceSubDirInfo in subDirs)
-                if (!await TryCreateDirectoryAsync(Path.Combine(target, Path.GetRelativePath(source, sourceSubDirInfo.FullName)), logger, parallelOptions?.CancellationToken ?? default))
+                if (!await TryCreateDirectoryAsync(CombineAsOSPath(target, Path.GetRelativePath(source, sourceSubDirInfo.FullName)), logger, parallelOptions?.CancellationToken ?? default))
                     return false;
 
             // Add own cancellation token source to parallel options:
@@ -777,7 +815,7 @@ public static class IOUtils
             // Copy files:
             await Parallel.ForEachAsync(files, parallelOptions, async (sourceFileInfo, ct) =>
             {
-                if (!await TryCopyFileAsync(sourceFileInfo.FullName, Path.Combine(target, Path.GetRelativePath(source, sourceFileInfo.FullName)), true, logger, ct))
+                if (!await TryCopyFileAsync(sourceFileInfo.FullName, CombineAsOSPath(target, Path.GetRelativePath(source, sourceFileInfo.FullName)), true, logger, ct))
                     ownCTS.Cancel(); // stops immediately when any fails
             });
 

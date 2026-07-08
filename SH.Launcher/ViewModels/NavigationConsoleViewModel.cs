@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -39,7 +38,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     public PathViewModel Paths => State.Paths;
     public AppSettingsViewModel AppSettings => State.AppSettings;
 
-    private readonly SemaphoreSlim Semaphore = new(1, 1);
+    private readonly SemaphoreSlim LaunchSemaphore = new(1, 1);
 
 
 
@@ -62,7 +61,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
 
     public async Task OnLeftButtons() =>
-        State.DispatchQueue.TryEnqueue(() => InitializeBuildSystemAsync(true));
+        State.DispatchQueue.TryEnqueue(() => State.InitializeAsync(true));
 
     public async Task OnLeftLever() =>
         State.DispatchQueue.TryEnqueue(() => LaunchOriginalGame());
@@ -87,121 +86,33 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             return;
         }
 
-        ProgressInfo backup = new("Perform backup");
-        ProgressInfo template = new("Prepare template");
-        ProgressInfo cache = new("Validate cache");
-        ProgressInfo loadMods = new("Load mods");
-        ProgressInfo launch = new("Initialization",
-        [
-            (backup, 10),
-            (template, 70),
-            (cache, 10),
-            (loadMods, 10),
-        ]);
-
-        backup?.ProgressChanged += LeftScreen.OnBackupOriginalProgressAsync;
-        template?.ProgressChanged += LeftScreen.OnCreateTemplateProgressAsync;
-        cache?.ProgressChanged += LeftScreen.OnValidateCacheProgressAsync;
-        loadMods?.ProgressChanged += LeftScreen.OnLoadModsProgressAsync;
-
-        // Since we have 5 progress "bars", we don't need to be notified more than 5 times
-        backup.Max = 5;
-        template.Max = 5;
-        cache.Max = 5;
-        loadMods.Max = 5;
-
-        launch.Reset(); // resets all children
+        State.BackupProgress.ProgressChanged += LeftScreen.OnBackupOriginalProgressAsync;
+        State.TemplateProgress.ProgressChanged += LeftScreen.OnCreateTemplateProgressAsync;
+        State.CacheProgress.ProgressChanged += LeftScreen.OnValidateCacheProgressAsync;
+        State.LoadModsProgress.ProgressChanged += LeftScreen.OnLoadModsProgressAsync;
 
         try
         {
-            using CancellationTokenSource cts = new();
-            State.InitializeCTS = cts;
-            CancellationToken ct = cts.Token;
-
             LeftScreen.Reset();
             LeftScreen.LeftButtonsState = EControlState.Running;
 
-            if (forceReset)
+            if (await State.InitializeAsync(forceReset))
             {
-                Log.Info($"Resetting {SpaceHavenLauncher.Name} files...");
-                await IOUtils.TryDeleteDirectoryAsync(Paths.Data.TemplateDir, Log, ct);
-                await IOUtils.TryDeleteDirectoryAsync(Paths.Data.BuildDir, Log, ct);
-                await IOUtils.TryDeleteDirectoryAsync(Paths.Data.CacheDir, Log, ct);
+                LeftScreen.LeftButtonsState = EControlState.Ready;
             }
-
-            DeploymentService svc = new(Paths.Data, Log);
-
-            // There must be an original JAR file in order to proceed:
-            Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
-            if (!await svc.TryBackupOriginalAsync(State.InitializeCTS.Token, backup))
+            else
             {
-                Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
-                LeftScreen.SetError(ELeftScreenStep.BackupOriginal);
-                return;
+                LeftScreen.LeftButtonsState = EControlState.Error;
+
+                if (!State.BackupProgress.HasCompleted)
+                    LeftScreen.SetError(ELeftScreenStep.Backup);
+                else if (!State.TemplateProgress.HasCompleted)
+                    LeftScreen.SetError(ELeftScreenStep.Template);
+                else if (!State.CacheProgress.HasCompleted)
+                    LeftScreen.SetError(ELeftScreenStep.Cache);
+                else if (!State.LoadModsProgress.HasCompleted)
+                    LeftScreen.SetError(ELeftScreenStep.LoadMods);
             }
-            backup.Complete();
-            Log.Success($"Original files backup is complete");
-
-            await Task.Yield();
-
-            // There must be a template jar file in order to proceed:
-            Log.Debug($@"Preparing template files...", Paths.Data.TemplateDir);
-            if (!await Task.Run(() => svc.TryPrepareTemplateAsync(State.InitializeCTS.Token, template)))
-            {
-                Log.Error("Unable to prepare template JAR file", Paths.Data.TemplateDir);
-                LeftScreen.SetError(ELeftScreenStep.CreateTemplate);
-                return;
-            }
-            template.Complete();
-            Log.Success($"Template files are ready");
-
-            await Task.Yield();
-
-            // Read version info:
-            Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
-            VersionParserService versionParser = new();
-            if (!await Paths.TryReadSpaceHavenVersion(Log, State.InitializeCTS.Token))
-            {
-                Log.Error($"Unable to read {Paths.SpaceHavenName} version", Paths.Data.TemplateDir);
-                LeftScreen.SetError(ELeftScreenStep.CreateTemplate);
-                return;
-
-            }
-            Log.Success($"Detected {Paths.SpaceHavenName} version {Paths.SpaceHavenVersion}");
-
-            await Task.Yield();
-
-            // The cached mod jar must match the current original jar:
-            Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
-            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(State.InitializeCTS.Token, cache)))
-            {
-                Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
-                LeftScreen.SetError(ELeftScreenStep.ValidateCache);
-                return;
-            }
-            cache.Complete();
-            Log.Success($"Cached files are validated");
-
-            await Task.Yield();
-
-            // Load mods:
-            Log.Debug($@"Loading mods...");
-            if (!await TryReloadModsAsync(ct, loadMods))
-            {
-                Log.Error("Unable to all load mods");
-                LeftScreen.SetError(ELeftScreenStep.LoadMods);
-                return;
-            }
-            loadMods.Complete();
-
-            // Done.
-            Log.Success($"{SpaceHavenLauncher.Name} initialization is complete", Paths.WorkDir);
-            LeftScreen.LeftButtonsState = EControlState.Ready;
-        }
-        catch (OperationCanceledException)
-        {
-            Log.Error($"{SpaceHavenLauncher.Name} initialization was cancelled");
-            LeftScreen.LeftButtonsState = EControlState.Error;
         }
         catch (Exception ex)
         {
@@ -210,85 +121,10 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
         finally
         {
-            State.InitializeCTS = null;
-            launch?.Dispose();
-        }
-    }
-
-
-
-    private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo progress)
-    {
-        try
-        {
-            progress?.Start();
-
-            // Clear mod items:
-            State.Mods.Clear();
-            State.ModPages.Clear();
-
-            // Prepare the list of items to remove, then remove, otherwise we get an exception:
-            List<LeftPaneItem> leftPaneItemsToRemove = State.LeftPaneItems.Where(item => item.Type == EPageType.Mod).ToList();
-            foreach (LeftPaneItem item in leftPaneItemsToRemove)
-            {
-                State.LeftPaneItems.Remove(item);
-                State.FilteredLeftPaneItems.Remove(item);
-            }
-
-            // Load mods, then sort them:
-            ModRepositoryService modRepoSvc = new(Paths.Data, Log);
-            ModValuesRepositoryService valuesRepoSvc = new(Paths.Data, Log);
-            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, progress);
-            if (mods == null)
-                return false;
-            mods = await valuesRepoSvc.TryLoadModSortingAsync(mods, ct);
-
-            // Load mod values:
-            foreach (ModData mod in mods.Values)
-            {
-                if (await valuesRepoSvc.TryLoadCurrentModValuesAsync(mod, ct))
-                {
-                    // Try to also read previous version values:
-                    await valuesRepoSvc.TryLoadPreviousModValuesAsync(mod, false, ct);
-                }
-                else
-                {
-                    // Try to read previous values for using them as current values:
-                    // (defaults to 'suggested value' if no previous value is defined)
-                    await valuesRepoSvc.TryLoadPreviousModValuesAsync(mod, true, ct);
-
-                    // Save current version values:
-                    await valuesRepoSvc.TrySaveModValuesAsync(mod, false, ct);
-                }
-            }
-
-            // Now add the loaded mods:
-            foreach (ModData modData in mods.Values)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                ModViewModel mod = new(modData, mods.Values);
-                State.Mods.Add(mod);
-                State.ModPages.Add(mod.Name, new ModPageViewModel(mod));
-                State.LeftPaneItems.Add(new LeftPaneItem(EPageType.Mod, mod));
-                await Task.Yield();
-            }
-            State.FilteredLeftPaneItems = new(State.LeftPaneItems);
-
-            // Update mod conflicts:
-            State.UpdateModIds();
-            State.UpdateModConflicts();
-            State.UpdateModDependencies();
-
-            // Done.
-            progress?.Complete();
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log.Info(ex);
-            return false;
+            State.BackupProgress.ProgressChanged -= LeftScreen.OnBackupOriginalProgressAsync;
+            State.TemplateProgress.ProgressChanged -= LeftScreen.OnCreateTemplateProgressAsync;
+            State.CacheProgress.ProgressChanged -= LeftScreen.OnValidateCacheProgressAsync;
+            State.LoadModsProgress.ProgressChanged -= LeftScreen.OnLoadModsProgressAsync;
         }
     }
 
@@ -331,7 +167,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
-        
+
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
@@ -341,7 +177,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         progress.Start();
         runGame.Start();
 
-        await Semaphore.WaitAsync();
+        await LaunchSemaphore.WaitAsync();
         try
         {
             using CancellationTokenSource cts = new();
@@ -415,7 +251,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             catch { }
 
             State.LaunchCTS = null;
-            Semaphore.Release();
+            LaunchSemaphore.Release();
 
             CentralScreen.ShowEmptyOnMonitor();
             try
@@ -486,7 +322,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         progress.Start();
         runGame.Start();
 
-        await Semaphore.WaitAsync();
+        await LaunchSemaphore.WaitAsync();
         try
         {
             using CancellationTokenSource cts = new();
@@ -534,6 +370,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 Initialization = initialization,
                 JavaBuild = javaBuild,
                 XmlBuild = xmlBuild,
+                GamePlatform = State.GamePlatform,
             };
             settings.Mods.AddRange(mods);
 
@@ -547,9 +384,12 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             await Task.Yield();
 
+            bool hasXmlMod = mods.Any(m => m.IsXmlMod);
+            bool hasJavaMod = mods.Any(m => m.IsJavaMod);
+
             // DEPLOY
             DeploymentService svc = new(Paths.Data, Log);
-            if (!await svc.DeployModifiedGameAsync(mods.Any(mod => mod.IsXmlMod), mods.Any(mod => mod.IsJavaMod), ct, deploy))
+            if (!await svc.DeployModifiedGameAsync(hasXmlMod, hasJavaMod, ct, deploy))
                 return;
             deploy.Complete();
 
@@ -563,25 +403,26 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             if (AppSettings.StartSpaceHavenAutomatically)
             {
                 runGame.Complete();
+                State.IsSpaceHavenRunning = true;
 
-                StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
-                string dashedLine = $"{new('=', sb.Length - 1)}";
-                sb.Insert(0, $"{dashedLine}\n");
-                sb.Append(dashedLine);
-                Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
+                GameLauncherService launcherSvc = new(Paths.Data, Log);
 
                 // Run and await Space Haven:
-                await Task.Yield();
-                State.IsSpaceHavenRunning = true;
-                if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
+                if (await launcherSvc.TryLaunchWithJreAsync(
+                    State.GamePlatform,
+                    State.AppSettings.JavaMainClass,
+                    State.AppSettings.JavaVMArgs,
+                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JavaFilePaths),
+                    Paths.Data.CacheJarPath,
+                    ct))
                     Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
-                else Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
-                await Task.Yield();
+                else
+                    Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
             }
             else
             {
                 Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "tab://SystemCore");
-                await Task.Delay(500);
+                await Task.Delay(250);
             }
 
             // Done.
@@ -615,7 +456,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             catch { }
 
             State.LaunchCTS = null;
-            Semaphore.Release();
+            LaunchSemaphore.Release();
 
             CentralScreen.ShowEmptyOnMonitor();
             try
@@ -687,7 +528,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         string exportModifiedFilesDir = Paths.Data.ExportModifiedFilesDir;
         string exportModifiedTexturesDir = Paths.Data.ExportModifiedTexturesDir;
 
-        await Semaphore.WaitAsync();
+        await LaunchSemaphore.WaitAsync();
         try
         {
             using CancellationTokenSource cts = new();
@@ -712,7 +553,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     Log.Warn($@"Skipping export of ORIGINAL files, accordingly to System Core settings", "tab://SystemCore");
                 }
-                else if (!File.Exists(originalJarPath) || !Directory.Exists(originalFilesDir))
+                else if (!IOUtils.FileExists(originalJarPath) || !IOUtils.DirectoryExists(originalFilesDir))
                 {
                     Log.Warn($"Unable to locate ORIGINAL files => {SpaceHavenLauncher.Name} was not properly initialized", workDir);
                     exportOriginalSuccess = false;
@@ -766,7 +607,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     Log.Warn($@"Skipping export of MODIFIED files, accordingly to System Core settings", "tab://SystemCore");
                 }
-                else if (!File.Exists(modifiedJarPath) || !Directory.Exists(modifiedFilesDir))
+                else if (!IOUtils.FileExists(modifiedJarPath) || !IOUtils.DirectoryExists(modifiedFilesDir))
                 {
                     Log.Warn($"Unable to locate MODIFIED files => The MODIFIED game must be built first", workDir);
                     exportModifiedSuccess = false;
@@ -828,7 +669,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         finally
         {
             State.ExportCTS = null;
-            Semaphore.Release();
+            LaunchSemaphore.Release();
 
             extractOriginalLibrary?.ProgressChanged -= RightScreen.OnExportOriginalLibraryProgressAsync;
             exportOriginalTextures?.ProgressChanged -= RightScreen.OnExportOriginalTexturesProgressAsync;
@@ -860,9 +701,9 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             Stopwatch clock = Stopwatch.StartNew();
 
             // Paths
-            string libraryDirectory = Path.Combine(modifiedFilesDir, SpaceHavenConstants.LIBRARY);
-            string texturesXmlPath = Path.Combine(libraryDirectory, SpaceHavenConstants.TEXTURES);
-            string animationsXmlPath = Path.Combine(libraryDirectory, SpaceHavenConstants.ANIMATIONS);
+            string libraryDirectory = IOUtils.CombineAsOSPath(modifiedFilesDir, SpaceHavenConstants.LIBRARY);
+            string texturesXmlPath = IOUtils.CombineAsOSPath(libraryDirectory, SpaceHavenConstants.TEXTURES);
+            string animationsXmlPath = IOUtils.CombineAsOSPath(libraryDirectory, SpaceHavenConstants.ANIMATIONS);
 
             progressSpriteSheets.Start();
 
@@ -900,7 +741,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             Log.Info($"Exporting sprite sheets...");
             progressExportSpriteSheets.Start();
             clock.Restart();
-            if (!await artRepository.TryExportSpriteSheetsToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressExportSpriteSheets))
+            if (!await artRepository.TryExportSpriteSheetsToPngAsync(IOUtils.CombineAsOSPath(exportDir, "textures"), parallelOptions, progressExportSpriteSheets))
                 throw new Exception("Unable to export all sprite sheets to PNG");
             Log.Debug($"{progressExportSpriteSheets} = {clock.Elapsed.TotalMilliseconds} ms");
             progressExportSpriteSheets.Complete();
@@ -911,7 +752,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             Log.Info($"Exporting sprites...");
             progressSprites.Start();
             clock.Restart();
-            if (!await artRepository.TryExportSpritesToPngAsync(Path.Combine(exportDir, "textures"), parallelOptions, progressSprites))
+            if (!await artRepository.TryExportSpritesToPngAsync(IOUtils.CombineAsOSPath(exportDir, "textures"), parallelOptions, progressSprites))
                 throw new Exception("Unable to export all sprites to PNG");
             Log.Debug($"{progressSprites} = {clock.Elapsed.TotalMilliseconds} ms");
             progressSprites.Complete();

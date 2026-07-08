@@ -1,10 +1,8 @@
 ﻿using SH.Content.Enums;
-using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -33,7 +31,7 @@ public sealed class AppSettingsRepositoryService
             AppSettingsData data = AppSettingsData.GetDefault();
 
             // No such file?
-            if (Paths.ApplicationSettingsPath.IsNullOrWhiteSpace() || !File.Exists(Paths.ApplicationSettingsPath))
+            if (!IOUtils.FileExists(Paths.ApplicationSettingsPath))
             {
                 Log.Info($@"Creating new application settings file ""{Paths.ApplicationSettingsPath}""");
                 await TrySaveAsync(data, ct);
@@ -71,7 +69,7 @@ public sealed class AppSettingsRepositoryService
 
             data.LogVerbosity =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.LogVerbosity))?.Value ?? string.Empty, out ELogVerbosity logVerbosity) ? logVerbosity : data.LogVerbosity;
-            
+
             data.ModPageSplitterHeight =
                 int.TryParse(root.Element(nameof(AppSettingsData.ModPageSplitterHeight))?.Value ?? string.Empty, out int modPageSplitterHeight) ? modPageSplitterHeight : data.ModPageSplitterHeight;
 
@@ -80,7 +78,7 @@ public sealed class AppSettingsRepositoryService
 
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
-            
+
             data.StartSpaceHavenAutomatically =
                 bool.TryParse(root.Element(nameof(AppSettingsData.StartSpaceHavenAutomatically))?.Value ?? string.Empty, out bool startSpaceHavenAutomatically) ? startSpaceHavenAutomatically : data.StartSpaceHavenAutomatically;
 
@@ -90,11 +88,17 @@ public sealed class AppSettingsRepositoryService
             data.ExportXmlAnnotationLanguage =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : data.ExportXmlAnnotationLanguage;
 
-            data.ExportTextures = 
+            data.ExportTextures =
                 bool.TryParse(root.Element(nameof(AppSettingsData.ExportTextures))?.Value ?? string.Empty, out bool exportTextures) ? exportTextures : data.ExportTextures;
 
             data.ExportOption =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.ExportOption))?.Value ?? string.Empty, out EExportOption exportOption) ? exportOption : data.ExportOption;
+
+            data.JavaVMArgs =
+                root.Element(nameof(AppSettingsData.JavaVMArgs))?.Value ?? string.Empty;
+
+            data.JavaMainClass =
+                root.Element(nameof(AppSettingsData.JavaMainClass))?.Value ?? string.Empty;
 
             // Done.
             Log.Success($"Application settings loaded", Paths.ApplicationSettingsPath);
@@ -134,6 +138,8 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));
             root.Add(new XElement(nameof(AppSettingsData.ExportTextures), data.ExportTextures));
             root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));
+            root.Add(new XElement(nameof(AppSettingsData.JavaVMArgs), data.JavaVMArgs));
+            root.Add(new XElement(nameof(AppSettingsData.JavaMainClass), data.JavaMainClass));
 
             // Save to file:
             if (!await IOUtils.TrySaveXDocumentAsync(Paths.ApplicationSettingsPath, doc, null, Log, ct))

@@ -245,7 +245,7 @@ public sealed class ArtRepository
             List<Sprite> sprites = SpriteSheets.Values.OrderByDescending(ss => ss.SpritesByName.Count).ThenBy(s => s.Name).SelectMany(ss => ss.SpritesByName.Values.OrderBy(s => s.Y * s.SpriteSheet.Width + s.X)).ToList();
 
             // Create directories using SpriteSheet names first:
-            string[] dirs = SpriteSheets.Keys.Select(name => Path.Combine(exportDir, name.ToString())).ToArray() ?? [];
+            string[] dirs = SpriteSheets.Keys.Select(name => IOUtils.CombineAsOSPath(exportDir, name.ToString())).ToArray() ?? [];
             foreach (string dir in dirs)
                 if (!await IOUtils.TryCreateDirectoryAsync(dir, Log, parallelOptions.CancellationToken))
                     return false;

@@ -41,7 +41,6 @@ public partial class PathViewModel : ObservableObject
         // Calculated directories:
         AppDir = data.AppDir;
         WorkDir = data.WorkDir;
-        ExportDir = data.ExportDir;
 
         // Configurable directories:
         SteamDir = data.SteamDir;
@@ -50,6 +49,8 @@ public partial class PathViewModel : ObservableObject
         ClassicModsDir = data.ClassicModsDir;
         SpaceHavenJarDir = data.SpaceHavenJarDir;
         ModValuesDir = data.ModValuesDir;
+        ExportDir = data.ExportDir;
+        JREPath = data.JREPath;
 
         return this;
     }
@@ -78,6 +79,9 @@ public partial class PathViewModel : ObservableObject
                     return;
                 case nameof(ModValuesDir):
                     Data?.ModValuesDir = ModValuesDir;
+                    return;
+                case nameof(JREPath):
+                    Data?.JREPath = JREPath;
                     return;
                 default:
                     break;
@@ -121,6 +125,7 @@ public partial class PathViewModel : ObservableObject
     [ObservableProperty]
     private string _ModValuesDir;
 
-
+    [ObservableProperty]
+    private string _JREPath;
 
 }

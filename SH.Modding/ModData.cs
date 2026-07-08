@@ -39,10 +39,10 @@ public sealed class ModData
 
     public string Directory { get; set; }
 
-    public string XmlLibraryDirectory => Path.Combine(Directory, ModdingConstants.LIBRARY);
-    public string XmlPatchesDirectory => Path.Combine(Directory, ModdingConstants.PATCHES);
-    public string AudioDirectory => Path.Combine(Directory, ModdingConstants.AUDIO);
-    public string TexturesDirectory => Path.Combine(Directory, ModdingConstants.TEXTURES);
+    public string XmlLibraryDirectory => IOUtils.CombineAsOSPath(Directory, ModdingConstants.LIBRARY);
+    public string XmlPatchesDirectory => IOUtils.CombineAsOSPath(Directory, ModdingConstants.PATCHES);
+    public string AudioDirectory => IOUtils.CombineAsOSPath(Directory, ModdingConstants.AUDIO);
+    public string TexturesDirectory => IOUtils.CombineAsOSPath(Directory, ModdingConstants.TEXTURES);
 
     public string InfoXmlPath { get; set; }
     public string MarkdownDescriptionPath { get; set; }

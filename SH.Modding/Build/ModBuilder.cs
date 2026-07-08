@@ -209,10 +209,6 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Also, ignore errors
                 await TryComposeGameCredits();
 
-                // Build JAR:
-                if (!await TryCreateSpaceHavenJarFile())
-                    return false;
-
                 // Copy XML hash file:
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
                     return false;
@@ -226,9 +222,15 @@ public sealed class ModBuilder : IAsyncDisposable
                 XmlBuild.Complete();
             }
 
-            // Create a fresh new config.json
-            if (!await TryCreateConfigJson())
+            // Aleways build the modifiedspacehaven.jar file:
+            if (!await TryCreateModifiedSpaceHavenJarFile())
                 return false;
+
+            // Create a fresh new config.json
+            if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
+                return false;
+            //if (!await TryCreateConfigJson())
+            //    return false;
 
             // Create file for JAVA modders:
             if (!await TryWriteModsJson())
@@ -489,11 +491,11 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // JAR:
-            string templateJarHash = File.Exists(Paths.TemplateJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, CT) : null;
+            string templateJarHash = IOUtils.FileExists(Paths.TemplateJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, CT) : null;
             templateJarHash ??= string.Empty;
-            string buildJarHash = File.Exists(Paths.BuildJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.BuildJarHashPath, Log, CT) : null;
+            string buildJarHash = IOUtils.FileExists(Paths.BuildJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.BuildJarHashPath, Log, CT) : null;
             buildJarHash ??= string.Empty;
-            string cacheJarHash = File.Exists(Paths.CacheJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.CacheJarHashPath, Log, CT) : null;
+            string cacheJarHash = IOUtils.FileExists(Paths.CacheJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.CacheJarHashPath, Log, CT) : null;
             cacheJarHash ??= string.Empty;
             IsNewJar = templateJarHash != buildJarHash || buildJarHash != cacheJarHash;
 
@@ -504,13 +506,13 @@ public sealed class ModBuilder : IAsyncDisposable
             {
                 NeedsXmlBuild &=
                     IsNewJar ||
-                    !File.Exists(Paths.CacheJarPath) ||
-                    !File.Exists(Paths.CacheJarHashPath) ||
+                    !IOUtils.FileExists(Paths.CacheJarPath) ||
+                    !IOUtils.FileExists(Paths.CacheJarHashPath) ||
                     (Build.XmlHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheXmlHashPath, Log, CT) ?? string.Empty);
 
                 NeedsJavaBuild &=
-                    !File.Exists(Paths.CacheConfigJsonPath) ||
-                    !File.Exists(Paths.CacheJavaHashPath) ||
+                    !IOUtils.FileExists(Paths.CacheConfigJsonPath) ||
+                    !IOUtils.FileExists(Paths.CacheJavaHashPath) ||
                     (Build.JavaHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty);
             }
 
@@ -540,23 +542,23 @@ public sealed class ModBuilder : IAsyncDisposable
         {
             Log.Info($@"Resetting XML build...");
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.BuildAudioDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildAudioDirectory, Log, CT))
                 return false;
             ResetXmlBuild.SetNormalized(0.10);
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.BuildTexturesDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildTexturesDirectory, Log, CT))
                 return false;
             ResetXmlBuild.SetNormalized(0.20);
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.BuildMergeDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildMergeDirectory, Log, CT))
                 return false;
             ResetXmlBuild.SetNormalized(0.50);
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.BuildPatchDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildPatchDirectory, Log, CT))
                 return false;
             ResetXmlBuild.SetNormalized(0.80);
 
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.BuildStageDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildStageDirectory, Log, CT))
                 return false;
 
             // Done.
@@ -753,7 +755,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
 
                         // Save merged Space Haven XML file to mod merge directory:
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                         //    return false;
                     }
                 }
@@ -767,7 +769,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Save merged XML files to build merge directory:
             foreach (XmlFile spaceHavenXmlFile in mergedSpaceHavenXmlFiles)
             {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                     return false;
                 // Update line numbers:
                 if (!await spaceHavenXmlFile.TryReparse(Log, CT))
@@ -985,7 +987,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
 
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(mod.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                         //    return false;
                         // Save and reload to update line numbers of XML nodes:
                         //if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
@@ -1000,7 +1002,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
             foreach (XmlFile spaceHavenXmlFile in Build.XmlFile.Values)
             {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(Path.Combine(Paths.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                     return false;
                 // Update line numbers:
                 if (!await spaceHavenXmlFile.TryReparse(Log, CT))
@@ -1173,10 +1175,11 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Copy audio files:
+            string escapedBuildStageDirectory = $"{Paths.BuildStageDirectory}{Path.DirectorySeparatorChar}";
             foreach (AudioBuildData audio in audioByName.Values)
             {
-                string targetAbsolutePath = Path.GetFullPath(Path.Combine(Paths.BuildStageDirectory, audio.TargetRelativePath));
-                if (!targetAbsolutePath.StartsWith(Paths.BuildStageDirectory, StringComparison.Ordinal))
+                string targetAbsolutePath = Path.GetFullPath(IOUtils.CombineAsOSPath(Paths.BuildStageDirectory, audio.TargetRelativePath)).AsOSPath();
+                if (!targetAbsolutePath.StartsWith(escapedBuildStageDirectory, StringComparison.Ordinal))
                 {
                     Log.Error($@"Invalid target audio file path ""{targetAbsolutePath}"" for {audio}");
                     return false;
@@ -1417,10 +1420,10 @@ public sealed class ModBuilder : IAsyncDisposable
                         string cimFilename = $"{spriteSheet.GlobalId}.cim";
 
                         // Export to CIM to build stage directory:
-                        await spriteSheet.TryExportToCimAsync(Path.Combine(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
+                        await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
 
                         // Export to PNG, for debugging:
-                        spriteSheet.TryExportToPng(Path.Combine(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
+                        spriteSheet.TryExportToPng(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
                     }
                     finally
                     {
@@ -1462,7 +1465,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     re.SetAttributeValue("y", sprite.SpriteSheetY);
                     re.SetAttributeValue("w", sprite.Width);
                     re.SetAttributeValue("h", sprite.Height);
-                    re.SetAttributeValue("id", sprite.GlobalId = Build.AllocateNextNumericId(EIdPool.TexturesRegion));
+                    re.SetAttributeValue("id", sprite.GlobalId);
                     re.SetAttributeValue("_src", sprite.LocalName);
                     parentTexturesRegionNode.Add(re);
 
@@ -1559,20 +1562,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryCreateSpaceHavenJarFile()
+    private async Task<bool> TryCreateModifiedSpaceHavenJarFile()
     {
         try
         {
             Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDirectory);
             Clock.Restart();
-
-            // Clear target directory:
-            if (!await IOUtils.TryDeleteDirectoryAsync(Paths.CacheDirectory, Log, CT))
-                return false;
-            if (!await IOUtils.TryCreateDirectoryAsync(Paths.CacheDirectory, Log, CT))
-                return false;
-
-            BuildJarFile.SetNormalized(0.10);
 
             // Select files to add to template JAR:
             DirectoryInfo di = new(Paths.BuildStageDirectory);
@@ -1583,22 +1578,45 @@ public sealed class ModBuilder : IAsyncDisposable
 
             BuildJarFile.SetNormalized(0.85);
 
-            // calculate hash:
+            // Calculate hash of modified JAR:
             string hash = await XxHash64Calculator.ComputeFromFileAsync(Paths.CacheJarPath, Log, CT);
             if (!await IOUtils.TryWriteAllTextAsync(Paths.CacheModifiedJarHashPath, hash, Log, CT))
                 return false;
-            BuildJarFile.SetNormalized(0.90);
 
             // Copy original JAR hash file:
             if (!await IOUtils.TryCopyFileAsync(Paths.TemplateJarHashPath, Paths.BuildJarHashPath, true, Log, CT))
                 return false;
-            BuildJarFile.SetNormalized(0.95);
-
             if (!await IOUtils.TryCopyFileAsync(Paths.BuildJarHashPath, Paths.CacheJarHashPath, true, Log, CT))
                 return false;
-            BuildJarFile?.Complete();
+
+            BuildJarFile.SetNormalized(0.90);
+
+            // Write the required class paths to jars.txt so the Bootstrap class can load them:
+            List<string> classPaths = [];
+            classPaths.AddRange(
+                Build.Mods
+                .Where(m => m.IsJavaMod)
+                .SelectMany(m => m.JavaFilePaths)
+                .Select(path => path.AsStdPath())
+                .Where(path => !path.IsNullOrWhiteSpace() && path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+                .ToList());
+
+            string jarsTxtPath = IOUtils.CombineAsOSPath(Paths.CacheDirectory, "jars.txt");
+            if (!await IOUtils.TryWriteAllTextAsync(jarsTxtPath, classPaths.JoinToString("\r\n"), Log, CT))
+                return false;
+
+            BuildJarFile.SetNormalized(0.95);
+
+            // Deploy aop / java agent libs to cache dir:
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJ), IOUtils.CombineAsOSPath(Paths.CacheDirectory, ModdingConstants.ASPECTJ), true, Log, CT))
+                return false;
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJWEAVER), IOUtils.CombineAsOSPath(Paths.CacheDirectory, ModdingConstants.ASPECTJWEAVER), true, Log, CT))
+                return false;
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, "LauncherAgent.jar"), IOUtils.CombineAsOSPath(Paths.CacheDirectory, "LauncherAgent.jar"), true, Log, CT))
+                return false;
 
             // Done.
+            BuildJarFile?.Complete();
             Log.Debug($"{BuildJarFile} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.CacheDirectory);
             Log.Success($"'{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' is ready", Paths.CacheDirectory);
             return true;
@@ -1620,17 +1638,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-
-
-
     private async Task<bool> TryCreateConfigJson()
     {
         try
         {
+            // "-XstartOnFirstThread"?
+
             Log.Info($"Generating {SpaceHavenConstants.CONFIG_JSON}...", Paths.CacheDirectory);
             Clock.Restart();
 
@@ -1657,7 +1670,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Insert javaagent entry:
                 Log.Debug($@"Adding -javaagent entry to {nameof(config.VMArgs)}...", Paths.CacheConfigJsonPath);
-                config.VMArgs.Insert(config.VMArgs.Count - 1, $"-javaagent:{Path.Combine(Paths.SpaceHavenJarDir, ModdingConstants.ASPECTJWEAVER).AsStdPath()}");
+                config.VMArgs.Insert(config.VMArgs.Count - 1, $"-javaagent:{IOUtils.CombineAsStdPath(Paths.SpaceHavenJarDir, ModdingConstants.ASPECTJWEAVER)}");
 
                 // Clear AOP entries:
                 Log.Debug($@"Clearing JAVA AOP libraries from {nameof(config.ClassPath)}...", Paths.CacheConfigJsonPath);

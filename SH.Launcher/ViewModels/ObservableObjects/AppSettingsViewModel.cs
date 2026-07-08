@@ -53,6 +53,8 @@ public partial class AppSettingsViewModel : ObservableObject
             ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
             ExportTextures = data.ExportTextures;
             ExportOption = data.ExportOption;
+            JavaVMArgs = data.JavaVMArgs;
+            JavaMainClass = data.JavaMainClass;
 
             return this;
         }
@@ -106,6 +108,12 @@ public partial class AppSettingsViewModel : ObservableObject
                     break;
                 case nameof(ExportOption):
                     Data?.ExportOption = ExportOption;
+                    break;
+                case nameof(JavaVMArgs):
+                    Data?.JavaVMArgs = JavaVMArgs;
+                    break;
+                case nameof(JavaMainClass):
+                    Data?.JavaMainClass = JavaMainClass;
                     break;
 
                 default:
@@ -165,4 +173,10 @@ public partial class AppSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private EExportOption _ExportOption;
+
+    [ObservableProperty]
+    private string _JavaVMArgs;
+
+    [ObservableProperty]
+    private string _JavaMainClass;
 }

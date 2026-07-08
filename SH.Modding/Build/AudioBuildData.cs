@@ -188,17 +188,25 @@ internal sealed class AudioBuildData
             if (!SourceRelativePath.IsNullOrWhiteSpace())
             {
                 SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath);
-                if (IOUtils.FileExists(SourceAbsolutePath))
+
+                // Validate paths escaping mod audio dir:
+                if (!SourceAbsolutePath.StartsWith(Mod.AudioDirectory, StringComparison.OrdinalIgnoreCase))
                 {
-                    Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioDirectory);
-                    return true;
+                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDirectory}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
+                    return false;
                 }
-                else
+
+                // Validate invalid paths:
+                if (!IOUtils.FileExists(SourceAbsolutePath))
                 {
                     // Fail, since the explicitly defined path could not be found:
                     Log.Error($@"Invalid mod audio file path ""{SourceRelativePath}"" defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
                     return false;
                 }
+
+                // Done.
+                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioDirectory);
+                return true;
             }
 
             // Is it a relative path within the mod's audio directory?

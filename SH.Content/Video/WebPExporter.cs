@@ -1,5 +1,6 @@
-﻿using SH.Framework.Logging;
-using Imazen.WebP;
+﻿using Imazen.WebP;
+using SH.Framework.IO;
+using SH.Framework.Logging;
 using SkiaSharp;
 using System;
 using System.IO;
@@ -13,7 +14,7 @@ public static class WebpExporter
     {
         try
         {
-            string path = Path.Combine(outputDir, $"{clip.Name}.webp");
+            string path = IOUtils.CombineAsOSPath(outputDir, $"{clip.Name}.webp");
             logger?.Debug($@"Exporting clip to ""{path}""");
 
             if (scale <= 0.0)
@@ -53,7 +54,7 @@ public static class WebpExporter
             byte[] animatedWebP = encoder.Assemble();
 
             string dir = Path.GetDirectoryName(path);
-            if (!Directory.Exists(dir))
+            if (!IOUtils.DirectoryExists(dir))
                 try { Directory.CreateDirectory(dir); } catch { }
             File.WriteAllBytes(path, animatedWebP);
 
