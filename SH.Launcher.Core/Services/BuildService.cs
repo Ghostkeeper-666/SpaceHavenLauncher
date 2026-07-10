@@ -1,6 +1,7 @@
 ﻿using SH.Framework.Logging;
 using SH.Modding.Build;
 using System;
+using System.Runtime;
 using System.Threading.Tasks;
 
 namespace SH.Launcher.Core.Services;
@@ -16,12 +17,19 @@ public sealed class BuildService
     {
         try
         {
-            // Build!
-            ModBuilder builder = new(settings, Log);
+            // Build scoped:
+            {
+                ModBuilder builder = new(settings, Log);
+                if (!await Task.Run(() => builder.TryBuildAsync()))
+                    return false;
+            }
 
-            // A cancellation token is already passed using build settings:
-            if (!await Task.Run(() => builder.TryBuildAsync()))
-                return false;
+            // Force Garbage Collection:
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
             // Done.
             return true;

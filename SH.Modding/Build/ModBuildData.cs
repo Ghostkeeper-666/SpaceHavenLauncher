@@ -4,7 +4,9 @@ using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SixLabors.ImageSharp.Drawing;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
@@ -19,7 +21,7 @@ internal sealed class ModBuildData : IAsyncDisposable
 {
     public ModBuildData(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildData build, ILogger logger)
     {
-        Settings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
+        BuildSettings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
         Data = mod ?? throw new ArgumentNullException(nameof(mod));
         Build = build ?? throw new ArgumentNullException(nameof(build));
         BuildSeqNum = buildSeqNum;
@@ -29,9 +31,9 @@ internal sealed class ModBuildData : IAsyncDisposable
         Log = new LoggerCollection(logger, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
     }
 
-    private readonly BuildSettings Settings;
-    private ParallelOptions ParallelOptions => Settings.ParallelOptions;
-    private CancellationToken CT => Settings.CT;
+    private readonly BuildSettings BuildSettings;
+    private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
+    private CancellationToken CT => BuildSettings.CT;
 
     public string Name => Data.Name;
     public VersionInfo Version => Data.Version;
@@ -156,23 +158,27 @@ internal sealed class ModBuildData : IAsyncDisposable
                 // - file size
                 // - last modified time
                 // - a few bytes from content
-                byte[] buffer = new byte[65536]; // this buffer size should be enough to detect changes in most small-sized images
                 List<string> resourceFilePaths = [];
                 resourceFilePaths.AddRange(AudioFilePaths);
                 resourceFilePaths.AddRange(TextureFilePaths);
                 resourceFilePaths.Sort();
-                foreach (string path in resourceFilePaths)
+
+                ArrayPool<byte> arrayPool = new(1024, 32);
+                await Parallel.ForEachAsync(resourceFilePaths, BuildSettings.ParallelOptions, async (path, ct) =>
                 {
-                    if(!IOUtils.FileExists(path))
-                        continue;
+                    if (!IOUtils.FileExists(path))
+                        return;
+                    byte[] buffer = arrayPool.Get();
                     FileInfo fi = new(path);
                     Array.Clear(buffer, 0, buffer.Length);
                     BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), fi.Length);
                     BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), fi.LastWriteTimeUtc.Ticks);
                     string relativePath = path.Substring(Directory.Length + 1);
                     await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log);
-                    xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
-                }
+                    lock (xmlHashes)
+                        xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
+                    arrayPool.Return(buffer);
+                });
 
                 CT.ThrowIfCancellationRequested();
 

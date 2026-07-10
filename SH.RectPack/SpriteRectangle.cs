@@ -6,7 +6,6 @@ public struct SpriteRectangle
     public int Y;
     public int Width;
     public int Height;
-    public int SortKey;
     public object Sprite;
 
     public readonly int Right => X + Width;
@@ -21,7 +20,6 @@ public struct SpriteRectangle
         Y = y;
         Width = width;
         Height = height;
-        SortKey = 0;
         Sprite = sprite;
     }
 
@@ -31,7 +29,6 @@ public struct SpriteRectangle
         Y = y;
         Width = width;
         Height = height;
-        SortKey = 0;
     }
 
     public readonly bool IsEqual(in SpriteRectangle other) =>

@@ -1,4 +1,5 @@
-﻿using SH.Framework.Extensions;
+﻿using SH.Content.Art;
+using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.RectPack;
 using System;
@@ -8,7 +9,7 @@ using System.Threading;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpriteAtlasBuildData
+internal sealed class SpriteAtlasBuildData : IDisposable
 {
     public string Name { get; }
     public List<SpriteSheetBuildData> SpriteSheets { get; } = [];
@@ -63,21 +64,33 @@ internal sealed class SpriteAtlasBuildData
             OrderedDictionary<int, SpriteBuildData> allSprites = [];
             allSprites.AddRange(Sprites, s => s.LocalId, s => s);
             allSprites.AddRange(sprites, s => s.LocalId, s => s);
+            SpriteBuildData[] sortedSprites = allSprites.Values.OrderByDescending(sprite => ((ulong)sprite.Width) * ((ulong)sprite.Height)).ToArray();
 
-            // Clear all spritesheets, since everything will be re-calculated:
+            // Clear all existing spritesheets, since everything will be re-calculated:
             foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
+            {
                 spriteSheet.Clear();
+                spriteSheet.Resize(SpriteSheetSize, SpriteSheetSize);
+            }
+
+            // Estimate the amount of spritesheets required and create them:
+            long totalArea = allSprites.Values.Sum(s => (long)s.Area);
+            long spriteSheetArea = SpriteSheetSize * SpriteSheetSize;
+            double efficiency = 0.80;
+            int estimatedSpriteSheetCount = 1 + (int)(totalArea / (efficiency * spriteSheetArea));
+            for (int i = SpriteSheets.Count; i < estimatedSpriteSheetCount; ++i)
+                SpriteSheets.Add(new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this));
 
             ct.ThrowIfCancellationRequested();
 
             // Fit each sprite to a spritesheet:
             int count = 0;
-            SpriteBuildData[] sortedSprites = allSprites.Values.OrderByDescending(sprite => ((ulong)sprite.Width) * ((ulong)sprite.Height)).ToArray();
             foreach (SpriteBuildData sprite in sortedSprites)
             {
                 ct.ThrowIfCancellationRequested();
 
-                ++count;
+                if (count++ % 100 == 0 && count > 0)
+                    log?.Info($"{Name} Sprite Atlas: {count} of {allSprites.Count} sprite(s) packed");
 
                 // Check for very large sprite:
                 if (sprite.Width > SpriteSheetSize || sprite.Height > SpriteSheetSize)
@@ -86,20 +99,16 @@ internal sealed class SpriteAtlasBuildData
                     return false;
                 }
 
-                // Try to fit sprite to an existing spritesheet:
+                // Fill spritesheets with less sprites first:
                 bool spriteWasAdded = false;
-                foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
+                foreach (SpriteSheetBuildData spriteSheet in SpriteSheets.OrderBy(ss => ss.Sprites.Count))
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    // Resize spritesheet if it is below the maximum allowed size:
-                    if (spriteSheet.Width < SpriteSheetSize || spriteSheet.Height < SpriteSheetSize)
-                        spriteSheet.Resize(Math.Max(spriteSheet.Width, SpriteSheetSize), Math.Max(spriteSheet.Width, SpriteSheetSize));
-
-                    // Check if occupancy would exceed max allowed:
+                    // Check if occupancy is enough:
                     double spriteOccupancy = ((sprite.Height + SpriteSpacing) * (sprite.Width + SpriteSpacing)) / (double)(SpriteSheetSize * SpriteSheetSize);
                     double newOccupancy = spriteSheet.Packer.Occupancy + spriteOccupancy;
-                    if (newOccupancy > spriteSheet.Packer.MaxOccupancy)
+                    if (newOccupancy > efficiency)
                         continue;
 
                     // Test if the spritesheet can hold this new sprite:
@@ -107,6 +116,7 @@ internal sealed class SpriteAtlasBuildData
                         spriteSheet.Packer.Rectangles
                         .Append(new SpriteRectangle(0, 0, sprite.Width + SpriteSpacing, sprite.Height + SpriteSpacing, sprite))
                         .ToList();
+
                     if (!spriteSheet.Packer.TryPack(rects))
                         continue;
 
@@ -120,11 +130,12 @@ internal sealed class SpriteAtlasBuildData
 
                 // Create a new sprite sheet, and manually add the first sprite:
                 SpriteSheetBuildData newSpriteSheet =
-                    new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, 0.90, this);
+                    new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this);
                 newSpriteSheet.Add(sprite);
                 newSpriteSheet.Packer.Rectangles.Add(new SpriteRectangle(0, 0, sprite.Width + SpriteSpacing, sprite.Height + SpriteSpacing, sprite));
                 SpriteSheets.Add(newSpriteSheet);
             }
+            log?.Info($"{Name} Sprite Atlas: {count} of {allSprites.Count} sprite(s) packed");
 
             // Pack each sprite:
             foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
@@ -150,19 +161,15 @@ internal sealed class SpriteAtlasBuildData
         }
     }
 
-    private bool TryPack(SpriteSheetBuildData spriteSheet, SpriteBuildData additionalSprite, CancellationToken ct)
+    #region IDisposable
+    public volatile bool IsDisposed;
+    public void Dispose()
     {
-        ct.ThrowIfCancellationRequested();
-
-        List<SpriteRectangle> rectList =
-            spriteSheet.Sprites
-            .Select(s => new SpriteRectangle(0, 0, s.Width + spriteSheet.SpriteSpacing, s.Height + spriteSheet.SpriteSpacing, s))
-            .ToList();
-        if (additionalSprite != null)
-            rectList.Add(new SpriteRectangle(0, 0, additionalSprite.Width + spriteSheet.SpriteSpacing, additionalSprite.Height + spriteSheet.SpriteSpacing, additionalSprite));
-
-        return spriteSheet.Packer.TryPack(rectList);
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+        foreach (SpriteSheetBuildData ss in SpriteSheets)
+            ss?.Dispose();
     }
-
-
+    #endregion
 }

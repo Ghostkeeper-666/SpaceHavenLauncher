@@ -1,4 +1,5 @@
 ﻿using SH.Content;
+using SH.Content.Art;
 using SH.Content.Enums;
 using SH.Content.Xml;
 using SH.Framework.Cryptography;
@@ -1332,7 +1333,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
             // Create sprite atlases by texture filter type, and pack sprites into sprite sheets:
-            SortedDictionary<ETextureFilter, SpriteAtlasBuildData> spriteAtlases = [];
             foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>().OrderByDescending(e => (int)e))
             {
                 Clock.Restart();
@@ -1380,14 +1380,12 @@ public sealed class ModBuilder : IAsyncDisposable
                 CT.ThrowIfCancellationRequested();
 
                 // Pack sprites into sprite sheets:
-                SpriteAtlasBuildData spriteAtlas = new(filter.ToString().ToUpperInvariant())
+                using SpriteAtlasBuildData spriteAtlas = new(filter.ToString().ToUpperInvariant())
                 {
                     SpriteSheetSize = filter == ETextureFilter.Linear ? 4096 : 2048,
                     SpriteSpacing = filter == ETextureFilter.Linear ? 0 : 4,
                 };
 
-                spriteAtlases[filter] = spriteAtlas;
-                
                 if (!await Task.Run(() => spriteAtlas.Add(sprites.Values, Log, CT)))
                 {
                     Log.Error($@"Unable to pack sprites into sprite atlas '{spriteAtlas.Name}'", Paths.BuildStageAnimationsXmlPath);

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDisposable
+internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
 {
     public SpriteBuildData(string localName, int localId, string absoluteFilePath)
     {
@@ -28,6 +28,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
 
         Width = Image.Width;
         Height = Image.Height;
+        Area = Width * Height;
     }
 
     public SpriteSheetBuildData SpriteSheet { get; set; }
@@ -44,10 +45,12 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
     public int Width { get; }
     public int Height { get; }
 
+    public int Area { get; }
+
     public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath);
     public string AbsoluteFilePath { get; }
 
-    public byte[] PixelData { get; }
+    public byte[] PixelData { get; private set; }
     public SKBitmap Image { get; private set; }
 
     public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
@@ -133,14 +136,16 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
     }
 
 
-    #region IAsyncDisposable
+    #region IDisposable
     public volatile bool IsDisposed;
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         if (IsDisposed)
             return;
         IsDisposed = true;
+        PixelData = null;
         try { Image?.Dispose(); } catch { }
+        Image = null;
     }
     #endregion
 }

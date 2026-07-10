@@ -14,9 +14,9 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpriteSheetBuildData
+internal sealed class SpriteSheetBuildData : IDisposable
 {
-    public SpriteSheetBuildData(int localId, int width, int height, int maxSprites, int spriteSpacing, double maxOccupancy, SpriteAtlasBuildData atlas)
+    public SpriteSheetBuildData(int localId, int width, int height, int maxSprites, int spriteSpacing, SpriteAtlasBuildData atlas)
     {
         ArgumentNullException.ThrowIfNull(atlas);
         Atlas = atlas;
@@ -26,8 +26,8 @@ internal sealed class SpriteSheetBuildData
         Height = height;
         PixelFormat = 4;
         PixelData = new byte[PixelFormat * Width * Height];
-        SpriteSpacing = spriteSpacing <= 0 ? 0 : spriteSpacing;
-        Packer = new(Width, Height, maxSprites, SpriteSpacing < 1 ? 1 : SpriteSpacing, maxOccupancy);
+        SpriteSpacing = spriteSpacing;
+        Packer = new(Width, Height, maxSprites);
     }
 
     public SpriteSheetBuildData(int localId, string path, SpriteAtlasBuildData atlas)
@@ -67,7 +67,7 @@ internal sealed class SpriteSheetBuildData
     internal SpritePacker Packer { get; private set; }
 
     public IReadOnlyList<SpriteBuildData> Sprites => SpriteList;
-    private readonly List<SpriteBuildData> SpriteList = [];
+    private List<SpriteBuildData> SpriteList = [];
     public int Count => SpriteList.Count;
 
     public int SpriteSpacing { get; set; }
@@ -89,10 +89,12 @@ internal sealed class SpriteSheetBuildData
 
     public void Resize(int width, int height)
     {
+        if (width == Width && height == Height)
+            return;
         Width = width;
         Height = height;
         PixelData = new byte[PixelFormat * Width * Height];
-        Packer = new(Width, Height, Packer.MaxRectangles, Packer.Shrink, Packer.MaxOccupancy);
+        Packer = new(Width, Height, Packer.MaxRectangles);
     }
 
     public bool TryGenerateFromSprites(ILogger log = null)
@@ -254,5 +256,20 @@ internal sealed class SpriteSheetBuildData
     }
 
     public override string ToString() => LocalId.ToString();
+
+    #region IDisposable
+    public volatile bool IsDisposed;
+    public void Dispose()
+    {
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+        PixelData = null;
+        Packer = null;
+        foreach (SpriteBuildData sprite in SpriteList)
+            sprite?.Dispose();
+        SpriteList = null;
+    }
+    #endregion
 }
 

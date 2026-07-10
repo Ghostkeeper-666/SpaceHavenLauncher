@@ -5,22 +5,21 @@ namespace SH.RectPack;
 
 public sealed class SpritePacker
 {
+    private static readonly Comparer<SpriteRectangle> AreaDescending =
+        Comparer<SpriteRectangle>.Create(static (a, b) => b.Area.CompareTo(a.Area));
+
     public List<SpriteRectangle> Rectangles { get; private set; } = [];
     public SpriteRectangle Bounds { get; private set; }
-    public int MaxRectangles => OverallBest.Length;
-    public int Shrink { get; }
-    public double MaxOccupancy { get; }
-    public double Occupancy { get; private set;}
+    public int MaxRectangles => Working.Length;
+    public double Occupancy { get; private set; }
 
     private readonly int MaxWidth;
     private readonly int MaxHeight;
 
     private readonly List<SpriteRectangle> Slots;
-    private SpriteRectangle[] OverallBest;
-    private SpriteRectangle[] LocalBest;
-    private SpriteRectangle[] Buffer;
+    private readonly SpriteRectangle[] Working;
 
-    public SpritePacker(int width, int height, int maxRectangles, int shrink, double maxOccupancy)
+    public SpritePacker(int width, int height, int maxRectangles)
     {
         if (width <= 0)
             throw new ArgumentOutOfRangeException(nameof(width), width, "must be greater than 0");
@@ -28,99 +27,52 @@ public sealed class SpritePacker
             throw new ArgumentOutOfRangeException(nameof(height), height, "must be greater than 0");
         if (maxRectangles <= 0)
             throw new ArgumentOutOfRangeException(nameof(maxRectangles), maxRectangles, "must be greater than 0");
-        if (shrink <= 0)
-            throw new ArgumentOutOfRangeException(nameof(shrink), shrink, "must be greater than 0");
-        if (maxOccupancy <= 0 || maxOccupancy > 1.0)
-            throw new ArgumentOutOfRangeException(nameof(maxOccupancy), maxOccupancy, "must be > 0 and <= 1");
 
         MaxWidth = width;
         MaxHeight = height;
-        Shrink = shrink;
-        MaxOccupancy = maxOccupancy;
 
-        OverallBest = new SpriteRectangle[maxRectangles];
-        LocalBest = new SpriteRectangle[maxRectangles];
-        Buffer = new SpriteRectangle[maxRectangles];
-
+        Working = new SpriteRectangle[maxRectangles];
         Slots = new List<SpriteRectangle>(2 * maxRectangles);
     }
 
     public bool TryPack(List<SpriteRectangle> rectangles)
     {
         Rectangles = rectangles ?? throw new ArgumentNullException(nameof(rectangles));
-        if (Rectangles.Count == 0)
+
+        int count = Rectangles.Count;
+        if (count == 0)
         {
             Occupancy = 0;
             return true;
         }
 
-        if (Rectangles.Count > OverallBest.Length)
-            throw new ArgumentException("Too many rectangles.", nameof(rectangles));
+        if (count > Working.Length)
+            throw new ArgumentException("Too many rectangles!", nameof(rectangles));
 
-        int rectanglesAreaSum = 0;
-        for (int i = 0; i < Rectangles.Count; ++i)
-            rectanglesAreaSum += rectangles[i].Area;
+        rectangles.CopyTo(Working, 0);
+        Array.Sort(Working, 0, count, AreaDescending);
 
-        rectangles.CopyTo(OverallBest, 0);
-        for (int i = 0; i < Rectangles.Count; ++i)
-            OverallBest[i].SortKey = OverallBest[i].Area;
-        Array.Sort(OverallBest, 0, Rectangles.Count, Comparer<SpriteRectangle>.Create(static (a, b) => b.SortKey.CompareTo(a.SortKey)));
-        OverallBest.AsSpan(0, rectangles.Count).CopyTo(LocalBest.AsSpan(0, rectangles.Count));
-
-        SpriteRectangle bounds = default;
-        int width = MaxWidth;
-        int height = MaxHeight;
-        int maxArea = ComputeMaxArea(rectanglesAreaSum);
-        do
-        {
-            if (!TryPackRectangles(width, height, out int boundsWidth, out int boundsHeight))
-                break;
-
-            bounds.Width = boundsWidth;
-            bounds.Height = boundsHeight;
-
-            // Swap working buffers
-            (Buffer, LocalBest) = (LocalBest, Buffer);
-            width = bounds.Width <= Shrink ? 1 : bounds.Width - Shrink;
-            height = bounds.Height <= Shrink ? 1 : bounds.Height - Shrink;
-        }
-        while (bounds.Area > maxArea);
+        if (!TryPackRectangles(count, MaxWidth, MaxHeight, out int boundsWidth, out int boundsHeight))
+            return false;
 
         // Unable to fit all:
-        if (bounds.Width <= 0 || bounds.Height <= 0 || bounds.Width > MaxWidth || bounds.Height > MaxHeight)
+        if (boundsWidth <= 0 || boundsHeight <= 0 || boundsWidth > MaxWidth || boundsHeight > MaxHeight)
             return false;
 
         // Done.
-        Bounds = bounds;
-        (OverallBest, LocalBest) = (LocalBest, OverallBest);
+        Bounds = new SpriteRectangle(0, 0, boundsWidth, boundsHeight);
+
         int rectsArea = 0;
-        for (int i = 0; i < rectangles.Count; ++i)
+        for (int i = 0; i < count; ++i)
         {
-            rectangles[i] = OverallBest[i];
-            rectsArea += rectangles[i].Area;
+            rectangles[i] = Working[i];
+            rectsArea += Working[i].Area;
         }
         Occupancy = rectsArea / (double)(MaxWidth * MaxHeight);
         return true;
     }
 
-
-    private void SortByArea(SpriteRectangle[] buffer)
-    {
-    }
-
-
-    private int ComputeMaxArea(int rectanglesAreaSum)
-    {
-        double value = Math.Ceiling(rectanglesAreaSum / MaxOccupancy);
-        if (value <= 0)
-            return rectanglesAreaSum;
-        if (double.IsPositiveInfinity(value))
-            return int.MaxValue;
-        return (int)value;
-    }
-
-
-    private bool TryPackRectangles(int binWidth, int binHeight, out int boundsWidth, out int boundsHeight)
+    private bool TryPackRectangles(int count, int binWidth, int binHeight, out int boundsWidth, out int boundsHeight)
     {
         boundsWidth = 0;
         boundsHeight = 0;
@@ -128,18 +80,17 @@ public sealed class SpritePacker
         Slots.Clear();
         Slots.Add(new SpriteRectangle(0, 0, binWidth, binHeight));
 
-        for (int r = 0; r < Rectangles.Count; ++r)
+        for (int r = 0; r < count; ++r)
         {
-            ref readonly SpriteRectangle source = ref LocalBest[r];
+            SpriteRectangle packed = Working[r];
 
-            if (!TryFindSlot(source, out int slotIndex))
+            if (!TryFindSlot(packed, out int slotIndex))
                 return false;
 
             SpriteRectangle slot = Slots[slotIndex];
-            SpriteRectangle packed = source;
             packed.X = slot.X;
             packed.Y = slot.Y;
-            Buffer[r] = packed;
+            Working[r] = packed;
 
             int right = packed.Right;
             if (right > boundsWidth)
@@ -192,10 +143,9 @@ public sealed class SpritePacker
             else Slots.RemoveAt(slotIndex);
         }
 
-        //done.
+        // Done.
         return true;
     }
-
 
     private bool TryFindSlot(in SpriteRectangle rectangle, out int index)
     {
@@ -212,16 +162,15 @@ public sealed class SpritePacker
         return false;
     }
 
-
     private void AddSlot(SpriteRectangle rectangle)
     {
-        rectangle.SortKey = Math.Max(rectangle.X, rectangle.Y);
+        int key = SlotSortKey(rectangle);
         int min = 0;
         int max = Slots.Count - 1;
         while (min <= max)
         {
             int middle = (min + max) >> 1;
-            if (rectangle.SortKey < Slots[middle].SortKey)
+            if (key < SlotSortKey(Slots[middle]))
                 max = middle - 1;
             else
                 min = middle + 1;
@@ -229,23 +178,20 @@ public sealed class SpritePacker
         Slots.Insert(min, rectangle);
     }
 
-
     private void SortSlots(int slotIndex)
     {
         SpriteRectangle rectangle = Slots[slotIndex];
+        int key = SlotSortKey(rectangle);
 
-        int newSortKey = Math.Max(rectangle.X, rectangle.Y);
-
-        if (newSortKey == rectangle.SortKey)
-            return;
-
-        rectangle.SortKey = newSortKey;
         int index = slotIndex;
-        while (index + 1 < Slots.Count && newSortKey > Slots[index + 1].SortKey)
+        while (index + 1 < Slots.Count && key > SlotSortKey(Slots[index + 1]))
         {
             Slots[index] = Slots[index + 1];
             ++index;
         }
         Slots[index] = rectangle;
     }
+
+    private static int SlotSortKey(in SpriteRectangle rectangle) =>
+        Math.Max(rectangle.X, rectangle.Y);
 }
