@@ -1,7 +1,6 @@
-﻿using RectpackSharp;
-using SH.Framework;
-using SH.Framework.Extensions;
+﻿using SH.Framework.Extensions;
 using SH.Framework.Logging;
+using SH.RectPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +12,8 @@ internal sealed class SpriteAtlasBuildData
 {
     public string Name { get; }
     public List<SpriteSheetBuildData> SpriteSheets { get; } = [];
+    public int SpriteSheetSize { get; set; } = 2048;
+    public int SpriteSpacing { get; set; } = 4;
 
     public List<SpriteBuildData> Sprites
     {
@@ -29,8 +30,10 @@ internal sealed class SpriteAtlasBuildData
     public int SpriteCount =>
         SpriteSheets.Sum(sh => sh.Count);
 
-    public SpriteAtlasBuildData(string name) =>
+    public SpriteAtlasBuildData(string name)
+    {
         Name = name ?? throw new ArgumentNullException(nameof(name));
+    }
 
     public void Clear() =>
         SpriteSheets.Clear();
@@ -44,13 +47,11 @@ internal sealed class SpriteAtlasBuildData
     public SpriteBuildData GetSpriteWithLocalName(string localName) =>
         Sprites?.FirstOrDefault(s => s.LocalName.Equals(localName, StringComparison.Ordinal));
 
-    public bool Add(IEnumerable<SpriteBuildData> sprites, uint maxSpriteSheetWidth, uint maxSpriteSheetHeight, bool crop, ILogger log, CancellationToken ct)
+    public bool Add(IEnumerable<SpriteBuildData> sprites, ILogger log, CancellationToken ct)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(sprites);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSpriteSheetWidth);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSpriteSheetHeight);
 
             // Nothing to do?
             if (!sprites.Any())
@@ -69,75 +70,73 @@ internal sealed class SpriteAtlasBuildData
 
             ct.ThrowIfCancellationRequested();
 
-            int maxLocalId = sprites.Max(s => s.LocalId);
-            SpriteBuildData[] spritesByLocalId = new SpriteBuildData[maxLocalId + 1];
-            foreach (SpriteBuildData sprite in sprites)
-                spritesByLocalId[sprite.LocalId] = sprite;
-
             // Fit each sprite to a spritesheet:
-            foreach (SpriteBuildData sprite in allSprites.Values.OrderByDescending(sprite => ((ulong)sprite.Width) * ((ulong)sprite.Height)))
+            int count = 0;
+            SpriteBuildData[] sortedSprites = allSprites.Values.OrderByDescending(sprite => ((ulong)sprite.Width) * ((ulong)sprite.Height)).ToArray();
+            foreach (SpriteBuildData sprite in sortedSprites)
             {
                 ct.ThrowIfCancellationRequested();
 
+                ++count;
+
                 // Check for very large sprite:
-                if (sprite.Width > maxSpriteSheetWidth || sprite.Height > maxSpriteSheetHeight)
+                if (sprite.Width > SpriteSheetSize || sprite.Height > SpriteSheetSize)
                 {
-                    log?.Error($"Texture '{sprite.LocalName}' with size {sprite.Width}x{sprite.Height} does not fit into the maximum allowed size of {maxSpriteSheetWidth}x{maxSpriteSheetHeight}");
+                    log?.Error($"Texture '{sprite.LocalName}' with size {sprite.Width}x{sprite.Height} does not fit into the maximum allowed size of {SpriteSheetSize}x{SpriteSheetSize}");
                     return false;
                 }
 
                 // Try to fit sprite to an existing spritesheet:
-                bool added = false;
+                bool spriteWasAdded = false;
                 foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
                 {
                     ct.ThrowIfCancellationRequested();
 
                     // Resize spritesheet if it is below the maximum allowed size:
-                    if (spriteSheet.Width < maxSpriteSheetWidth || spriteSheet.Height < maxSpriteSheetHeight)
-                        spriteSheet.Resize((int)Math.Max(spriteSheet.Width, maxSpriteSheetWidth), (int)Math.Max(spriteSheet.Width, maxSpriteSheetHeight));
+                    if (spriteSheet.Width < SpriteSheetSize || spriteSheet.Height < SpriteSheetSize)
+                        spriteSheet.Resize(Math.Max(spriteSheet.Width, SpriteSheetSize), Math.Max(spriteSheet.Width, SpriteSheetSize));
 
-                    // Test if the spritesheet can hold this sprite:
-                    if (!TryPack(spritesByLocalId, spriteSheet, sprite, out _, ct))
+                    // Check if occupancy would exceed max allowed:
+                    double spriteOccupancy = ((sprite.Height + SpriteSpacing) * (sprite.Width + SpriteSpacing)) / (double)(SpriteSheetSize * SpriteSheetSize);
+                    double newOccupancy = spriteSheet.Packer.Occupancy + spriteOccupancy;
+                    if (newOccupancy > spriteSheet.Packer.MaxOccupancy)
                         continue;
 
-                    spriteSheet.Sprites.Add(sprite);
-                    added = true;
+                    // Test if the spritesheet can hold this new sprite:
+                    List<SpriteRectangle> rects =
+                        spriteSheet.Packer.Rectangles
+                        .Append(new SpriteRectangle(0, 0, sprite.Width + SpriteSpacing, sprite.Height + SpriteSpacing, sprite))
+                        .ToList();
+                    if (!spriteSheet.Packer.TryPack(rects))
+                        continue;
+
+                    // Add sprite to spritesheet:
+                    spriteSheet.Add(sprite);
+                    spriteWasAdded = true;
                     break;
                 }
-                if (added)
+                if (spriteWasAdded)
                     continue;
 
-                // Create a new sprite sheet, then add the sprite:
-                SpriteSheets.Add(new(SpriteSheets.Count, (int)maxSpriteSheetWidth, (int)maxSpriteSheetHeight, this));
-                SpriteSheets.Last().Sprites.Add(sprite);
+                // Create a new sprite sheet, and manually add the first sprite:
+                SpriteSheetBuildData newSpriteSheet =
+                    new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, 0.90, this);
+                newSpriteSheet.Add(sprite);
+                newSpriteSheet.Packer.Rectangles.Add(new SpriteRectangle(0, 0, sprite.Width + SpriteSpacing, sprite.Height + SpriteSpacing, sprite));
+                SpriteSheets.Add(newSpriteSheet);
             }
 
             // Pack each sprite:
             foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
             {
-                ct.ThrowIfCancellationRequested();
-
-                if (!TryPack(spritesByLocalId, spriteSheet, null, out PackingRectangle bounds, ct))
-                {
-                    log?.Error($"Unable to pack all textures to sprite sheet {spriteSheet}");
-                    return false;
-                }
-
-                foreach (SpriteBuildData sprite in spriteSheet.Sprites)
+                foreach (SpriteRectangle r in spriteSheet.Packer.Rectangles)
                 {
                     ct.ThrowIfCancellationRequested();
-
-                    int distancingOffset = sprite.PackingRectangleHasBorder ? 1 : 0;
-                    sprite.SpriteSheetX = distancingOffset + (int)sprite.PackingRectangle.X;
-                    sprite.SpriteSheetY = distancingOffset + (int)sprite.PackingRectangle.Y;
-                    sprite.SpriteSheet = spriteSheet;
-                }
-
-                // Crop spritesheet to its content:
-                if (crop)
-                {
-                    int size = Math.Max(MathHelpers.NextPowerOfTwo((int)bounds.Width), MathHelpers.NextPowerOfTwo((int)bounds.Height));
-                    spriteSheet.Resize(size, size);
+                    SpriteBuildData sprite = (SpriteBuildData)r.Sprite;
+                    int borderX = (r.Width - sprite.Width) >> 1;
+                    int borderY = (r.Height - sprite.Height) >> 1;
+                    sprite.SpriteSheetX = r.X + borderX;
+                    sprite.SpriteSheetY = r.Y + borderY;
                 }
             }
 
@@ -151,49 +150,19 @@ internal sealed class SpriteAtlasBuildData
         }
     }
 
-    private bool TryPack(SpriteBuildData[] spritesByLocalId, SpriteSheetBuildData spriteSheet, SpriteBuildData additionalSprite, out PackingRectangle bounds, CancellationToken ct)
+    private bool TryPack(SpriteSheetBuildData spriteSheet, SpriteBuildData additionalSprite, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        List<PackingRectangle> rectList = spriteSheet.Sprites.Select(CreatePackingRectangleForSprite).ToList();
+        List<SpriteRectangle> rectList =
+            spriteSheet.Sprites
+            .Select(s => new SpriteRectangle(0, 0, s.Width + spriteSheet.SpriteSpacing, s.Height + spriteSheet.SpriteSpacing, s))
+            .ToList();
         if (additionalSprite != null)
-            rectList.Add(CreatePackingRectangleForSprite(additionalSprite));
-        PackingRectangle[] rects = rectList.ToArray();
+            rectList.Add(new SpriteRectangle(0, 0, additionalSprite.Width + spriteSheet.SpriteSpacing, additionalSprite.Height + spriteSheet.SpriteSpacing, additionalSprite));
 
-        ct.ThrowIfCancellationRequested();
-
-        try
-        {
-            RectanglePacker.Pack(rects, out bounds, PackingHints.FindBest, 1.0, 1, (uint)spriteSheet.Width, (uint)spriteSheet.Height);
-        }
-        catch
-        {
-            bounds = default;
-            return false;
-        }
-
-        uint usedWidth = 0;
-        uint usedHeight = 0;
-        foreach (PackingRectangle rect in rects)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            SpriteBuildData sprite = spritesByLocalId[rect.Id];
-            sprite.PackingRectangle = rect; // set calculated rectangle
-            uint right = rect.X + rect.Width;
-            uint bottom = rect.Y + rect.Height;
-            if (right > usedWidth)
-                usedWidth = right;
-            if (bottom > usedHeight)
-                usedHeight = bottom;
-        }
-
-        return usedWidth <= spriteSheet.Width && usedHeight <= spriteSheet.Height;
+        return spriteSheet.Packer.TryPack(rectList);
     }
 
 
-    private PackingRectangle CreatePackingRectangleForSprite(SpriteBuildData s) =>
-        s.Width <= 510 && s.Height <= 510 ?
-        new(0, 0, (uint)(s.Width + 2), (uint)(s.Height + 2), s.LocalId) :
-        new(0, 0, (uint)s.Width, (uint)s.Height, s.LocalId);
 }

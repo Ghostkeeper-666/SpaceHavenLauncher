@@ -1,5 +1,4 @@
-﻿using RectpackSharp;
-using SH.Framework.Extensions;
+﻿using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SkiaSharp;
@@ -50,9 +49,6 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IAsyncDispo
 
     public byte[] PixelData { get; }
     public SKBitmap Image { get; private set; }
-
-    internal bool PackingRectangleHasBorder => PackingRectangle.Width != Width || PackingRectangle.Height != Height;
-    internal PackingRectangle PackingRectangle { get; set; }
 
     public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
     {

@@ -27,8 +27,6 @@ internal sealed class ModBuildData : IAsyncDisposable
         ErrorFileLogger = new FileLogger(ErrorLogPath);
         ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
         Log = new LoggerCollection(logger, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
-        foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>())
-            SpriteAtlases[filter] = new(filter.ToString());
     }
 
     private readonly BuildSettings Settings;
@@ -75,7 +73,6 @@ internal sealed class ModBuildData : IAsyncDisposable
     public SortedDictionary<string, VarBuildData> Variables { get; } = [];
 
     public SortedDictionary<string, AudioBuildData> Audio { get; } = [];
-    public Dictionary<ETextureFilter, SpriteAtlasBuildData> SpriteAtlases { get; } = [];
 
     public bool IsXmlMod => HasAudio || HasTextures || HasLibraryXml || HasPatchXml;
     public bool IsJavaMod => HasJava;
@@ -420,8 +417,6 @@ internal sealed class ModBuildData : IAsyncDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (SpriteBuildData sprite in SpriteAtlases.Values.SelectMany(spriteAtlas => spriteAtlas.Sprites ?? []))
-            try { await sprite.DisposeAsync(); } catch { }
         try { await FullFileLogger.DisposeAsync(); } catch { }
         try { await ErrorFileLogger.DisposeAsync(); } catch { }
     }

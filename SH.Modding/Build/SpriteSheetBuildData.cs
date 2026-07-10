@@ -1,6 +1,7 @@
 ﻿using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SH.RectPack;
 using SkiaSharp;
 using System;
 using System.Buffers.Binary;
@@ -15,7 +16,7 @@ namespace SH.Modding.Build;
 
 internal sealed class SpriteSheetBuildData
 {
-    public SpriteSheetBuildData(int localId, int width, int height, SpriteAtlasBuildData atlas)
+    public SpriteSheetBuildData(int localId, int width, int height, int maxSprites, int spriteSpacing, double maxOccupancy, SpriteAtlasBuildData atlas)
     {
         ArgumentNullException.ThrowIfNull(atlas);
         Atlas = atlas;
@@ -25,6 +26,8 @@ internal sealed class SpriteSheetBuildData
         Height = height;
         PixelFormat = 4;
         PixelData = new byte[PixelFormat * Width * Height];
+        SpriteSpacing = spriteSpacing <= 0 ? 0 : spriteSpacing;
+        Packer = new(Width, Height, maxSprites, SpriteSpacing < 1 ? 1 : SpriteSpacing, maxOccupancy);
     }
 
     public SpriteSheetBuildData(int localId, string path, SpriteAtlasBuildData atlas)
@@ -61,15 +64,26 @@ internal sealed class SpriteSheetBuildData
     public int Height { get; private set; }
     public int PixelFormat { get; }
     public byte[] PixelData { get; private set; }
-    public List<SpriteBuildData> Sprites { get; } = [];
-    public int Count => Sprites.Count;
+    internal SpritePacker Packer { get; private set; }
+
+    public IReadOnlyList<SpriteBuildData> Sprites => SpriteList;
+    private readonly List<SpriteBuildData> SpriteList = [];
+    public int Count => SpriteList.Count;
+
+    public int SpriteSpacing { get; set; }
 
     public OrderedDictionary<string, SpriteBuildData> SpritesByName { get; } = [];
     public OrderedDictionary<string, SpriteBuildData> SpritesById { get; } = [];
 
+    public void Add(SpriteBuildData sprite)
+    {
+        SpriteList.Add(sprite);
+        sprite.SpriteSheet = this;
+    }
+
     public void Clear()
     {
-        Sprites.Clear();
+        SpriteList.Clear();
         PixelData = new byte[PixelFormat * Width * Height];
     }
 
@@ -78,6 +92,7 @@ internal sealed class SpriteSheetBuildData
         Width = width;
         Height = height;
         PixelData = new byte[PixelFormat * Width * Height];
+        Packer = new(Width, Height, Packer.MaxRectangles, Packer.Shrink, Packer.MaxOccupancy);
     }
 
     public bool TryGenerateFromSprites(ILogger log = null)
@@ -86,7 +101,7 @@ internal sealed class SpriteSheetBuildData
         {
             using SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
             using SKCanvas canvas = new(bitmap);
-            foreach (SpriteBuildData sprite in Sprites)
+            foreach (SpriteBuildData sprite in SpriteList)
                 canvas.DrawBitmap(sprite.Image, sprite.SpriteSheetX, sprite.SpriteSheetY);
 
             Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
