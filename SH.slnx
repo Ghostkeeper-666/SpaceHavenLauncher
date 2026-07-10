@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/GITHUB/">
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
   <Folder Name="/JAVA/">
     <File Path="JAVA/LauncherAgent.java" />
     <File Path="JAVA/MANIFEST.MF" />
