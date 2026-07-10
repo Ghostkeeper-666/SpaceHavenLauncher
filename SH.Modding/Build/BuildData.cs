@@ -15,22 +15,23 @@ namespace SH.Modding.Build;
 
 internal sealed class BuildData : IAsyncDisposable
 {
-    public BuildData(BuildSettings buildSettings, BuildPathData paths, ILogger logger)
+    public BuildData(BuildSettings settings, ILogger logger)
     {
-        Settings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
-        Paths = paths ?? throw new ArgumentNullException(nameof(paths));
+        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
         FileLogger = new FileLogger(Paths.BuildLogPath);
         Log = new LoggerCollection(logger, FileLogger);
     }
 
     public ILogger Log { get; }
-    public BuildPathData Paths { get; }
+    public BuildPathData Paths => Settings.Paths;
 
     private readonly BuildSettings Settings;
     private ParallelOptions ParallelOptions => Settings.ParallelOptions;
     private CancellationToken CT => Settings.CT;
     private FileLogger FileLogger { get; }
+    
     public List<ModBuildData> Mods { get; } = [];
+
     public bool HasXmlMods => Mods.Any(mod => mod.IsXmlMod);
     public bool HasJavaMods => Mods.Any(mod => mod.IsJavaMod);
 

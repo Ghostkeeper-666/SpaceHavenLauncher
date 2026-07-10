@@ -65,11 +65,13 @@ public sealed class PathData
 
     #region Derived Properties
 
+
     public string AppAspectJPath => IOUtils.CombineAsOSPath(AppDir, ModdingConstants.ASPECTJ);
     public string AppAspectJWeaverPath => IOUtils.CombineAsOSPath(AppDir, ModdingConstants.ASPECTJWEAVER);
 
     public string LearningDir => IOUtils.CombineAsOSPath(AppDir, "Learning");
 
+    public string AppLogPath => IOUtils.CombineAsOSPath(WorkDir, "appLog.txt");
     public string ModListPath => IOUtils.CombineAsOSPath(WorkDir, "mods.xml");
     public string PathSettingsPath => IOUtils.CombineAsOSPath(WorkDir, "path.xml");
     public string ApplicationSettingsPath => IOUtils.CombineAsOSPath(WorkDir, "app.xml");
@@ -137,7 +139,6 @@ public sealed class PathData
     public string BuildXmlHashPath => IOUtils.CombineAsOSPath(BuildDir, ModdingConstants.XML_BUILD_HASH_TXT);
     public string BuildJavaHashPath => IOUtils.CombineAsOSPath(BuildDir, ModdingConstants.JAVA_BUILD_HASH_TXT);
 
-    public string BuildLogPath => IOUtils.CombineAsOSPath(BuildDir, ModdingConstants.LOG_TXT);
     public string BuildLogsDir => IOUtils.CombineAsOSPath(BuildDir, "logs");
     public string BuildTexturesDir => IOUtils.CombineAsOSPath(BuildDir, "textures");
     public string BuildAudioDir => IOUtils.CombineAsOSPath(BuildDir, "audio");

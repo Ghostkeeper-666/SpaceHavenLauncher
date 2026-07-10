@@ -20,19 +20,19 @@ namespace SH.Modding.Build;
 
 public sealed class ModBuilder : IAsyncDisposable
 {
-    private readonly BuildPathData Paths;
-    private readonly BuildSettings BuildSettings;
+    private readonly BuildSettings Settings;
+    private BuildPathData Paths => Settings.Paths;
 
     private readonly LoggerCollection Log;
     private FileLogger FileLogger;
 
     private BuildData Build;
-    private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
-    private CancellationToken CT => BuildSettings.CT;
+    private ParallelOptions ParallelOptions => Settings.ParallelOptions;
+    private CancellationToken CT => Settings.CT;
 
-    private IProgressInfo Initialization => BuildSettings.Initialization;
+    private IProgressInfo Initialization => Settings.InitializationProgress;
 
-    private IProgressInfo XmlBuild => BuildSettings.XmlBuild;
+    private IProgressInfo XmlBuild => Settings.XmlBuildProgress;
     private IProgressInfo ResetXmlBuild;
     private IProgressInfo CopyTemplateFiles;
     private IProgressInfo LoadXml;
@@ -47,7 +47,7 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo PatchXmlFiles;
     private IProgressInfo BuildJarFile;
 
-    private IProgressInfo JavaBuild => BuildSettings.JavaBuild;
+    private IProgressInfo JavaBuild => Settings.JavaBuildProgress;
     private IProgressInfo ResetJavaBuild;
     private IProgressInfo PrepareJavaFiles;
 
@@ -80,14 +80,19 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    public ModBuilder(BuildPathData paths, BuildSettings buildSettings, ILogger logger)
+    public ModBuilder(BuildSettings settings, ILogger logger)
     {
-        Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        BuildSettings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
+        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        Settings.Paths = new(
+            settings.AppDir,
+            settings.WorkDir,
+            settings.SpaceHavenDir,
+            settings.SpaceHavenJarDir
+        );
         Log = new LoggerCollection(logger);
     }
 
-    private void Fail() => BuildSettings.Fail();
+    private void Fail() => Settings.Fail();
 
 
 
@@ -110,8 +115,10 @@ public sealed class ModBuilder : IAsyncDisposable
         {
             Log.Info($"Starting Build...", Paths.BuildDirectory);
 
+            Build = new BuildData(Settings, Log);
+
             // No mods?
-            if ((BuildSettings?.Mods?.Count ?? 0) <= 0)
+            if ((Settings?.Mods?.Count ?? 0) <= 0)
             {
                 Log.Error("There are no mods enabled");
                 return false;
@@ -134,15 +141,9 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Copy JAVA hash file to cache directory:
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
                     return false;
-
-                // JAVA build completed:
-                JavaBuild.Complete();
             }
-            else
-            {
-                Log.Success("JAVA build skipped");
-                JavaBuild.Complete();
-            }
+            else Log.Success("JAVA build skipped");
+            JavaBuild.Complete();
 
             // XML Build:
             if (NeedsXmlBuild)
@@ -212,27 +213,19 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Copy XML hash file:
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
                     return false;
-
-                // XML build completed:
-                XmlBuild.Complete();
             }
-            else
-            {
-                Log.Success("XML build skipped");
-                XmlBuild.Complete();
-            }
+            else Log.Success("XML build skipped");
+            XmlBuild.Complete();
 
-            // Aleways build the modifiedspacehaven.jar file:
+            // Always build the modifiedspacehaven.jar file:
             if (!await TryCreateModifiedSpaceHavenJarFile())
                 return false;
 
-            // Create a fresh new config.json
+            // Copy template config.json
             if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
                 return false;
-            //if (!await TryCreateConfigJson())
-            //    return false;
 
-            // Create file for JAVA modders:
+            // Create mods.json file for JAVA modders:
             if (!await TryWriteModsJson())
                 return false;
 
@@ -398,10 +391,10 @@ public sealed class ModBuilder : IAsyncDisposable
             Clock.Restart();
 
             // Initialize build data, and start logging build to file, right after the build directory reset:
-            Build = new(BuildSettings, Paths, Log);
+            Build = new(Settings, Log);
 
             // Add mods:
-            Build.AddMods(BuildSettings.Mods);
+            Build.AddMods(Settings.Mods);
             Initialization?.SetNormalized(0.45);
 
             // Load mod variables:
@@ -502,7 +495,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Is a new build required?
             NeedsXmlBuild = Build.HasXmlMods;
             NeedsJavaBuild = Build.HasJavaMods;
-            if (BuildSettings.SkipRebuilding)
+            if (Settings.SkipRebuilding)
             {
                 NeedsXmlBuild &=
                     IsNewJar ||
@@ -1597,8 +1590,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 Build.Mods
                 .Where(m => m.IsJavaMod)
                 .SelectMany(m => m.JavaFilePaths)
+                .Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) && IOUtils.FileExists(path))
                 .Select(path => path.AsStdPath())
-                .Where(path => !path.IsNullOrWhiteSpace() && path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
                 .ToList());
 
             string jarsTxtPath = IOUtils.CombineAsOSPath(Paths.CacheDirectory, "jars.txt");
@@ -1628,123 +1621,6 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
-
-
-
-
-
-
-
-
-
-
-    private async Task<bool> TryCreateConfigJson()
-    {
-        try
-        {
-            // "-XstartOnFirstThread"?
-
-            Log.Info($"Generating {SpaceHavenConstants.CONFIG_JSON}...", Paths.CacheDirectory);
-            Clock.Restart();
-
-            // Create modified config.json:
-            ConfigJsonFile config = await ConfigJsonFile.TryLoadAsync(Paths.TemplateConfigJsonPath, Log, CT);
-            if (config == null || config.ClassPath == null || config.VMArgs == null || config.MainClass.IsNullOrWhiteSpace())
-            {
-                Log.Error($@"Invalid template {SpaceHavenConstants.CONFIG_JSON} in ""{Paths.TemplateConfigJsonPath}"", please repair the game by reinstalling it", Paths.TemplateDirectory);
-                return false;
-            }
-
-            // Add JARs from mods:
-            if (Build.HasJavaMods)
-            {
-                Log.Debug($@"Preparing ""{SpaceHavenConstants.CONFIG_JSON}"" for a JAVA modified game...", Paths.CacheConfigJsonPath);
-                List<ModBuildData> mods = Build.Mods.Where(mod => mod.HasJava).ToList();
-                PrepareJavaFiles.Max = mods.Count;
-
-                // Clear javaagent entries:
-                Log.Debug($@"Clearing -javaagent entries from {nameof(config.VMArgs)}...", Paths.CacheConfigJsonPath);
-                string[] javaAgentEntries = config.VMArgs.Where(entry => entry.StartsWith("-javaagent", StringComparison.OrdinalIgnoreCase)).ToArray();
-                foreach (string javaAgentEntry in javaAgentEntries)
-                    config.VMArgs.Remove(javaAgentEntry);
-
-                // Insert javaagent entry:
-                Log.Debug($@"Adding -javaagent entry to {nameof(config.VMArgs)}...", Paths.CacheConfigJsonPath);
-                config.VMArgs.Insert(config.VMArgs.Count - 1, $"-javaagent:{IOUtils.CombineAsStdPath(Paths.SpaceHavenJarDir, ModdingConstants.ASPECTJWEAVER)}");
-
-                // Clear AOP entries:
-                Log.Debug($@"Clearing JAVA AOP libraries from {nameof(config.ClassPath)}...", Paths.CacheConfigJsonPath);
-                string[] aspectjEntries = config.ClassPath.Where(entry => entry.Contains("aspectj", StringComparison.OrdinalIgnoreCase)).ToArray();
-                foreach (string aspectjEntry in aspectjEntries)
-                    config.ClassPath.Remove(aspectjEntry);
-
-                // Add AOP entries:
-                Log.Debug($@"Adding JAVA AOP libraries to {nameof(config.ClassPath)}...", Paths.CacheConfigJsonPath);
-                config.ClassPath.Insert(0, ModdingConstants.ASPECTJWEAVER); // it must be the 1st entry
-                config.ClassPath.Insert(1, ModdingConstants.ASPECTJ);  // it must be the 2nd entry
-
-                // Add mod JARs to classPath, considering the mod load order:
-                foreach (ModBuildData mod in mods)
-                {
-                    CT.ThrowIfCancellationRequested();
-                    try
-                    {
-                        ILogger modLog = mod.Log;
-                        foreach (string path in mod.JavaFilePaths.Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)).OrderBy(path => path))
-                        {
-                            string stdPath = path.AsStdPath();
-                            modLog.Debug($@"Adding JAR file to classPath: ""{stdPath}""", Paths.CacheConfigJsonPath);
-                            config.ClassPath.Remove(stdPath); // avoid duplicates
-                            config.ClassPath.Add(stdPath); // append
-                        }
-                    }
-                    finally
-                    {
-                        // Done with this mod.
-                        PrepareJavaFiles.Increment();
-                    }
-                }
-
-                // Add spacehavenjar at the end:
-                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
-                config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
-            }
-
-            if (Build.HasXmlMods)
-            {
-                Log.Debug($@"Preparing ""{SpaceHavenConstants.CONFIG_JSON}"" for a XML modified game...", Paths.CacheConfigJsonPath);
-
-                Log.Debug($@"Replacing {SpaceHavenConstants.SPACEHAVEN_JAR} with {ModdingConstants.MODIFIED_SPACEHAVEN_JAR} in {nameof(config.ClassPath)}", Paths.CacheConfigJsonPath);
-                config.ClassPath.Remove(SpaceHavenConstants.SPACEHAVEN_JAR); // remove original
-                config.ClassPath.Remove(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // avoids duplicate
-                config.ClassPath.Add(ModdingConstants.MODIFIED_SPACEHAVEN_JAR); // append
-            }
-
-            // Write config.json to cache directory:
-            if (!await IOUtils.TryWriteAllTextAsync(Paths.CacheConfigJsonPath, config.ToJsonString(), Log, CT))
-                return false;
-
-            // Write JAVA hash file:
-            if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
-                return false;
-
-            // Done.
-            Log.Debug($"Generation of {SpaceHavenConstants.CONFIG_JSON} was successful", Paths.CacheConfigJsonPath);
-            PrepareJavaFiles.Complete();
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log?.Error($"Unable to generate {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDirectory);
-            return false;
-        }
-    }
-
-
-
-
-
 
 
 

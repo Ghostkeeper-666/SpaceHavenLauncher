@@ -11,7 +11,35 @@ namespace SH.Framework.Extensions;
 public static class EnumerableX
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string JoinToString(this IEnumerable items, string separator = null)
+    public static string JoinToString(this IEnumerable items)
+    {
+        if (items == null)
+            return string.Empty;
+        StringBuilder sb = new();
+        foreach (object o in items)
+            if (o != null)
+                sb.Append(o.ToString());
+        return sb.ToString();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string JoinToString(this IEnumerable items, char separator)
+    {
+        if (items == null)
+            return string.Empty;
+        StringBuilder sb = new();
+        foreach (object o in items)
+        {
+            if (o != null) sb.Append(o.ToString());
+            sb.Append(separator);
+        }
+        if (sb.Length > 0)
+            --sb.Length;
+        return sb.ToString();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string JoinToString(this IEnumerable items, string separator)
     {
         if (items == null)
             return string.Empty;

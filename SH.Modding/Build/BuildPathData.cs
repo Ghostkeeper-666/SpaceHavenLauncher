@@ -1,19 +1,27 @@
 ﻿using SH.Content;
 using SH.Framework.IO;
+using System;
 
 namespace SH.Modding.Build;
 
-public sealed class BuildPathData
+internal sealed class BuildPathData
 {
-    public BuildPathData() { }
+    public BuildPathData(string appDir, string workDir, string spaceHavenDir, string spaceHavenJarDir)
+    {
+        AppDir = appDir ?? throw new ArgumentNullException(nameof(appDir));
+        WorkDir = workDir ?? throw new ArgumentNullException(nameof(workDir));
+        SpaceHavenDir = spaceHavenDir ?? throw new ArgumentNullException(nameof(spaceHavenDir));
+        SpaceHavenJarDir = spaceHavenJarDir ?? throw new ArgumentNullException(nameof(spaceHavenJarDir));
+    }
 
-    #region Configurable Properties
+    #region Primary Properties
+
     public string AppDir { get; set; }
     public string WorkDir { get; set; }
     public string SpaceHavenDir { get; set; }
     public string SpaceHavenJarDir { get; set; }
 
-    #endregion Configurable Properties
+    #endregion Primary Properties
 
 
     #region Derived Properties
@@ -33,7 +41,7 @@ public sealed class BuildPathData
     public string BuildXmlHashPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.XML_BUILD_HASH_TXT);
     public string BuildJavaHashPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.JAVA_BUILD_HASH_TXT);
 
-    public string BuildLogPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.LOG_TXT);
+    public string BuildLogPath => IOUtils.CombineAsOSPath(BuildDirectory, "buildLog.txt");
     public string BuildLogsDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "logs");
     public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "textures");
     public string BuildAudioDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "audio");

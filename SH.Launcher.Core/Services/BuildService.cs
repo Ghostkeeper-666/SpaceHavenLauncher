@@ -1,5 +1,4 @@
 ﻿using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Modding.Build;
 using System;
 using System.Threading.Tasks;
@@ -9,20 +8,16 @@ namespace SH.Launcher.Core.Services;
 public sealed class BuildService
 {
     private readonly LoggerCollection Log;
-    private readonly PathData Paths;
 
-    public BuildService(PathData paths, ILogger logger)
-    {
-        Paths = paths ?? throw new ArgumentNullException(nameof(paths));
+    public BuildService(ILogger logger) =>
         Log = new LoggerCollection(logger);
-    }
 
-    public async Task<bool> TryBuildAsync(BuildPathData paths, BuildSettings settings)
+    public async Task<bool> TryBuildAsync(BuildSettings settings)
     {
         try
         {
             // Build!
-            ModBuilder builder = new(paths, settings, Log);
+            ModBuilder builder = new(settings, Log);
 
             // A cancellation token is already passed using build settings:
             if (!await Task.Run(() => builder.TryBuildAsync()))
@@ -34,7 +29,7 @@ public sealed class BuildService
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error(ex, Paths.BuildDir);
+            Log.Error(ex);
             return false;
         }
     }

@@ -186,12 +186,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             Log.Info("Launching the ORIGINAL game...", Paths.SpaceHavenDir);
             CentralScreen.LeftLeverState = EControlState.Running;
 
-            // DEPLOY
-            DeploymentService svc = new(Paths.Data, Log);
-            if (!await svc.RestoreOriginalGameAsync(State.LaunchCTS.Token, progress))
-                return;
+            // Nothing to do?
 
-            // Everything is ready!
             progress.Complete();
             CentralScreen.LeftLeverState = EControlState.Ready;
 
@@ -297,21 +293,19 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
 
         // Progress:
-        ProgressInfo initialization = new("Warm-up");
-        ProgressInfo javaBuild = new("JAVA Mods");
-        ProgressInfo xmlBuild = new("XML Mods");
-        ProgressInfo deploy = new("Deploy");
+        ProgressInfo initializationProgress = new("Warm-up");
+        ProgressInfo javaBuildProgress = new("JAVA Mods");
+        ProgressInfo xmlBuildProgress = new("XML Mods");
         ProgressInfo progress = new("Progress");
-        progress.AddChild(initialization, 10);
-        progress.AddChild(javaBuild, 5);
-        progress.AddChild(xmlBuild, 80);
-        progress.AddChild(deploy, 5);
+        progress.AddChild(initializationProgress, 1);
+        progress.AddChild(javaBuildProgress, 1);
+        progress.AddChild(xmlBuildProgress, 6);
         ProgressInfo runGame = new(Paths.SpaceHavenName);
 
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
-        xmlBuild.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
-        javaBuild.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
-        initialization.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
+        xmlBuildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
+        javaBuildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
+        initializationProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
 
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
@@ -337,7 +331,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             Log.Info("Launching the MODIFIED game...", Paths.Data.CacheDir);
             CentralScreen.RightLeverState = EControlState.Running;
 
-            // LIST MODS:
+            // GET MOD LIST:
             List<ModData> mods =
                 State.Mods
                 .Where(modViewModel => modViewModel.IsEnabled)
@@ -351,55 +345,41 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 return;
             }
 
-            await Task.Yield();
-
             // BUILD:
-            BuildPathData paths = new()
-            {
-                AppDir = Paths.AppDir,
-                WorkDir = Paths.WorkDir,
-                SpaceHavenDir = Paths.SpaceHavenDir,
-                SpaceHavenJarDir = Paths.SpaceHavenJarDir,
-            };
-
             BuildSettings settings = new(ct)
             {
                 AppVersion = SpaceHavenLauncher.Version,
+                AppDir = Paths.AppDir,
+                WorkDir = Paths.WorkDir,
+
                 SpaceHavenVersion = Paths.SpaceHavenVersion,
-                SkipRebuilding = AppSettings.SkipRebuilding,
-                Initialization = initialization,
-                JavaBuild = javaBuild,
-                XmlBuild = xmlBuild,
+                SpaceHavenDir = Paths.SpaceHavenDir,
+                SpaceHavenJarDir = Paths.SpaceHavenJarDir,
                 GamePlatform = State.GamePlatform,
+
+                SkipRebuilding = AppSettings.SkipRebuilding,
+
+                InitializationProgress = initializationProgress,
+                JavaBuildProgress = javaBuildProgress,
+                XmlBuildProgress = xmlBuildProgress,
             };
+
             settings.Mods.AddRange(mods);
 
-            BuildService builderSvc = new(Paths.Data, Log);
-            if (!await builderSvc.TryBuildAsync(paths, settings))
+            BuildService builderSvc = new(Log);
+            if (!await builderSvc.TryBuildAsync(settings))
             {
                 Log.Error(State.StatusBarText = "Unable to build selected mods", Paths.Data.BuildDir);
                 CentralScreen.RightLeverState = EControlState.Error;
                 return;
             }
-
-            await Task.Yield();
-
-            bool hasXmlMod = mods.Any(m => m.IsXmlMod);
-            bool hasJavaMod = mods.Any(m => m.IsJavaMod);
-
-            // DEPLOY
-            DeploymentService svc = new(Paths.Data, Log);
-            if (!await svc.DeployModifiedGameAsync(hasXmlMod, hasJavaMod, ct, deploy))
-                return;
-            deploy.Complete();
-
-            await Task.Yield();
-
-            // Everything is ready!
             progress.Complete();
             CentralScreen.RightLeverState = EControlState.Ready;
 
+
             // LAUNCH GAME
+            bool hasXmlMod = mods.Any(m => m.IsXmlMod);
+            bool hasJavaMod = mods.Any(m => m.IsJavaMod);
             if (AppSettings.StartSpaceHavenAutomatically)
             {
                 runGame.Complete();
@@ -408,7 +388,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 GameLauncherService launcherSvc = new(Paths.Data, Log);
 
                 // Run and await Space Haven:
-                if (await launcherSvc.TryLaunchWithJreAsync(
+                if (await launcherSvc.TryLaunchModifiedGameAsync(
                     State.GamePlatform,
                     State.AppSettings.JavaMainClass,
                     State.AppSettings.JavaVMArgs,

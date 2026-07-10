@@ -28,6 +28,7 @@ public sealed class DebugService
         FilePaths.Clear();
 
         // Main settings:
+        Add(Paths.AppLogPath);
         Add(Paths.PathSettingsPath);
         Add(Paths.ApplicationSettingsPath);
         Add(Paths.ModListPath);

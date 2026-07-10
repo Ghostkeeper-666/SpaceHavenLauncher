@@ -27,7 +27,7 @@ public sealed class GameLauncherService
         Log = logger ?? new VoidLogger();
     }
 
-    public async Task<bool> TryLaunchWithJreAsync(
+    public async Task<bool> TryLaunchModifiedGameAsync(
         EGamePlatform gamePlatform,
         string mainClass,
         string vmArgs,
@@ -63,52 +63,37 @@ public sealed class GameLauncherService
                 return false;
             }
 
-            // Process details:
-            ProcessStartInfo info = new()
-            {
-                FileName = Paths.JREPath,
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Maximized, // <<< not respected on all platforms!
-            };
+            // Simple check for classpath in the provided VM args, just to warn:
+            // If the user wants to do this, it's not our problem...
+            if (vmArgs.Contains("-cp", StringComparison.OrdinalIgnoreCase) ||
+                vmArgs.Contains("-classpath", StringComparison.OrdinalIgnoreCase) ||
+                vmArgs.Contains("--class-path", StringComparison.OrdinalIgnoreCase))
+                Log.Warn("The provided vmArgs contain class paths. This attempt will most probably not work correctly!");
 
-            // VMArgs:
-            foreach (string vmArg in vmArgs?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [])
-                if(!vmArg.StartsWith("-javaagent", StringComparison.OrdinalIgnoreCase))
-                    info.ArgumentList.Add(vmArg);
+            List<string> args = [];
 
-            if (hasJavaMods)
-            {
-                info.ArgumentList.Add($"-javaagent:{Path.Combine(Paths.CacheDir, "LauncherAgent.jar").AsOSPath()}");
-                info.ArgumentList.Add($"-javaagent:{Path.Combine(Paths.CacheDir, ModdingConstants.ASPECTJWEAVER).AsOSPath()}");
-                info.ArgumentList.Add("-Daj.weaving.verbose=true");
-                info.ArgumentList.Add("-Dorg.aspectj.weaver.showWeaveInfo=true");
-            }
+            // First Launcher args:
+            args.Add($@"""-Daj.weaving.verbose=true""");
+            args.Add($@"""-Dorg.aspectj.weaver.showWeaveInfo=true""");
+            args.Add($@"""-XshowSettings:properties""");
+            args.Add($@"""-D{ModdingConstants.JVM_VAR_MODS_JSON}={Paths.CacheModsJsonPath}""");
 
-            // classPath:
-            //List<string> classPaths = [];
-            //if (hasJavaMods)
-            //{
-            // AOP libs:
-            //classPaths.Add(Path.Combine(Paths.AppDir, ModdingConstants.ASPECTJWEAVER).AsStdPath());
-            //classPaths.Add(Path.Combine(Paths.AppDir, ModdingConstants.ASPECTJ).AsStdPath());
+            // The first java agent must be the LauncherAgent:
+            args.Add($@"""-javaagent:{IOUtils.CombineAsOSPath(Paths.CacheDir, "LauncherAgent.jar")}""");
 
-            // MOD libs:
-            //foreach (string modJar in modJars?.Where(path => !path.IsNullOrWhiteSpace() && path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)) ?? [])
-            //    classPaths.Add(modJar.AsStdPath());
-            //}
-            //classPaths.Add(gameJar.AsStdPath());
-            //info.ArgumentList.Add("-cp");
-            //info.ArgumentList.Add(classPaths.JoinToString(";"));
+            // Now add the vmArgs from original config.json OR advanced-user-customized vmArgs
+            // Any customized argument must be quoted and escaped correctly by the user
+            // If the advanced user passes -javaagent arguments, they have a higher priority over the AOP agent
+            args.Add(vmArgs);
 
-            info.ArgumentList.Add("-cp");
+            // Now add the AOP agent after everything else and just before the class path:
+            args.Add($@"""-javaagent:{IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJWEAVER)}""");
 
+            // Add class paths for AOP and spacehaven.jar:
+            args.Add("-cp");
+            args.Add($@"""{IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJ)}{Path.PathSeparator}{gameJar.AsOSPath()}""");
 
-            info.ArgumentList.Add($"{Path.Combine(Paths.CacheDir, ModdingConstants.ASPECTJ).AsOSPath()};{gameJar.AsOSPath()}");
-
-            // mainClass:
+            // And finally set the main class:
             if (mainClass.IsNullOrWhiteSpace())
             {
                 switch (gamePlatform)
@@ -123,16 +108,27 @@ public sealed class GameLauncherService
                         throw new NotImplementedException($"{nameof(gamePlatform)} = {gamePlatform}");
                 }
             }
-            info.ArgumentList.Add(mainClass);
+            args.Add(mainClass);
 
-            // Working Directory:
-            info.WorkingDirectory = Paths.SpaceHavenJarDir.AsOSPath();
+            // Create process:
+            ProcessStartInfo info = new()
+            {
+                FileName = Paths.JREPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Maximized, // <<< not respected on all platforms!
+                WorkingDirectory = Paths.SpaceHavenJarDir.AsOSPath(),
+                Arguments = args.JoinToString(' '),
+            };
 
-            // Log command line:
-            Log.Debug($@"""{info.WorkingDirectory}""", info.WorkingDirectory);
-            Log.Debug($@"""{info.FileName}"" {info.ArgumentList.Select(arg => $@"""{arg}""").JoinToString(" ")}", info.WorkingDirectory);
-
-            // Start the process:
+            // Log:
+            Log.Debug($@"Cache Directory: ""{Paths.CacheDir}""");
+            Log.Debug($@"{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}: ""{Paths.CacheModifiedJarHashPath}""");
+            Log.Debug($@"{ModdingConstants.MODS_JSON}: ""{Paths.CacheModsJsonPath}""");
+            Log.Debug($@"JVM Variable for path to {ModdingConstants.MODS_JSON} file: {ModdingConstants.JVM_VAR_MODS_JSON}");
+            
             string text = $"Starting {SpaceHavenConstants.SpaceHavenName}";
             string dashedLine = new('=', text.Length);
             StringBuilder sb = new();
@@ -141,13 +137,23 @@ public sealed class GameLauncherService
             sb.AppendLine(dashedLine);
             Log.Success(sb.ToString(), Paths.SpaceHavenDir);
 
+            Log.Debug($@"Working Directory: ""{info.WorkingDirectory}""", info.WorkingDirectory);
+            Log.Debug($@"""{Paths.JREPath}"" {info.Arguments}", info.WorkingDirectory);
+
+            // Process:
             using Process process = new()
             {
                 StartInfo = info,
             };
 
+            process.OutputDataReceived += (_, e) => Log.Debug(e?.Data);
+            process.ErrorDataReceived += (_, e) => Log.Debug(e?.Data);
+
             if (!process.Start())
                 return false;
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
             try
             {
@@ -173,3 +179,4 @@ public sealed class GameLauncherService
         }
     }
 }
+

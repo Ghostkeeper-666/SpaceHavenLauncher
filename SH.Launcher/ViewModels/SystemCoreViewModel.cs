@@ -44,9 +44,6 @@ public partial class SystemCoreViewModel : ViewModelBase
     private string _DebugButtonText = "COLLECT";
 
     [ObservableProperty]
-    private string _DebugToolTipText = $"This collects debugging information from {SpaceHavenLauncher.Name} and stores it {PathData.DebugFilename} for later analysis";
-
-    [ObservableProperty]
     private string _DebugProgressText = string.Empty;
 
     [ObservableProperty]
@@ -65,6 +62,11 @@ public partial class SystemCoreViewModel : ViewModelBase
     private IBrush _JavaVMArgs_ForeColor = Brushes.OrangeRed;
     [ObservableProperty]
     private IBrush _JavaMainClass_ForeColor = Brushes.OrangeRed;
+
+    [ObservableProperty]
+    private string _Help_CollectDebuggingInformation = $"This collects debugging information from {SpaceHavenLauncher.Name} and stores it {PathData.DebugFilename} for later analysis";
+
+
 
     private CancellationTokenSource DebugCTS;
 

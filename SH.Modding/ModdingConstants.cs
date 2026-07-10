@@ -28,7 +28,6 @@ public static class ModdingConstants
     public static readonly string TEMPLATE_SPACEHAVEN_JAR = "templatespacehaven.jar";
     public static readonly string MODIFIED_SPACEHAVEN_JAR = "modifiedspacehaven.jar";
 
-    public static readonly string LOG_TXT = "log.txt";
     public static readonly string XML_BUILD_HASH_TXT = "xml.hash";
     public static readonly string JAVA_BUILD_HASH_TXT = "java.hash";
     public static readonly string ORIGINAL_JAR_HASH_TXT = "originaljar.hash";
@@ -40,6 +39,8 @@ public static class ModdingConstants
     public static readonly string DISABLED_TXT = "disabled.txt"; // DEPRECATED
     public static readonly string CUSTOM_TEXTURE = "custom_texture_"; // DEPRECATED
     public static readonly string GENERATED_TEXTURES_XML = $"generated_textures.xml"; // DEPRECATED
+
+    public static readonly string JVM_VAR_MODS_JSON = "SpaceHavenLauncher.ModsJson";
 
     public static IReadOnlyList<string> PathsForModding => new string[]
     {

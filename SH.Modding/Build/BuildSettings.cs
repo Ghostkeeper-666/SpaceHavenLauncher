@@ -21,26 +21,37 @@ public sealed class BuildSettings : IAsyncDisposable
             CancellationToken = LinkedCTS.Token,
         };
         SkipRebuilding = true;
-        Initialization = new ProgressInfo(nameof(Initialization));
-        XmlBuild = new ProgressInfo(nameof(XmlBuild));
-        JavaBuild = new ProgressInfo(nameof(JavaBuild));
+        InitializationProgress = new ProgressInfo(nameof(InitializationProgress));
+        XmlBuildProgress = new ProgressInfo(nameof(XmlBuildProgress));
+        JavaBuildProgress = new ProgressInfo(nameof(JavaBuildProgress));
     }
 
+
+
     public VersionInfo AppVersion { get; set; }
+    public string AppDir { get; set; }
+    public string WorkDir { get; set; }
+
     public VersionInfo SpaceHavenVersion { get; set; }
-    public bool SkipRebuilding { get; set; }
+    public string SpaceHavenDir { get; set; }
+    public string SpaceHavenJarDir { get; set; }
     public EGamePlatform GamePlatform { get; set; }
 
+    public bool SkipRebuilding { get; set; }
     public List<ModData> Mods { get; } = [];
+
+    public IProgressInfo InitializationProgress { get; set; }
+    public IProgressInfo XmlBuildProgress { get; set; }
+    public IProgressInfo JavaBuildProgress { get; set; }
+
+    internal BuildPathData Paths { get; set; }
+
     private CancellationToken ExternalCT { get; }
     private CancellationTokenSource InternalCTS { get; }
     private CancellationTokenSource LinkedCTS { get; }
     internal ParallelOptions ParallelOptions { get; }
     internal CancellationToken CT => ParallelOptions.CancellationToken;
 
-    public IProgressInfo Initialization { get; set; }
-    public IProgressInfo XmlBuild { get; set; }
-    public IProgressInfo JavaBuild { get; set; }
 
     internal bool BuildFailure { get; private set; }
     internal void Fail()
@@ -48,6 +59,7 @@ public sealed class BuildSettings : IAsyncDisposable
         BuildFailure = true;
         try { InternalCTS.Cancel(); } catch { }
     }
+
 
     public ValueTask DisposeAsync()
     {
