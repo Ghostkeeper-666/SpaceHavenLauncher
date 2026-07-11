@@ -72,10 +72,13 @@ public sealed class PathData
     public string LearningDir => IOUtils.CombineAsOSPath(AppDir, "Learning");
 
     public string AppLogPath => IOUtils.CombineAsOSPath(WorkDir, "appLog.txt");
+    public string LauncherAgentLogPath => IOUtils.CombineAsOSPath(CacheDir, "LauncherAgent.log");
+
     public string ModListPath => IOUtils.CombineAsOSPath(WorkDir, "mods.xml");
     public string PathSettingsPath => IOUtils.CombineAsOSPath(WorkDir, "path.xml");
     public string ApplicationSettingsPath => IOUtils.CombineAsOSPath(WorkDir, "app.xml");
     public string SystemInformationFilePath => IOUtils.CombineAsOSPath(WorkDir, "system.txt");
+    
 
     public static readonly string DebugFilename = "DEBUG.ZIP";
     public string DebugFilePath => IOUtils.CombineAsOSPath(WorkDir, DebugFilename);
@@ -182,7 +185,6 @@ public sealed class PathData
     public string CacheTexturesXmlPath => IOUtils.CombineAsOSPath(CacheLibraryDir, SpaceHavenConstants.TEXTURES);
     public string CacheAnimationsXmlPath => IOUtils.CombineAsOSPath(CacheLibraryDir, SpaceHavenConstants.ANIMATIONS);
     public string CacheSpaceHavenSettingsXmlPath => IOUtils.CombineAsOSPath(CacheLibraryFilesDir, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
-
 
 
     public string ExportDir => IOUtils.CombineAsOSPath(WorkDir, "export");
