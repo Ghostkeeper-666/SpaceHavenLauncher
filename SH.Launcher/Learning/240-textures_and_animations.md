@@ -69,11 +69,22 @@ A game object is positioned over the **Tile Grid** and is subdivided into minor 
 - a smaller part can flip its **Animations** horizontally (i.e. mirror them)
 - therefore a smaller part can be used to define the visuals of multiple **Tiles** of the same game object
 
+# CIM Image Format
+
+Big texture images of **Sprite Sheets** are stored in **\*.cim** files
+
+The CIM format in libGDX is a simple, lossless image format designed for fast loading and saving within libGDX
+
+It is not a common image format outside the libGDX ecosystem, so few image editors support this format. It stores:
+
+- **Width** and **Height**
+- **Pixel Format** (RGBA8888)
+- **Raw Pixel Data** as uncompressed OR compressed with zlib/Deflate
+- For Space Haven, pixel data is **uncompressed**
+
 # The "textures" XML file
 
-The big image of a **Sprite Sheet** is stored in **CIM** format in a **\*.cim** file:
-- The **CIM** format stores the image itself — its format is discussed later
-- All **Sprite Sheet** and **Sprite** metadata is stored in the **textures** file like below:
+The **Sprite Sheet** and **Sprite** metadata is stored in the **textures** file like below:
 
 Space Haven file: **textures**
 
@@ -107,9 +118,14 @@ Space Haven file: **textures**
 This section defines **Sprite Sheet** metadata:
 - Attribute **i** defines the name of the CIM file containing the **Sprite Sheet** image
 - Attribute **w** is the width, and attribute **h** is the height in pixels of the **Sprite Sheet** image
-- Attribute **f** means enable filtering: "**0**" for yes, "**1**" for no
-- Attribute **min** is the filter interpolation applied when shrinking the image: "**0**" for **Nearest**, "**1**" for **Linear**
-- Attribute **max** is the filter interpolation applied when growing the image: "**0**" for **Nearest**, "**1**" for **Linear**
+- Attribute **f** this is simply a toggle flag: "**1**" when filtering settings exist, otherwise it assumes "**0**"
+- Attribute **min** (Minification filter): the scale-down algorithm (how to render the image when we zoom out)
+- Attribute **max** (Magnification filter): the scale-up algorithm (how to render the image when we zoom in)
+- Attributes **min** and **max**: use **0** for **Nearest Neighbor** filtering and **1** for **Bilinear Interpolation** filtering
+
+Use **Bilinear Interpolation** for smoothness: build icons, faction icons, UI icons, portraits, emoji, gradients, and backgrounds
+
+Use **Nearest Neighbor** for crisp pixel-art: facilities, walls/hulls, statues, turrets, item crates, characters, monsters, robots, asteroids, shuttles, pods, small explosions, bullets, and haven foundation ships
 
 ### The &lt;regions&gt; section
 

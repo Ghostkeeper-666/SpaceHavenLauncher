@@ -67,13 +67,15 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         XmlLibraryFiles = data.XmlLibraryFilePaths.Count <= 0 ? string.Empty : $"XML library files:\n\n{data.XmlLibraryRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
         XmlPatchFiles = data.XmlPatchFilePaths.Count <= 0 ? string.Empty : $"XML patch files:\n\n{data.XmlPatchRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
         AudioFiles = data.AudioFilePaths.Count <= 0 ? string.Empty : $"Audio files:\n\n{data.AudioRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        TextureFiles = data.TextureFilePaths.Count <= 0 ? string.Empty : $"Texture files:\n\n{data.TextureRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        JarFiles = data.JavaFilePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JavaRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        SpriteFiles = data.SpritePaths.Count <= 0 ? string.Empty : $"Sprite Textures:\n\n{data.SpriteRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        SpriteSheetFiles = data.SpriteSheetPaths.Count <= 0 ? string.Empty : $"Spritesheet Textures (CIM):\n\n{data.SpriteRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        JarFiles = data.JarFilePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JavaRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
 
         XmlLibraryFilesWidth = new(XmlLibraryFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
         XmlPatchFilesWidth = new(XmlPatchFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
         AudioFilesWidth = new(AudioFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
-        TextureFilesWidth = new(TextureFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
+        SpritesFilesWidth = new(SpriteFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
+        SpriteSheetFilesWidth = new(SpriteSheetFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
         JarFilesWidth = new(JarFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
     }
 
@@ -240,7 +242,9 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
     [ObservableProperty]
     private string _AudioFiles;
     [ObservableProperty]
-    private string _TextureFiles;
+    private string _SpriteFiles;
+    [ObservableProperty]
+    private string _SpriteSheetFiles;
     [ObservableProperty]
     private string _XmlLibraryFiles;
     [ObservableProperty]
@@ -251,7 +255,9 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
     [ObservableProperty]
     private GridLength _AudioFilesWidth;
     [ObservableProperty]
-    private GridLength _TextureFilesWidth;
+    private GridLength _SpritesFilesWidth;
+    [ObservableProperty]
+    private GridLength _SpriteSheetFilesWidth;
     [ObservableProperty]
     private GridLength _XmlLibraryFilesWidth;
     [ObservableProperty]

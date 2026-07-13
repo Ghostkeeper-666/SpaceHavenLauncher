@@ -1,5 +1,4 @@
 ﻿using SH.Content;
-using SH.Content.Art;
 using SH.Content.Enums;
 using SH.Content.Xml;
 using SH.Framework.Cryptography;
@@ -60,7 +59,7 @@ public sealed class ModBuilder : IAsyncDisposable
     [
         EXmlFileType.SpaceHavenSettings,
         EXmlFileType.Audio,
-        //EXmlFileType.Textures,
+        EXmlFileType.Textures,
         EXmlFileType.Animations,
         EXmlFileType.Texts,
         EXmlFileType.Haven,
@@ -70,7 +69,7 @@ public sealed class ModBuilder : IAsyncDisposable
     [
         EXmlFileType.SpaceHavenSettings,
         EXmlFileType.Audio,
-        //EXmlFileType.Textures,
+        EXmlFileType.Textures,
         EXmlFileType.Animations,
         EXmlFileType.Texts,
         EXmlFileType.Haven,
@@ -426,7 +425,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 modInfo.Version = mod.Version.ToString();
                 modInfo.Directory = mod.Directory.AsStdPath();
                 modInfo.ID = mod.ID;
-                modInfo.Textures.AddRange(mod.TextureFilePaths.Select(path => path.AsStdPath()));
+                modInfo.Textures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath()));
                 modInfo.Audio.AddRange(mod.AudioFilePaths.Select(path => path.AsStdPath()));
                 modInfo.Java.AddRange(mod.JavaFilePaths.Select(path => path.AsStdPath()));
                 modInfo.Other.AddRange(mod.OtherFilePaths.Select(path => path.AsStdPath()));
@@ -614,6 +613,8 @@ public sealed class ModBuilder : IAsyncDisposable
                     // Only merge supported files!
                     foreach (EXmlFileType xmlFileType in SupportedXmlMergeFileTypes)
                     {
+                        CT.ThrowIfCancellationRequested();
+
                         // Any such files in mod?
                         XmlFile[] modXmlFiles = mod.XmlFiles[xmlFileType].Values.ToArray();
                         if (modXmlFiles.Length <= 0)
@@ -629,6 +630,8 @@ public sealed class ModBuilder : IAsyncDisposable
                         // Merge with all mod library XML files:
                         foreach (XmlFile modXmlFile in modXmlFiles)
                         {
+                            CT.ThrowIfCancellationRequested();
+
                             if (modXmlFile.IsIgnored)
                             {
                                 modLog.Warn($@"Ignoring ""{modXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
@@ -660,28 +663,26 @@ public sealed class ModBuilder : IAsyncDisposable
 
                                 foreach (XElement node in nodes)
                                 {
+                                    CT.ThrowIfCancellationRequested();
+
                                     // Strip XML comments out:
                                     node.DescendantNodesAndSelf().OfType<XComment>().Remove();
 
                                     // Read id and name:
-                                    string id = nodeType.IdAttribute != null ? node.Attribute(nodeType.IdAttribute)?.Value : null;
-                                    string name = nodeType.NameAttribute != null ? node.Attribute(nodeType.NameAttribute)?.Value : null;
+                                    string key = nodeType.KeyAttribute != null ? node.Attribute(nodeType.KeyAttribute)?.Value : null;
                                     string src = $"{mod.Name}, {modXmlFile.RelativePath}, line {node.Line()}";
 
                                     // Replace existing nodes with same id OR same name:
                                     HashSet<XElement> existingNodes = [];
-                                    if (!nodeType.IdAttribute.IsNullOrWhiteSpace())
-                                        existingNodes.AddRange(parentNode.Elements(node.Name)?.Where(n => n.Attribute(nodeType.IdAttribute)?.Value == id) ?? []);
-                                    if (!nodeType.NameAttribute.IsNullOrWhiteSpace())
-                                        existingNodes.AddRange(parentNode.Elements(node.Name)?.Where(n => n.Attribute(nodeType.NameAttribute)?.Value == name) ?? []);
+                                    if (!nodeType.KeyAttribute.IsNullOrWhiteSpace())
+                                        existingNodes.AddRange(parentNode.Elements(node.Name)?.Where(n => n.Attribute(nodeType.KeyAttribute)?.Value == key) ?? []);
 
                                     string prettyPath = $"path='{nodeType.XPath}'";
 
-                                    string prettyNewId = id.IsNullOrWhiteSpace() ? null : $" {nodeType.IdAttribute}={id}";
-                                    string prettyNewName = name.IsNullOrWhiteSpace() ? null : $" {nodeType.NameAttribute}='{name}'";
+                                    string prettyNewKey = key.IsNullOrWhiteSpace() ? null : $" {nodeType.KeyAttribute}={key}";
                                     string prettyNewSrc = $" src='{src}'";
 
-                                    string prettyNewNode = $"new node [{prettyPath}{prettyNewId}{prettyNewName}{prettyNewSrc}]";
+                                    string prettyNewNode = $"new node [{prettyPath}{prettyNewKey}{prettyNewSrc}]";
 
                                     // Remove existing node(s):
                                     if (existingNodes.Count <= 0)
@@ -694,18 +695,16 @@ public sealed class ModBuilder : IAsyncDisposable
                                         {
                                             CT.ThrowIfCancellationRequested();
 
-                                            string existingId = nodeType.IdAttribute.IsNullOrWhiteSpace() ? null : existingNode.Attribute(nodeType.IdAttribute)?.Value;
-                                            string existingName = nodeType.NameAttribute.IsNullOrWhiteSpace() ? null : existingNode.Attribute(nodeType.NameAttribute)?.Value;
+                                            string existingKey = nodeType.KeyAttribute.IsNullOrWhiteSpace() ? null : existingNode.Attribute(nodeType.KeyAttribute)?.Value;
                                             string existingMod = existingNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
                                             if (existingMod.IsNullOrWhiteSpace()) existingMod = null;
                                             string existingSrc = existingNode.Attribute(NodeType.ATTRIBUTE_LIBRARY)?.Value;
                                             if (existingMod == null || existingSrc.IsNullOrWhiteSpace()) existingSrc = null;
 
-                                            string prettyExistingId = existingId == null ? null : $" {nodeType.IdAttribute}={existingId}";
-                                            string prettyExistingName = existingName == null ? null : $" {nodeType.NameAttribute}='{existingName}'";
+                                            string prettyExistingKey = existingKey == null ? null : $" {nodeType.KeyAttribute}={existingKey}";
                                             string prettyExistingSrc = existingSrc == null ? null : $" src='{existingSrc}'";
 
-                                            string prettyExistingNode = $"existing node [{prettyPath}{prettyExistingId}{prettyExistingName}{prettyExistingSrc}]";
+                                            string prettyExistingNode = $"existing node [{prettyPath}{prettyExistingKey}{prettyExistingSrc}]";
 
                                             if (existingMod == null)
                                                 modLog.Debug($@"Replacing {prettyExistingNode} with {prettyNewNode}", modXmlFile.Path);
@@ -717,10 +716,8 @@ public sealed class ModBuilder : IAsyncDisposable
                                         }
                                     }
 
-                                    // Mark node:
+                                    // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                     node.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
-
-                                    // Mark special nodes with additional modding metadata:
                                     if (xmlFileType == EXmlFileType.Animations)
                                     {
                                         // Mark animations assetPos nodes:
@@ -739,6 +736,21 @@ public sealed class ModBuilder : IAsyncDisposable
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
+                                    else if (xmlFileType == EXmlFileType.Textures)
+                                    {
+                                        // Mark sprite sheet nodes:
+                                        foreach (XElement a in node.DescendantsAndSelf("t"))
+                                        {
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
+                                        }
+                                        // Mark sprite nodes:
+                                        foreach (XElement a in node.DescendantsAndSelf("re"))
+                                        {
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
+                                        }
+                                    }
 
                                     // Add new node:
                                     parentNode.Add(new XElement(node));
@@ -747,7 +759,6 @@ public sealed class ModBuilder : IAsyncDisposable
                         }
 
                         // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
-
                         // Save merged Space Haven XML file to mod merge directory:
                         //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
                         //    return false;
@@ -811,6 +822,8 @@ public sealed class ModBuilder : IAsyncDisposable
             // Select mods with library XML files:
             foreach (ModBuildData mod in Build.Mods)
             {
+                CT.ThrowIfCancellationRequested();
+
                 HashSet<XmlFile> spaceHavenModifiedFiles = [];
                 try
                 {
@@ -833,6 +846,8 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     foreach (XmlFile modPatchXmlFile in mod.XmlFiles[EXmlFileType.Patch].Values)
                     {
+                        CT.ThrowIfCancellationRequested();
+
                         if (modPatchXmlFile.IsIgnored)
                         {
                             modLog.Warn($@"Ignoring ""{modPatchXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modPatchXmlFile.Path);
@@ -872,6 +887,8 @@ public sealed class ModBuilder : IAsyncDisposable
                         modLog.Debug($@"Processing {nodes.Count} patch nodes from ""{modPatchXmlFile}""...", modPatchXmlFile.Path);
                         foreach (XElement patchNode in nodes)
                         {
+                            CT.ThrowIfCancellationRequested();
+
                             // Parse patch operation:
                             if (!XmlPatchOperation.TryCreate(modPatchXmlFile, mod.Variables, patchNode, out XmlPatchOperation patch, modLog))
                                 return false;
@@ -905,7 +922,8 @@ public sealed class ModBuilder : IAsyncDisposable
                             if (targetNodes.Count > 25)
                                 modLog.Warn($@"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
 
-                            // Mark special nodes with additional modding metadata:
+
+                            // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             // (1) Attribute Operation
                             if (patch.IsAttributePatchOperation)
                             {
@@ -937,7 +955,32 @@ public sealed class ModBuilder : IAsyncDisposable
                                         }
                                     }
                                 }
+
+                                // Mark texture nodes:
+                                else if (targetXmlType == EXmlFileType.Textures)
+                                {
+                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "t"))
+                                    {
+                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "i")
+                                        {
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "re"))
+                                    {
+                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "n")
+                                        {
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+                                }
                             }
+
+                            // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                             // (2) Node Operation
                             else if (patch.IsNodePatchOperation && patch.Operation != EPatchOperation.RemoveNode)
                             {
@@ -957,6 +1000,22 @@ public sealed class ModBuilder : IAsyncDisposable
                                 {
                                     string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                     foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos").Where(n => n.Attribute("filename") != null) ?? [])
+                                    {
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                    }
+                                }
+
+                                // Mark textures nodes:
+                                else if (targetXmlType == EXmlFileType.Textures)
+                                {
+                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("t") ?? [])
+                                    {
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                    }
+                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("re") ?? [])
                                     {
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
@@ -1115,6 +1174,8 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildAudioFile, Log, CT))
                 return false;
 
+#warning TODO: Check for audio name collisions!
+
             // Collect all assetPos filename references and save it to spriteReference objects:
             bool errors = false;
             OrderedDictionary<int, AudioBuildData> audioById = []; // keep original order!
@@ -1214,20 +1275,204 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Info($@"Generating TEXTURES...", Paths.BuildTexturesDirectory);
             Clock.Restart();
 
+            // Get and save textures document, for debugging:
+            XmlFile spaceHavenTexturesXmlFile = Build.XmlFile[EXmlFileType.Textures];
+            if (!await spaceHavenTexturesXmlFile.TrySaveToAsync(Paths.BuildStageTexturesXmlPath, Log, CT))
+                return false;
+
             // Get and save animations document, for debugging:
             XmlFile spaceHavenAnimationsXmlFile = Build.XmlFile[EXmlFileType.Animations];
             if (!await spaceHavenAnimationsXmlFile.TrySaveToAsync(Paths.BuildStageAnimationsXmlPath, Log, CT))
                 return false;
 
-            // Collect all texture paths:
-            IReadOnlyList<string> textureFilePaths = Build.Mods.SelectMany(mod => mod.TextureFilePaths).OrderBy(path => path).ToArray();
+            // Get last original game spritesheet ID:
+            int lastOriginalSpriteSheetKey = Build.GetLastUsedKey(EKeyPool.TexturesCim);
+
+            // Get last original game sprite ID:
+            int lastOriginalSpriteName = Build.GetLastUsedKey(EKeyPool.TexturesRegion);
+
+            // Get last original game sprite NAME:
+            int lastOriginalSpriteId = Build.LastOriginalSpriteId;
+            int lastUsedSpriteId = Build.LastOriginalSpriteId;
+
+            // Collect all available sprite sheets:
+            IReadOnlyList<string> spriteSheetPaths = Build.Mods.SelectMany(mod => mod.SpriteSheetPaths).OrderBy(path => path).ToArray();
+
+            // Collect all available sprites:
+            IReadOnlyList<string> textureFilePaths = Build.Mods.SelectMany(mod => mod.SpritePaths).OrderBy(path => path).ToArray();
+
+            // Remap sprite sheet ID:
+            SpriteAtlasBuildData cimAtlas = new("CIM");
+            Dictionary<string, int> RemappedSpriteSheetIDs = [];
+            List<XElement> modifiedSpriteSheetNodes =
+                spaceHavenTexturesXmlFile.Root
+                .Descendants("t")
+                .Where(t => !(t.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
+                .ToList();
+            foreach (XElement t in modifiedSpriteSheetNodes)
+            {
+                string modName = t.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
+                if (modName.IsNullOrWhiteSpace())
+                    continue;
+
+                // library operation (OPTIONAL):
+                string libraryOperation = t?.Attribute(NodeType.ATTRIBUTE_LIBRARY)?.Value;
+                // patch operation (OPTIONAL):
+                string patchOperation = t?.Attribute(NodeType.ATTRIBUTE_PATCH)?.Value;
+                // last operation:
+                string lastOperation = patchOperation ?? libraryOperation ?? "unknown mod operation";
+                // pretty print:
+
+                string key = NodeType.TexturesCim.KeyAttribute;
+                string spriteSheetKeyStr = t.Attribute(key)?.Value?.Trim();
+                if (spriteSheetKeyStr.IsNullOrEmpty())
+                {
+                    Log.Error($@"Unable to remap ID of <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                    continue;
+                }
+
+                if (RemappedSpriteSheetIDs.ContainsKey(spriteSheetKeyStr))
+                {
+                    Log.Error($@"Unable ro remap <t> sprite sheet node with duplicate {key}=""{spriteSheetKeyStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                    continue;
+                }
+
+                int remappedSpriteSheetKey = Build.AllocateNextNumericId(EKeyPool.TexturesCim);
+                RemappedSpriteSheetIDs[spriteSheetKeyStr] = remappedSpriteSheetKey;
+                Log.Debug($@"Remapped <t> sprite sheet node from i=""{remappedSpriteSheetKey}"" to {key}=""{remappedSpriteSheetKey}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+
+                if (spriteSheetKeyStr.TryParse(out int spriteSheetId) && spriteSheetId <= lastOriginalSpriteSheetKey)
+                    continue;
+
+                ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                if (mod == null)
+                {
+                    Log.Error($@"Unable to retrieve mod '{modName}' owning <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"", in in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}", Paths.BuildStageAnimationsXmlPath);
+                    continue;
+                }
+
+                // Check for exiting sprite image:
+                string[] expectedAbsolutePaths =
+                [
+                    IOUtils.CombineAsOSPath(mod.SpritesDirectory, $"{spriteSheetKeyStr}.png"),
+                    IOUtils.CombineAsOSPath(mod.SpritesDirectory, spriteSheetKeyStr),
+                ];
+                string absolutePath = mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.Ordinal)));
+                absolutePath ??= mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.OrdinalIgnoreCase)));
+                if (absolutePath == null)
+                {
+                    Log.Error($@"Unable to locate image file '{spriteSheetKeyStr}' for <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"", in in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}", Paths.BuildStageAnimationsXmlPath);
+                    return false;
+                }
+
+                SpriteSheetBuildData spriteSheet = new(remappedSpriteSheetKey, absolutePath, cimAtlas) { GlobalId = remappedSpriteSheetKey, };
+                cimAtlas.Add(spriteSheet);
+            }
+
+
+            // Generate directly provided CIM files:
+            await Parallel.ForEachAsync(cimAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
+            {
+                try
+                {
+                    Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDirectory);
+
+                    if (!spriteSheet.TryRenderFromSprites(Log))
+                    {
+                        Log.Error($@"Unable to generate sprite sheet '{spriteSheet.LocalId}'");
+                        Fail();
+                    }
+
+                    string cimFilename = $"{spriteSheet.GlobalId}.cim";
+
+                    // Export to CIM to build stage directory:
+                    await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
+
+                    // Export to PNG, for debugging:
+                    spriteSheet.TryExportToPng(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
+                }
+                finally
+                {
+                    //lock (WriteSpriteSheets)
+                    //    WriteSpriteSheets.IncrementNormalized((1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
+                }
+            });
+
+            // Remap sprite NAME:
+            Dictionary<string, int> RemappedSpriteNames = [];
+            List<XElement> modifiedSpriteNodes =
+                spaceHavenTexturesXmlFile.Root
+                .Descendants("re")
+                .Where(re => !(re.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
+                .ToList();
+            foreach (XElement re in modifiedSpriteNodes)
+            {
+                string modName = re.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
+                if (modName.IsNullOrWhiteSpace())
+                    continue;
+
+                // library operation (OPTIONAL):
+                string libraryOperation = re?.Attribute(NodeType.ATTRIBUTE_LIBRARY)?.Value;
+                // patch operation (OPTIONAL):
+                string patchOperation = re?.Attribute(NodeType.ATTRIBUTE_PATCH)?.Value;
+                // last operation:
+                string lastOperation = patchOperation ?? libraryOperation ?? "unknown mod operation";
+                // pretty print:
+
+                // NAME remapping:
+                {
+                    string spriteNameStr = re.Attribute("n")?.Value?.Trim();
+                    if (spriteNameStr.IsNullOrEmpty())
+                    {
+                        Log.Error($@"Unable to get sprite NAME for <re> sprite region node with n=""{spriteNameStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={re.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                        continue;
+                    }
+
+                    if (RemappedSpriteNames.ContainsKey(spriteNameStr))
+                    {
+                        Log.Error($@"Unable ro remap <re> sprite region node with duplicate n=""{spriteNameStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={re.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                        continue;
+                    }
+
+                    // Ignore original sprite names:
+                    if (spriteNameStr.TryParse(out int spriteName) && spriteName <= lastOriginalSpriteName)
+                    {
+                        Log.Debug($@"Skipping remapping of original <re> sprite region node n=""{spriteNameStr}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                        continue;
+                    }
+
+                    int remappedSpriteName = Build.AllocateNextNumericId(EKeyPool.TexturesRegion);
+                    RemappedSpriteNames[spriteNameStr] = remappedSpriteName;
+                    Log.Debug($@"Remapped <re> sprite region node from n=""{spriteNameStr}"" to n=""{remappedSpriteName}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                }
+
+                // ID remapping:
+                {
+                    string spriteIdStr = re.Attribute("id")?.Value?.Trim();
+                    int remappedSpriteId = ++lastUsedSpriteId;
+                    Log.Debug($@"Remapped <re> sprite region node from id=""{spriteIdStr}"" to id=""{remappedSpriteId}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
+                }
+            }
+
+            // Adjust animations assetPos "a" references to sprites with remapped names:
+            List<XElement> allAssetPosNodes = spaceHavenAnimationsXmlFile.Root.Descendants("assetPos").ToList();
+            foreach (XElement assetPos in allAssetPosNodes)
+            {
+                string remappedSpriteNameStr = assetPos?.Attribute("a")?.Value ?? string.Empty;
+                if (!RemappedSpriteNames.TryGetValue(remappedSpriteNameStr, out int remappedSpriteName))
+                    continue;
+
+                Log.Debug($@"Remapped <assetPos> sprite from a=""{remappedSpriteNameStr}"" to id=""{remappedSpriteName}"", in {spaceHavenAnimationsXmlFile.FileName} line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
+                assetPos.SetAttributeValue("a", remappedSpriteName);
+            }
+
+
 
             // Collect all assetPos filename references and save it to spriteReference objects:
             bool errors = false;
             int localSpriteId = 0;
             SortedDictionary<string, SpriteReference> spriteReferences = [];
-            List<XElement> assetPosNodes = spaceHavenAnimationsXmlFile.Root.Descendants("assetPos").ToList();
-            foreach (XElement assetPos in assetPosNodes)
+            foreach (XElement assetPos in allAssetPosNodes)
             {
                 CT.ThrowIfCancellationRequested();
                 try
@@ -1286,12 +1531,14 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         spriteRef = new(localName, ++localSpriteId, mod, assetPosFilenameReference, filter);
 
-                        // Add this assetPos reference:
+                        // Add current assetPos reference:
                         spriteRef.AssetPosNodes.Add(assetPos);
 
                         // Check for exiting sprite image:
                         string absolutePath = textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePath, StringComparison.Ordinal));
                         absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePath, StringComparison.OrdinalIgnoreCase));
+                        absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePathWithoutFileExtension, StringComparison.Ordinal));
+                        absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePathWithoutFileExtension, StringComparison.OrdinalIgnoreCase));
                         if (absolutePath == null)
                         {
                             Log.Error($@"Unable to locate image file '{spriteRef.AbsolutePath}' for {pretty}", Paths.BuildStageAnimationsXmlPath);
@@ -1305,30 +1552,19 @@ public sealed class ModBuilder : IAsyncDisposable
                     }
                     else
                     {
-                        // Add this assetPos reference:
+                        // Add current assetPos reference:
                         spriteRef.AssetPosNodes.Add(assetPos);
                     }
                 }
                 finally
                 {
-                    CollectSpriteRefs.IncrementNormalized(1.0 / assetPosNodes.Count);
+                    CollectSpriteRefs.IncrementNormalized(1.0 / allAssetPosNodes.Count);
                 }
             }
             if (errors)
                 return false;
 
             Log.Debug($"{CollectSpriteRefs} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-            CT.ThrowIfCancellationRequested();
-
-
-            // Scan Space Haven's texture file for last used sprite name:
-            XmlFile spaceHavenTexturesXmlFile = Build.XmlFile[EXmlFileType.Textures];
-            int lastGlobalSpriteName =
-                spaceHavenTexturesXmlFile.GetNodes(NodeType.TexturesRegion)?
-                .Select(node => node.Attribute(NodeType.TexturesRegion.NameAttribute)?.Value ?? string.Empty)
-                .Max(strId => int.TryParse(strId, out int id) ? id : 0)
-                ?? 0;
-            Log.Debug($"Last used global sprite name = {lastGlobalSpriteName}", Paths.BuildStageAnimationsXmlPath);
             CT.ThrowIfCancellationRequested();
 
 
@@ -1374,8 +1610,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Assign global ID and global Name to each sprite:
                 foreach (SpriteBuildData sprite in sprites.Values)
                 {
-                    sprite.GlobalId = Build.AllocateNextNumericId(EIdPool.TexturesRegion);
-                    sprite.GlobalName = (++lastGlobalSpriteName).ToString();
+                    sprite.GlobalName = Build.AllocateNextNumericId(EKeyPool.TexturesRegion).ToString();
+                    sprite.GlobalId = ++lastUsedSpriteId;
                 }
                 CT.ThrowIfCancellationRequested();
 
@@ -1398,7 +1634,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Assign global ID to each sprite sheet:
                 foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
-                    spriteSheet.GlobalId = Build.AllocateNextNumericId(EIdPool.TexturesCim);
+                    spriteSheet.GlobalId = Build.AllocateNextNumericId(EKeyPool.TexturesCim);
                 CT.ThrowIfCancellationRequested();
 
                 // Draw sprites to the sprite sheets, save sprite sheets as CIM and PNG:
@@ -1408,7 +1644,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDirectory);
 
-                        if (!spriteSheet.TryGenerateFromSprites(Log))
+                        if (!spriteSheet.TryRenderFromSprites(Log))
                         {
                             Log.Error($@"Unable to generate sprite sheet '{spriteSheet.LocalId}'");
                             Fail();
@@ -1458,8 +1694,8 @@ public sealed class ModBuilder : IAsyncDisposable
                     XElement re = new("re");
                     re.SetAttributeValue("n", sprite.GlobalName);
                     re.SetAttributeValue("t", sprite.SpriteSheet.GlobalId);
-                    re.SetAttributeValue("x", sprite.SpriteSheetX);
-                    re.SetAttributeValue("y", sprite.SpriteSheetY);
+                    re.SetAttributeValue("x", sprite.X);
+                    re.SetAttributeValue("y", sprite.Y);
                     re.SetAttributeValue("w", sprite.Width);
                     re.SetAttributeValue("h", sprite.Height);
                     re.SetAttributeValue("id", sprite.GlobalId);

@@ -201,6 +201,9 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             string xml = await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
+
+            xml = EraseXmlDeclaration(xml);
+
             return XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         }
         catch (OperationCanceledException) { throw; }
@@ -211,6 +214,21 @@ public static class IOUtils
             logger?.Error(ex, parent);
             return null;
         }
+    }
+
+    public static string EraseXmlDeclaration(string xml)
+    {
+        int start = xml.IndexOf("<?xml");
+        if (start < 0)
+            return xml;
+        StringBuilder sb = new(xml);
+        char deletedChar = ' ';
+        for (int i = start; deletedChar != '>'; ++i)
+        {
+            deletedChar = sb[i];
+            sb[i] = ' ';
+        }
+        return sb.ToString();
     }
 
     public static async Task<bool> TrySaveXDocumentAsync(string path, XDocument doc, XmlWriterSettings writeSettings, ILogger logger, CancellationToken ct)

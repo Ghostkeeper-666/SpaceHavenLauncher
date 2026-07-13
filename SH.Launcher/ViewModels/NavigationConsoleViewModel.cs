@@ -392,7 +392,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     State.GamePlatform,
                     State.AppSettings.JavaMainClass,
                     State.AppSettings.JavaVMArgs,
-                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JavaFilePaths),
+                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarFilePaths),
                     Paths.Data.CacheJarPath,
                     ct))
                     Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);

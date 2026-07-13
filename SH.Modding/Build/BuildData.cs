@@ -37,7 +37,8 @@ internal sealed class BuildData : IAsyncDisposable
 
 
     public OrderedDictionary<EXmlFileType, XmlFile> XmlFile { get; } = [];
-    public OrderedDictionary<EIdPool, SortedSet<string>> UsedIds { get; } = [];
+    public OrderedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; } = [];
+    public int LastOriginalSpriteId { get; private set; }
 
     public string XmlHash { get; private set; }
     public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new Dictionary<string, string>();
@@ -125,7 +126,7 @@ internal sealed class BuildData : IAsyncDisposable
         }
     }
 
-    public int AllocateNextNumericId(EIdPool poolId)
+    public int AllocateNextNumericId(EKeyPool poolId)
     {
         if (!UsedIds.TryGetValue(poolId, out SortedSet<string> pool))
             return 0;
@@ -133,6 +134,16 @@ internal sealed class BuildData : IAsyncDisposable
         if (!int.TryParse(idStr, out int id))
             return 0;
         if (!pool.Add((++id).ToString()))
+            return 0;
+        return id;
+    }
+
+    public int GetLastUsedKey(EKeyPool poolId)
+    {
+        if (!UsedIds.TryGetValue(poolId, out SortedSet<string> pool))
+            return 0;
+        string idStr = pool.LastOrDefault() ?? string.Empty;
+        if (!int.TryParse(idStr, out int id))
             return 0;
         return id;
     }
@@ -228,28 +239,35 @@ internal sealed class BuildData : IAsyncDisposable
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (nodeType.IdAttribute == null)
+                if (nodeType.KeyAttribute == null)
                     continue;
 
                 string[] ids =
                     XmlFile[nodeType.XmlFileType]
                     .GetNodes(nodeType)?
-                    .Select(n => n.Attribute(nodeType.IdAttribute)?.Value ?? string.Empty)?
+                    .Select(n => n.Attribute(nodeType.KeyAttribute)?.Value ?? string.Empty)?
                     .OrderBy(id => id)?
                     .ToArray() ?? [];
 
                 ct.ThrowIfCancellationRequested();
 
-                if (!UsedIds.TryGetValue(nodeType.IdPool, out SortedSet<string> idList))
-                    UsedIds[nodeType.IdPool] = idList = new(new NumericIdComparer());
+                if (!UsedIds.TryGetValue(nodeType.KeyPool, out SortedSet<string> idList))
+                    UsedIds[nodeType.KeyPool] = idList = new(new NumericIdComparer());
 
                 foreach (string id in ids)
                     if (!idList.Add(id))
-                        Log.Debug($@"Duplicate id=""{id}"" found in ID Pool '{nodeType.IdPool}'");
+                        Log.Debug($@"Duplicate id=""{id}"" found in ID Pool '{nodeType.KeyPool}'");
             }
 
+            // Scan Space Haven's texture file for last used sprite id:
+            LastOriginalSpriteId =
+                XmlFile[EXmlFileType.Textures]
+                .GetNodes(NodeType.TexturesRegion)
+                .Select(node => node.Attribute("id")?.Value ?? string.Empty)
+                .Max(strId => int.TryParse(strId, out int id) ? id : 0);
+
             // Report currently last used ID for each pool:
-            foreach (KeyValuePair<EIdPool, SortedSet<string>> kvp in UsedIds)
+            foreach (KeyValuePair<EKeyPool, SortedSet<string>> kvp in UsedIds)
                 Log.Debug($@"Last ID used from pool '{kvp.Key}' is {kvp.Value.LastOrDefault()}");
 
             // Done.

@@ -17,6 +17,7 @@ public static class ModdingConstants
     public static readonly string LIBRARY = "library";
     public static readonly string AUDIO = "audio";
     public static readonly string TEXTURES = "textures";
+    public static readonly string CIM = "cim";
 
     public static readonly string INFO_XML = "info.xml";
     public static readonly string DESCRIPTION_MD = "description.md";

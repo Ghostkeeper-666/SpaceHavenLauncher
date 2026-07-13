@@ -1,5 +1,4 @@
-﻿using SH.Content.Art;
-using SH.Framework.Extensions;
+﻿using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.RectPack;
 using System;
@@ -22,7 +21,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
         {
             List<SpriteBuildData> list = [];
             foreach (SpriteSheetBuildData ss in SpriteSheets)
-                foreach (SpriteBuildData s in ss.Sprites.OrderBy(s => s.AbsoluteFilePath))
+                foreach (SpriteBuildData s in ss.Sprites.OrderBy(s => s.AbsoluteFilePath ?? string.Empty))
                     list.Add(s);
             return list;
         }
@@ -47,6 +46,12 @@ internal sealed class SpriteAtlasBuildData : IDisposable
         Sprites?.FirstOrDefault(s => s.LocalName.Equals(globalName, StringComparison.Ordinal));
     public SpriteBuildData GetSpriteWithLocalName(string localName) =>
         Sprites?.FirstOrDefault(s => s.LocalName.Equals(localName, StringComparison.Ordinal));
+
+    public void Add(SpriteSheetBuildData spritesheet)
+    {
+        SpriteSheets.Add(spritesheet);
+    }
+
 
     public bool Add(IEnumerable<SpriteBuildData> sprites, ILogger log, CancellationToken ct)
     {
@@ -146,8 +151,8 @@ internal sealed class SpriteAtlasBuildData : IDisposable
                     SpriteBuildData sprite = (SpriteBuildData)r.Sprite;
                     int borderX = (r.Width - sprite.Width) >> 1;
                     int borderY = (r.Height - sprite.Height) >> 1;
-                    sprite.SpriteSheetX = r.X + borderX;
-                    sprite.SpriteSheetY = r.Y + borderY;
+                    sprite.X = r.X + borderX;
+                    sprite.Y = r.Y + borderY;
                 }
             }
 

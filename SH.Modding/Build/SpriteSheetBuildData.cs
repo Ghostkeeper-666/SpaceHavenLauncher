@@ -30,12 +30,12 @@ internal sealed class SpriteSheetBuildData : IDisposable
         Packer = new(Width, Height, maxSprites);
     }
 
-    public SpriteSheetBuildData(int localId, string path, SpriteAtlasBuildData atlas)
+    public SpriteSheetBuildData(string cimPath, SpriteAtlasBuildData atlas)
     {
         ArgumentNullException.ThrowIfNull(atlas);
         Atlas = atlas;
 
-        LocalId = localId;
+        LocalId = int.TryParse(Path.GetFileNameWithoutExtension(cimPath), out int localID) ? localID : atlas.SpriteSheets.Count;
 
         static int readInt32BigEndian(Stream stream)
         {
@@ -44,7 +44,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
             return BinaryPrimitives.ReadInt32BigEndian(buffer);
         }
 
-        using (FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, false))
+        using (FileStream fs = new(cimPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, false))
         using (ZLibStream zs = new(fs, CompressionMode.Decompress))
         {
             Width = readInt32BigEndian(zs);
@@ -55,6 +55,30 @@ internal sealed class SpriteSheetBuildData : IDisposable
             PixelData = new byte[PixelFormat * Width * Height];
             zs.ReadExactly(PixelData);
         }
+
+        Packer = new(Width, Height, 0); // no sprites accepted!
+    }
+
+    public SpriteSheetBuildData(int localID, string imagePath, SpriteAtlasBuildData atlas)
+    {
+        ArgumentNullException.ThrowIfNull(atlas);
+        Atlas = atlas;
+
+        LocalId = localID;
+
+        using SKBitmap bitmap = SKBitmap.Decode(imagePath)
+             ?? throw new InvalidOperationException($@"Failed to decode image ""{imagePath}""");
+
+        Width = bitmap.Width;
+        Height = bitmap.Height;
+
+        // RGBA8888
+        PixelFormat = 4;
+        PixelData = new byte[PixelFormat * Width * Height];
+
+        Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
+
+        Packer = new(Width, Height, 0); // no sprites accepted!
     }
 
     public SpriteAtlasBuildData Atlas { get; }
@@ -97,14 +121,14 @@ internal sealed class SpriteSheetBuildData : IDisposable
         Packer = new(Width, Height, Packer.MaxRectangles);
     }
 
-    public bool TryGenerateFromSprites(ILogger log = null)
+    public bool TryRenderFromSprites(ILogger log = null)
     {
         try
         {
             using SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
             using SKCanvas canvas = new(bitmap);
             foreach (SpriteBuildData sprite in SpriteList)
-                canvas.DrawBitmap(sprite.Image, sprite.SpriteSheetX, sprite.SpriteSheetY);
+                canvas.DrawBitmap(sprite.Image, sprite.X, sprite.Y);
 
             Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
             return true;
@@ -200,7 +224,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         }
     }
 
-    public bool TryExportAllSpritesToPng(string exportDir, ILogger log, CancellationToken ct)
+    public async Task<bool> TryExportAllSpritesToPngAsync(string exportDir, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -211,7 +235,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
             foreach (SpriteBuildData sprite in SpritesByName.Values)
             {
                 string exportPath = Path.Combine(exportDir, $"{sprite.LocalId}.png");
-                sprite.TryExportToPng(exportPath, log, ct);
+                await sprite.TryExportToPngAsync(exportPath, log, ct);
             }
             return true;
         }
@@ -223,6 +247,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         }
     }
 
+    [Obsolete("Use TryExportToPngAsync() instead!")]
     public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
     {
         try
@@ -245,6 +270,37 @@ internal sealed class SpriteSheetBuildData : IDisposable
             ct.ThrowIfCancellationRequested();
 
             data.SaveTo(stream);
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            log?.Error(ex);
+            return false;
+        }
+    }
+
+    public async Task<bool> TryExportToPngAsync(string path, ILogger log, CancellationToken ct)
+    {
+        try
+        {
+            string dir = Path.GetDirectoryName(path);
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
+                return false;
+
+            SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+            Marshal.Copy(PixelData, 0, bitmap.GetPixels(), PixelData.Length);
+            using SKData data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
+
+            await using FileStream stream = new(
+                path,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                65536,
+                useAsync: true);
+
+            await stream.WriteAsync(data.ToArray(), ct);
             return true;
         }
         catch (OperationCanceledException) { throw; }

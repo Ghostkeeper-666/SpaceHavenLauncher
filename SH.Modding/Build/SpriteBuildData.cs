@@ -12,6 +12,31 @@ namespace SH.Modding.Build;
 
 internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
 {
+    public SpriteBuildData(string localName, int localId, SpriteSheetBuildData spriteSheet, int width, int height, int x, int y)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
+        ArgumentNullException.ThrowIfNull(spriteSheet);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(width, 0, nameof(width));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(height, 0, nameof(height));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(width, 0, nameof(x));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(height, 0, nameof(y));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(x, spriteSheet.Width, nameof(x));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(y, spriteSheet.Height, nameof(y));
+
+        Width = width;
+        Height = height;
+        Area = Width * Height;
+        PixelData = new byte[4 * Area];
+
+        LocalName = localName;
+        LocalId = localId;
+        AbsoluteFilePath = null;
+
+        SpriteSheet = spriteSheet;
+        X = x;
+        Y = y;
+    }
+
     public SpriteBuildData(string localName, int localId, string absoluteFilePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localName);
@@ -31,6 +56,22 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         Area = Width * Height;
     }
 
+    public bool TryRenderFromSpriteSheet(ILogger log = null)
+    {
+        try
+        {
+            int rowSize = Width * 4;
+            for (int row = 0; row < Height; ++row)
+                Buffer.BlockCopy(SpriteSheet.PixelData, (Y + row) * SpriteSheet.Width * 4 + X * 4, PixelData, row * Width * 4, rowSize);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log?.Error(ex);
+            return false;
+        }
+    }
+
     public SpriteSheetBuildData SpriteSheet { get; set; }
 
     public string GlobalName { get; set; }
@@ -39,20 +80,21 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
     public int GlobalId { get; set; }
     public int LocalId { get; set; }
 
-    public int SpriteSheetX { get; set; }
-    public int SpriteSheetY { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
 
     public int Width { get; }
     public int Height { get; }
 
     public int Area { get; }
 
-    public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath);
+    public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath ?? string.Empty);
     public string AbsoluteFilePath { get; }
 
     public byte[] PixelData { get; private set; }
     public SKBitmap Image { get; private set; }
 
+    [Obsolete("Use TryExportToPngAsync() instead!")]
     public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
     {
         try
@@ -80,7 +122,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         }
     }
 
-    public async Task<bool> TryExportToPngAsync(string path, ILogger log = null)
+    public async Task<bool> TryExportToPngAsync(string path, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -99,11 +141,10 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
                 65536,
                 useAsync: true);
 
-            byte[] bytes = data.ToArray();
-
-            await stream.WriteAsync(bytes);
+            await stream.WriteAsync(data.ToArray(), ct);
             return true;
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

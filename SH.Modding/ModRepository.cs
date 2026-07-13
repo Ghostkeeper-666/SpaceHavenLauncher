@@ -4,6 +4,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Modding.Annotation;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -49,7 +50,10 @@ public sealed class ModRepository
                 }
                 modDirectories
                     .AddRange(Directory.GetDirectories(modRootDirectory)
-                    .Where(modDir => IOUtils.FileExists(IOUtils.CombineAsOSPath(modDir, ModdingConstants.INFO_XML)))
+                    .Where(modDir =>
+                        IOUtils.FileExists(IOUtils.CombineAsOSPath(modDir, ModdingConstants.INFO_XML)) ||
+                        IOUtils.FileExists(IOUtils.CombineAsOSPath(modDir, Path.GetFileNameWithoutExtension(ModdingConstants.INFO_XML)))
+                    )
                     ?? []);
             }
 
@@ -120,403 +124,18 @@ public sealed class ModRepository
         ModData mod = new();
         try
         {
-            bool success = true;
-
             mod.Directory = modDir.AsOSPath();
             if (!IOUtils.DirectoryExists(mod.Directory))
                 return null;
 
-            // info.xml file:
-            List<string> infoXmlPaths =
-            [
-                IOUtils.CombineAsOSPath(mod.Directory, ModdingConstants.INFO_XML), 
-                IOUtils.CombineAsOSPath(mod.Directory, Path.GetFileNameWithoutExtension(ModdingConstants.INFO_XML))
-            ];
-            mod.InfoXmlPath =
-                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(path => infoXmlPaths.Any(p => p.Equals(path, StringComparison.OrdinalIgnoreCase)));
+            string[] modSubDirs = Directory.GetDirectories(mod.Directory, "*.*", SearchOption.TopDirectoryOnly);
 
-            // Background image:
-            string[] possibleBackgroundImagePaths =
-            [
-                IOUtils.CombineAsOSPath(mod.Directory, "background.jpg"),
-                IOUtils.CombineAsOSPath(mod.Directory, "background.png"),
-                IOUtils.CombineAsOSPath(mod.Directory, "bg.jpg"),
-                IOUtils.CombineAsOSPath(mod.Directory, "bg.png"),
-            ];
-            mod.BackgroundImagePath =
-                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(path => possibleBackgroundImagePaths
-                .Any(possiblePath => path.Equals(possiblePath, StringComparison.OrdinalIgnoreCase)));
+            // Map all mod files:
+            MapModFiles(mod, modSubDirs);
 
-            // XML library files:
-            if (IOUtils.DirectoryExists(mod.XmlLibraryDirectory))
-                mod.XmlLibraryFilePaths.AddRange(Directory.GetFiles(mod.XmlLibraryDirectory, "*.*", SearchOption.AllDirectories)
-                    .Where(path => !Path.GetFileName(path).StartsWith(ModdingConstants.GENERATED_TEXTURES_XML, StringComparison.OrdinalIgnoreCase)));
-
-            // XML Patch files:
-            if (IOUtils.DirectoryExists(mod.XmlPatchesDirectory))
-                mod.XmlPatchFilePaths.AddRange(Directory.GetFiles(mod.XmlPatchesDirectory, "*.*", SearchOption.AllDirectories));
-
-            // Audio files:
-            if (IOUtils.DirectoryExists(mod.AudioDirectory))
-                mod.AudioFilePaths.AddRange(Directory.GetFiles(mod.AudioDirectory, "*.*", SearchOption.AllDirectories)
-                    .Where(f => f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase)));
-
-            // Texture files:
-            if (IOUtils.DirectoryExists(mod.TexturesDirectory))
-                mod.TextureFilePaths.AddRange(Directory.GetFiles(mod.TexturesDirectory, "*.*", SearchOption.AllDirectories)
-                    .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
-
-            // JAR files:
-            mod.JavaFilePaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)));
-
-            // ALL files:
-            mod.AllPaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.AllDirectories));
-
-            // Other files:
-            mod.OtherFilePaths.AddRange(
-                mod.AllPaths.Where(path =>
-                    path != mod.InfoXmlPath &&
-                    path != mod.BackgroundImagePath &&
-                    !Path.GetFileName(path).Equals(ModdingConstants.DISABLED_TXT, StringComparison.OrdinalIgnoreCase) &&
-                    !Path.GetFileName(path).StartsWith(ModdingConstants.CUSTOM_TEXTURE, StringComparison.OrdinalIgnoreCase) &&
-                    !mod.XmlLibraryFilePaths.Contains(path) &&
-                    !mod.XmlPatchFilePaths.Contains(path) &&
-                    !mod.AudioFilePaths.Contains(path) &&
-                    !mod.TextureFilePaths.Contains(path) &&
-                    !mod.JavaFilePaths.Contains(path)
-            ));
-
-
-            // ----------------------------------------------------------------------
-            // INFO.XML
-            XDocument doc = await IOUtils.TryLoadXDocumentAsync(mod.InfoXmlPath, Log, ct);
-            if (doc == null)
-            {
-                Log.Error($"Unable to parse {mod.InfoXmlPath}: please check for XML syntax errors", mod.InfoXmlPath);
+            // Parse info.xml:
+            if (!await ParseInfoXml(modDir, mod, ct))
                 return null;
-            }
-            XElement root = doc.Element("mod");
-            if (root == null)
-            {
-                Log.Error($@"Invalid root node: <mod> is expected, file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
-                return null;
-            }
-
-            // UNIQUE NAME
-            mod.Name = NormalizeModName(root.Element("name")?.Value);
-            if (mod.Name.IsNullOrWhiteSpace())
-            {
-                Log.Error($@"Each mod must have a unique valid name! The XML node <name> is missing or invalid in file ""{mod.InfoXmlPath}""", mod.InfoXmlPath);
-                return null;
-            }
-
-            // AUTO ID:
-            mod.AutoId = ModAutoId.ComputeMajorId(mod.Name);
-
-            // MOD ID:
-            mod.ModId = int.TryParse(root.Element("modid")?.Value?.Trim() ?? "0", out int modId) ? modId : 0;
-
-            // VALIDATE MOD ID:
-            if (mod.ModId != 0 && (mod.ModId < ModAutoId.MinValue || mod.ModId > ModAutoId.MaxValue))
-            {
-                Log.Warn($"[{mod.Name}] MOD ID must be within the range [{ModAutoId.MinValue}, {ModAutoId.MaxValue}] => Assigning an automatic ID instead. This MOD may fail to load in case it heavily depends on its MOD ID", mod.InfoXmlPath);
-                mod.ModId = 0;
-            }
-
-            // AUTHOR
-            mod.Author =
-                root.Element("author")?.Value?.Trim();
-
-            // TODO: First make mod author mandatory, then remove this code:
-            if (mod.Author.IsNullOrWhiteSpace())
-            {
-                if (mod.Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
-                    mod.Author = "Gravelyn";
-                else if (mod.Name.Contains("CustomizerPlus"))
-                    mod.Author = "r4v4g3 (r0xx0r3r)";
-                else
-                {
-                    mod.Author = string.Empty;
-                    Log.Warn($@"Missing mod author in mod ""{mod.Name}""");
-                }
-            }
-
-            // DESCRIPTION
-            mod.InfoXmlDescription = root.Element("description")?.Value?.TrimStart(' ', '\t', '\r', '\n', '~');
-            if (mod.InfoXmlDescription == null)
-            {
-                Log.Error($@"[{mod.Name}] Missing or empty <decription> node, file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
-                return null;
-            }
-
-            // MOD VERSION
-            mod.Version = new VersionInfo(root.Element("version")?.Value);
-
-
-            ct.ThrowIfCancellationRequested();
-
-
-            // SKIP this for the time being...
-            // >>> NEW: SPACE HAVEN LAUNCHER Compatibility
-            //{
-            //    List<XElement> appNodes = [];
-            //    appNodes.AddRange(root.Elements("spacehavenlauncher"));
-            //    appNodes.AddRange(root.Elements("spaceHavenLauncher"));
-            //    appNodes.AddRange(root.Elements("launcher"));
-            //    appNodes.AddRange(root.Elements("Launcher"));
-            //    foreach (XElement appNode in appNodes)
-            //    {
-            //        ct.ThrowIfCancellationRequested();
-
-            //        VersionInfo version =
-            //            new(appNode.Attribute("version")?.Value ?? appNode.Attribute("v")?.Value ?? appNode.Value);
-
-            //        EVersionOperator op =
-            //            VersionOperatorParser.ToOperator(
-            //                appNode.Attribute("operator")?.Value ??
-            //                appNode.Attribute("op")?.Value);
-
-            //        mod.AppCompatibility.Add(new("Space Haven Launcher", version, op));
-            //    }
-            //}
-
-
-            // >>> SPACE HAVEN Version Compatibility
-            List<XElement> spaceHavenNodes = [];
-            spaceHavenNodes.AddRange(root.Elements("spacehaven"));
-            spaceHavenNodes.AddRange(root.Elements("spaceHaven"));
-            spaceHavenNodes.AddRange(root.Elements("sh"));
-
-            List<XElement> gameVersionRootNodes = []; // DEPRECATED
-            gameVersionRootNodes.AddRange(root.Elements("gameversion"));
-            gameVersionRootNodes.AddRange(root.Elements("gameVersion"));
-            gameVersionRootNodes.AddRange(root.Elements("gameversions"));
-            gameVersionRootNodes.AddRange(root.Elements("gameVersions"));
-
-            if (spaceHavenNodes.Count > 0)
-            {
-                foreach (XElement node in spaceHavenNodes)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    VersionInfo version =
-                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
-
-                    EVersionOperator op =
-                        VersionOperatorParser.ToOperator(
-                            node.Attribute("operator")?.Value ??
-                            node.Attribute("op")?.Value);
-
-                    if (op == EVersionOperator.any)
-                        op = EVersionOperator.gte;
-
-                    mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, op));
-                }
-            }
-            else if (gameVersionRootNodes.Count > 0) // DEPRECATED
-            {
-                foreach (string node in gameVersionRootNodes.SelectMany(n => n?.Elements("v")?.Select(v => v?.Value?.TrimStart('v'))?.Where(str => !str.IsNullOrWhiteSpace()) ?? []))
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    VersionInfo version = new(node.Replace("*", string.Empty).Replace("+", string.Empty));
-                    mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, EVersionOperator.gte)); // DEPRECATED
-                }
-            }
-
-            // >>> NEW: MOD CONFLICTS
-            {
-                List<XElement> conflictNodes = [];
-                conflictNodes.AddRange(root.Elements("modconflict"));
-                conflictNodes.AddRange(root.Elements("modConflict"));
-
-                List<VersionCompatibility> modConflicts = [];
-                foreach (XElement node in conflictNodes)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    string modName =
-                        node.Attribute("name")?.Value?.Trim() ??
-                        node.Attribute("n")?.Value?.Trim();
-                    modName =
-                        modName?.Trim();
-                    if (modName.IsNullOrWhiteSpace())
-                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
-
-                    VersionInfo version =
-                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
-
-                    EVersionOperator op = VersionOperatorParser.ToOperator(
-                        node.Attribute("operator")?.Value ??
-                        node.Attribute("op")?.Value);
-
-                    modConflicts.Add(new(modName, version, op));
-                }
-                mod.ModConflicts.AddRange(modConflicts.OrderBy(m => m.Name));
-            }
-
-            // >>> NEW: MOD DEPENDENCIES
-            {
-                List<XElement> dependencyNodes = [];
-                dependencyNodes.AddRange(root.Elements("moddependency"));
-                dependencyNodes.AddRange(root.Elements("modDependency"));
-
-                List<VersionCompatibility> modDependencies = [];
-                foreach (XElement node in dependencyNodes)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    string modName =
-                        node.Attribute("name")?.Value?.Trim() ??
-                        node.Attribute("n")?.Value?.Trim();
-                    modName =
-                        modName?.Trim();
-                    if (modName.IsNullOrWhiteSpace())
-                        throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
-
-                    VersionInfo version =
-                        new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
-
-                    EVersionOperator op = VersionOperatorParser.ToOperator(
-                        node.Attribute("operator")?.Value ??
-                        node.Attribute("op")?.Value);
-
-                    modDependencies.Add(new(modName, version, op));
-                }
-                mod.ModDependencies.AddRange(modDependencies.OrderBy(m => m.Name));
-            }
-
-            // VARIABLES
-            List<XElement> rootVarNodes = [];
-            rootVarNodes.AddRange(root.Elements("config"));
-            rootVarNodes.AddRange(root.Elements("vars"));
-            rootVarNodes.AddRange(root.Elements("variables"));
-
-            VarData previousModVar = null;
-            HashSet<string> duplicateVariables = [];
-
-            foreach (XElement rootVarNode in rootVarNodes)
-            {
-                foreach (XElement v in rootVarNode.Elements("var") ?? [])
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    try
-                    {
-                        int line = v.Line();
-
-                        string name = v.Attribute("name")?.Value?.Trim('{', '}', ' ');
-                        if (name.IsNullOrWhiteSpace())
-                        {
-                            Log.Error($"[{mod.Name}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
-                            return null;
-                        }
-
-                        // Validate reserved variable name:
-                        if (ModAutoId.IdVariable.Equals(name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            Log.Error($"[{mod.Name}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
-                            return null;
-                        }
-
-                        bool isSeparator = name.Equals("separator", StringComparison.OrdinalIgnoreCase);
-                        if (isSeparator)
-                            name = string.Empty;
-
-                        string description = isSeparator ? string.Empty :
-                            v.Value?.TrimStart(' ', '\t', '\r', '\n') ?? string.Empty;
-
-                        // TODO: Remove this cleanup code after the "My Mod" series descriptions are simplified:
-                        string[] splittedDescription = description.Split('[');
-                        if (splittedDescription.Length > 0 && splittedDescription.Last().Contains("default", StringComparison.OrdinalIgnoreCase) && splittedDescription.Last().Contains("suggested", StringComparison.OrdinalIgnoreCase))
-                            description = splittedDescription.SkipLast(1).JoinToString("[").Trim();
-
-                        string original = isSeparator ? string.Empty : (
-                            v.Attribute("original")?.Value ??
-                            v.Attribute("default")?.Value ??
-                            v.Attribute("value")?.Value
-                            )?.Trim('{', '}', ' ') ?? string.Empty;
-
-                        string suggested = isSeparator ? string.Empty : (
-                            v.Attribute("suggested")?.Value ??
-                            v.Attribute("value")?.Value ??
-                            original
-                            )?.Trim('{', '}', ' ') ?? string.Empty;
-
-                        string previous = string.Empty;
-
-                        string current = isSeparator ? string.Empty : suggested;
-
-                        VarData modVar = new()
-                        {
-                            IsSeparator = isSeparator,
-                            Name = name,
-                            Description = description,
-                            OriginalValue = original,
-                            SuggestedValue = suggested,
-                            CurrentValue = current,
-                            PreviousValue = previous,
-                            Line = line,
-                        };
-
-                        // TODO: validation of strong-typed variables?
-
-                        // Skip multiple separators:
-                        if (modVar.IsSeparator && (previousModVar?.IsSeparator ?? true))
-                            continue;
-
-                        // Duplicate variables
-                        if (!modVar.IsSeparator && mod.Variables.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            // 'warn as error', just once for each variable:
-                            if (!duplicateVariables.Contains(name))
-                                Log.Warn($"[{mod.Name}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", mod.InfoXmlPath);
-                            duplicateVariables.Add(name);
-                            continue;
-                        }
-
-                        // Add variable:
-                        mod.Variables.Add(modVar);
-                        previousModVar = modVar;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"[{modDir}] {ex.Message}");
-                        success = false;
-                    }
-                }
-            }
-
-            // Stop here in case of errors:
-            if (success == false)
-                return null;
-
-            // Add a separator variable line at the end:
-            if (mod.Variables.Count > 0 && previousModVar?.IsSeparator != true)
-                mod.Variables.Add(new VarData()
-                {
-                    IsSeparator = true,
-                    Name = "Separator",
-                    Description = string.Empty,
-                    OriginalValue = string.Empty,
-                    SuggestedValue = string.Empty,
-                    CurrentValue = string.Empty,
-                    Line = 0,
-                });
-
-            // Read markdown mod description:
-            string mardkdownDescriptionPath = IOUtils.CombineAsOSPath(mod.Directory, ModdingConstants.DESCRIPTION_MD);
-            mod.MarkdownDescriptionPath =
-                Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(path => path.Equals(mardkdownDescriptionPath, StringComparison.OrdinalIgnoreCase));
-            if (mod.MarkdownDescriptionPath != null)
-                mod.MarkdownDescription = await IOUtils.TryReadAllTextAsync(mod.MarkdownDescriptionPath, Log, ct);
-
-            // Mod foreground color:
-            mod.ForegroundColor = (root.Element("ForegroundColor") ?? root.Element("foregroundColor") ?? root.Element("foregroundcolor") ?? root.Element("forecolor"))?.Value;
 
             //Done.
             return mod;
@@ -527,6 +146,447 @@ public sealed class ModRepository
             Log.Error($"[{mod.Name}] {ex.Message}", mod.Directory);
             return null;
         }
+    }
+
+    private static void MapModFiles(ModData mod, string[] modSubDirs)
+    {
+        // info.xml file:
+        List<string> infoXmlPaths =
+        [
+            IOUtils.CombineAsOSPath(mod.Directory, ModdingConstants.INFO_XML),
+                IOUtils.CombineAsOSPath(mod.Directory, Path.GetFileNameWithoutExtension(ModdingConstants.INFO_XML))
+        ];
+        mod.InfoXmlPath =
+            Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(path => infoXmlPaths.Any(p => p.Equals(path, StringComparison.OrdinalIgnoreCase)));
+
+        // Background image:
+        string[] possibleBackgroundImagePaths =
+        [
+            IOUtils.CombineAsOSPath(mod.Directory, "background.jpg"),
+                IOUtils.CombineAsOSPath(mod.Directory, "background.png"),
+                IOUtils.CombineAsOSPath(mod.Directory, "bg.jpg"),
+                IOUtils.CombineAsOSPath(mod.Directory, "bg.png"),
+            ];
+        mod.BackgroundImagePath =
+            Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(path => possibleBackgroundImagePaths
+            .Any(possiblePath => path.Equals(possiblePath, StringComparison.OrdinalIgnoreCase)));
+
+        // XML library files:
+        {
+            string[] xmlLibraryDirectories = modSubDirs
+                .Where(dir => dir.Equals(mod.XmlLibraryDirectory, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string[] dirs =
+                xmlLibraryDirectories
+                .SelectMany(dir => Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories))
+                // Ignore old Mod Loader deprecated file:
+                .Where(path => !Path.GetFileName(path).StartsWith(ModdingConstants.GENERATED_TEXTURES_XML, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            mod.XmlLibraryFilePaths.AddRange(dirs);
+        }
+
+        // XML Patch files:
+        {
+            string[] subDirs = modSubDirs
+                .Where(subDir => subDir.Equals(mod.XmlPatchesDirectory, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string[] dirs = subDirs
+                .SelectMany(subDir => Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories))
+                .ToArray();
+            mod.XmlPatchFilePaths.AddRange(dirs);
+        }
+
+        // Audio files:
+        {
+            string[] subDirs = modSubDirs
+                .Where(subDir => subDir.Equals(mod.AudioDirectory, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string[] dirs = subDirs
+                .SelectMany(subDir => Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories))
+                .Where(path => path.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            mod.AudioFilePaths.AddRange(dirs);
+        }
+
+        // Sprite files:
+        {
+            string[] subDirs = modSubDirs
+                .Where(subDir => subDir.Equals(mod.SpritesDirectory, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string[] dirs = subDirs
+                .SelectMany(subDir => Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories))
+                .ToArray();
+            mod.SpritePaths.AddRange(dirs);
+        }
+
+        // Sprite Sheet files:
+        {
+            string[] subDirs = modSubDirs
+                .Where(subDir => subDir.Equals(mod.SpriteSheetsDirectory, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string[] dirs = subDirs
+                .SelectMany(subDir => Directory.GetFiles(subDir, "*.*", SearchOption.AllDirectories))
+                .ToArray();
+            mod.SpriteSheetPaths.AddRange(dirs);
+        }
+
+        // JAR files (only those directly under the mod dir):
+        mod.JarFilePaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
+            .Where(f => f.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)));
+
+        // ALL files:
+        mod.AllPaths.AddRange(Directory.GetFiles(mod.Directory, "*.*", SearchOption.AllDirectories));
+
+        // Other files:
+        mod.OtherFilePaths.AddRange(
+            mod.AllPaths.Where(path =>
+                path != mod.InfoXmlPath &&
+                path != mod.BackgroundImagePath &&
+                !Path.GetFileName(path).Equals(ModdingConstants.DISABLED_TXT, StringComparison.OrdinalIgnoreCase) &&
+                !Path.GetFileName(path).StartsWith(ModdingConstants.CUSTOM_TEXTURE, StringComparison.OrdinalIgnoreCase) &&
+                !mod.XmlLibraryFilePaths.Contains(path) &&
+                !mod.XmlPatchFilePaths.Contains(path) &&
+                !mod.AudioFilePaths.Contains(path) &&
+                !mod.SpritePaths.Contains(path) &&
+                !mod.SpriteSheetPaths.Contains(path) &&
+                !mod.JarFilePaths.Contains(path)
+        ));
+    }
+
+    private async Task<bool> ParseInfoXml(string modDir, ModData mod, CancellationToken ct)
+    {
+        // ----------------------------------------------------------------------
+        // INFO.XML
+        XDocument doc = await IOUtils.TryLoadXDocumentAsync(mod.InfoXmlPath, Log, ct);
+        if (doc == null)
+        {
+            Log.Error($"Unable to parse {mod.InfoXmlPath}: please check for XML syntax errors", mod.InfoXmlPath);
+            return false;
+        }
+        XElement root = doc.Element("mod");
+        if (root == null)
+        {
+            Log.Error($@"Invalid root node: <mod> is expected, file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
+            return false;
+        }
+
+        // UNIQUE NAME
+        mod.Name = NormalizeModName(root.Element("name")?.Value);
+        if (mod.Name.IsNullOrWhiteSpace())
+        {
+            Log.Error($@"Each mod must have a unique valid name! The XML node <name> is missing or invalid in file ""{mod.InfoXmlPath}""", mod.InfoXmlPath);
+            return false;
+        }
+
+        // AUTO ID:
+        mod.AutoId = ModAutoId.ComputeMajorId(mod.Name);
+
+        // MOD ID:
+        mod.ModId = int.TryParse(root.Element("modid")?.Value?.Trim() ?? "0", out int modId) ? modId : 0;
+
+        // VALIDATE MOD ID:
+        if (mod.ModId != 0 && (mod.ModId < ModAutoId.MinValue || mod.ModId > ModAutoId.MaxValue))
+        {
+            Log.Warn($"[{mod.Name}] MOD ID must be within the range [{ModAutoId.MinValue}, {ModAutoId.MaxValue}] => Assigning an automatic ID instead. This MOD may fail to load in case it heavily depends on its MOD ID", mod.InfoXmlPath);
+            mod.ModId = 0;
+        }
+
+        // AUTHOR
+        mod.Author =
+            root.Element("author")?.Value?.Trim();
+
+        // TODO: First make mod author mandatory, then remove this code:
+        if (mod.Author.IsNullOrWhiteSpace())
+        {
+            if (mod.Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+                mod.Author = "Gravelyn";
+            else if (mod.Name.Contains("CustomizerPlus"))
+                mod.Author = "r4v4g3 (r0xx0r3r)";
+            else
+            {
+                mod.Author = string.Empty;
+                Log.Warn($@"Missing mod author in mod ""{mod.Name}""");
+            }
+        }
+
+        // DESCRIPTION
+        mod.InfoXmlDescription = root.Element("description")?.Value?.TrimStart(' ', '\t', '\r', '\n', '~');
+        if (mod.InfoXmlDescription == null)
+        {
+            Log.Error($@"[{mod.Name}] Missing or empty <decription> node, file=""{mod.InfoXmlPath}""", mod.InfoXmlPath);
+            return false;
+        }
+
+        // MOD VERSION
+        mod.Version = new VersionInfo(root.Element("version")?.Value);
+
+
+        ct.ThrowIfCancellationRequested();
+
+
+        // SKIP this for the time being...
+        // >>> NEW: SPACE HAVEN LAUNCHER Compatibility
+        //{
+        //    List<XElement> appNodes = [];
+        //    appNodes.AddRange(root.Elements("spacehavenlauncher"));
+        //    appNodes.AddRange(root.Elements("spaceHavenLauncher"));
+        //    appNodes.AddRange(root.Elements("launcher"));
+        //    appNodes.AddRange(root.Elements("Launcher"));
+        //    foreach (XElement appNode in appNodes)
+        //    {
+        //        ct.ThrowIfCancellationRequested();
+
+        //        VersionInfo version =
+        //            new(appNode.Attribute("version")?.Value ?? appNode.Attribute("v")?.Value ?? appNode.Value);
+
+        //        EVersionOperator op =
+        //            VersionOperatorParser.ToOperator(
+        //                appNode.Attribute("operator")?.Value ??
+        //                appNode.Attribute("op")?.Value);
+
+        //        mod.AppCompatibility.Add(new("Space Haven Launcher", version, op));
+        //    }
+        //}
+
+
+        // >>> SPACE HAVEN Version Compatibility
+        List<XElement> spaceHavenNodes = [];
+        spaceHavenNodes.AddRange(root.Elements("spacehaven"));
+        spaceHavenNodes.AddRange(root.Elements("spaceHaven"));
+        spaceHavenNodes.AddRange(root.Elements("sh"));
+
+        List<XElement> gameVersionRootNodes = []; // DEPRECATED
+        gameVersionRootNodes.AddRange(root.Elements("gameversion"));
+        gameVersionRootNodes.AddRange(root.Elements("gameVersion"));
+        gameVersionRootNodes.AddRange(root.Elements("gameversions"));
+        gameVersionRootNodes.AddRange(root.Elements("gameVersions"));
+
+        if (spaceHavenNodes.Count > 0)
+        {
+            foreach (XElement node in spaceHavenNodes)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                VersionInfo version =
+                    new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
+
+                EVersionOperator op =
+                    VersionOperatorParser.ToOperator(
+                        node.Attribute("operator")?.Value ??
+                        node.Attribute("op")?.Value);
+
+                if (op == EVersionOperator.any)
+                    op = EVersionOperator.gte;
+
+                mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, op));
+            }
+        }
+        else if (gameVersionRootNodes.Count > 0) // DEPRECATED
+        {
+            foreach (string node in gameVersionRootNodes.SelectMany(n => n?.Elements("v")?.Select(v => v?.Value?.TrimStart('v'))?.Where(str => !str.IsNullOrWhiteSpace()) ?? []))
+            {
+                ct.ThrowIfCancellationRequested();
+
+                VersionInfo version = new(node.Replace("*", string.Empty).Replace("+", string.Empty));
+                mod.SpaceHavenCompatibility.Add(new(SpaceHavenConstants.SpaceHavenName, version, EVersionOperator.gte)); // DEPRECATED
+            }
+        }
+
+        // >>> NEW: MOD CONFLICTS
+        {
+            List<XElement> conflictNodes = [];
+            conflictNodes.AddRange(root.Elements("modconflict"));
+            conflictNodes.AddRange(root.Elements("modConflict"));
+
+            List<VersionCompatibility> modConflicts = [];
+            foreach (XElement node in conflictNodes)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                string modName =
+                    node.Attribute("name")?.Value?.Trim() ??
+                    node.Attribute("n")?.Value?.Trim();
+                modName =
+                    modName?.Trim();
+                if (modName.IsNullOrWhiteSpace())
+                    throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
+
+                VersionInfo version =
+                    new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
+
+                EVersionOperator op = VersionOperatorParser.ToOperator(
+                    node.Attribute("operator")?.Value ??
+                    node.Attribute("op")?.Value);
+
+                modConflicts.Add(new(modName, version, op));
+            }
+            mod.ModConflicts.AddRange(modConflicts.OrderBy(m => m.Name));
+        }
+
+        // >>> NEW: MOD DEPENDENCIES
+        {
+            List<XElement> dependencyNodes = [];
+            dependencyNodes.AddRange(root.Elements("moddependency"));
+            dependencyNodes.AddRange(root.Elements("modDependency"));
+
+            List<VersionCompatibility> modDependencies = [];
+            foreach (XElement node in dependencyNodes)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                string modName =
+                    node.Attribute("name")?.Value?.Trim() ??
+                    node.Attribute("n")?.Value?.Trim();
+                modName =
+                    modName?.Trim();
+                if (modName.IsNullOrWhiteSpace())
+                    throw new Exception($@"[{mod.Name}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
+
+                VersionInfo version =
+                    new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
+
+                EVersionOperator op = VersionOperatorParser.ToOperator(
+                    node.Attribute("operator")?.Value ??
+                    node.Attribute("op")?.Value);
+
+                modDependencies.Add(new(modName, version, op));
+            }
+            mod.ModDependencies.AddRange(modDependencies.OrderBy(m => m.Name));
+        }
+
+        // VARIABLES
+        List<XElement> rootVarNodes = [];
+        rootVarNodes.AddRange(root.Elements("config"));
+        rootVarNodes.AddRange(root.Elements("vars"));
+        rootVarNodes.AddRange(root.Elements("variables"));
+
+        VarData previousModVar = null;
+        HashSet<string> duplicateVariables = [];
+        bool success = true;
+        foreach (XElement rootVarNode in rootVarNodes)
+        {
+            foreach (XElement v in rootVarNode.Elements("var") ?? [])
+            {
+                ct.ThrowIfCancellationRequested();
+
+                try
+                {
+                    int line = v.Line();
+
+                    string name = v.Attribute("name")?.Value?.Trim('{', '}', ' ');
+                    if (name.IsNullOrWhiteSpace())
+                    {
+                        Log.Error($"[{mod.Name}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
+                        return false;
+                    }
+
+                    // Validate reserved variable name:
+                    if (ModAutoId.IdVariable.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Error($"[{mod.Name}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", mod.InfoXmlPath);
+                        return false;
+                    }
+
+                    bool isSeparator = name.Equals("separator", StringComparison.OrdinalIgnoreCase);
+                    if (isSeparator)
+                        name = string.Empty;
+
+                    string description = isSeparator ? string.Empty :
+                        v.Value?.TrimStart(' ', '\t', '\r', '\n') ?? string.Empty;
+
+                    // TODO: Remove this cleanup code after the "My Mod" series descriptions are simplified:
+                    string[] splittedDescription = description.Split('[');
+                    if (splittedDescription.Length > 0 && splittedDescription.Last().Contains("default", StringComparison.OrdinalIgnoreCase) && splittedDescription.Last().Contains("suggested", StringComparison.OrdinalIgnoreCase))
+                        description = splittedDescription.SkipLast(1).JoinToString("[").Trim();
+
+                    string original = isSeparator ? string.Empty : (
+                        v.Attribute("original")?.Value ??
+                        v.Attribute("default")?.Value ??
+                        v.Attribute("value")?.Value
+                        )?.Trim('{', '}', ' ') ?? string.Empty;
+
+                    string suggested = isSeparator ? string.Empty : (
+                        v.Attribute("suggested")?.Value ??
+                        v.Attribute("value")?.Value ??
+                        original
+                        )?.Trim('{', '}', ' ') ?? string.Empty;
+
+                    string previous = string.Empty;
+
+                    string current = isSeparator ? string.Empty : suggested;
+
+                    VarData modVar = new()
+                    {
+                        IsSeparator = isSeparator,
+                        Name = name,
+                        Description = description,
+                        OriginalValue = original,
+                        SuggestedValue = suggested,
+                        CurrentValue = current,
+                        PreviousValue = previous,
+                        Line = line,
+                    };
+
+                    // TODO: validation of strong-typed variables?
+
+                    // Skip multiple separators:
+                    if (modVar.IsSeparator && (previousModVar?.IsSeparator ?? true))
+                        continue;
+
+                    // Duplicate variables
+                    if (!modVar.IsSeparator && mod.Variables.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        // 'warn as error', just once for each variable:
+                        if (!duplicateVariables.Contains(name))
+                            Log.Warn($"[{mod.Name}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", mod.InfoXmlPath);
+                        duplicateVariables.Add(name);
+                        continue;
+                    }
+
+                    // Add variable:
+                    mod.Variables.Add(modVar);
+                    previousModVar = modVar;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[{modDir}] {ex.Message}");
+                    success = false;
+                }
+            }
+        }
+
+        // Stop here in case of errors:
+        if (success == false)
+            return false;
+
+        // Add a separator variable line at the end:
+        if (mod.Variables.Count > 0 && previousModVar?.IsSeparator != true)
+            mod.Variables.Add(new VarData()
+            {
+                IsSeparator = true,
+                Name = "Separator",
+                Description = string.Empty,
+                OriginalValue = string.Empty,
+                SuggestedValue = string.Empty,
+                CurrentValue = string.Empty,
+                Line = 0,
+            });
+
+        // Read markdown mod description:
+        string mardkdownDescriptionPath = IOUtils.CombineAsOSPath(mod.Directory, ModdingConstants.DESCRIPTION_MD);
+        mod.MarkdownDescriptionPath =
+            Directory.GetFiles(mod.Directory, "*.*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(path => path.Equals(mardkdownDescriptionPath, StringComparison.OrdinalIgnoreCase));
+        if (mod.MarkdownDescriptionPath != null)
+            mod.MarkdownDescription = await IOUtils.TryReadAllTextAsync(mod.MarkdownDescriptionPath, Log, ct);
+
+        // Mod foreground color:
+        mod.ForegroundColor = (root.Element("ForegroundColor") ?? root.Element("foregroundColor") ?? root.Element("foregroundcolor") ?? root.Element("forecolor"))?.Value;
+
+        // Done.
+        return true;
     }
 
     private readonly string ValidModNameChars = "01234567890abcdefghijklmnopqrstuvwxyz-()";

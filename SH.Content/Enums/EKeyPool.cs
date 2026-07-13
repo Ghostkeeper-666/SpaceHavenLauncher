@@ -1,6 +1,6 @@
 ﻿namespace SH.Content.Enums;
 
-public enum EIdPool
+public enum EKeyPool
 {
     Generic,
     IdleAnim,

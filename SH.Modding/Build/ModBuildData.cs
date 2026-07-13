@@ -42,21 +42,23 @@ internal sealed class ModBuildData : IAsyncDisposable
     public int ID => Data.ID;
 
     public string AudioDirectory => Data.AudioDirectory;
-    public string TexturesDirectory => Data.TexturesDirectory;
+    public string SpritesDirectory => Data.SpritesDirectory;
+    public string SpriteSheetsDirectory => Data.SpriteSheetsDirectory;
     public string XmlLibraryDirectory => Data.XmlLibraryDirectory;
     public string XmlPatchesDirectory => Data.XmlPatchesDirectory;
 
     // Mod Absolute Paths:
     public IReadOnlyList<string> AudioFilePaths => Data.AudioFilePaths;
-    public IReadOnlyList<string> TextureFilePaths => Data.TextureFilePaths;
+    public IReadOnlyList<string> SpritePaths => Data.SpritePaths;
+    public IReadOnlyList<string> SpriteSheetPaths => Data.SpriteSheetPaths;
     public IReadOnlyList<string> XmlLibraryFilePaths => Data.XmlLibraryFilePaths;
     public IReadOnlyList<string> XmlPatchFilePaths => Data.XmlPatchFilePaths;
-    public IReadOnlyList<string> JavaFilePaths => Data.JavaFilePaths;
+    public IReadOnlyList<string> JavaFilePaths => Data.JarFilePaths;
     public IReadOnlyList<string> OtherFilePaths => Data.OtherFilePaths;
 
     // Mod Relative Paths:
     public IReadOnlyList<string> AudioRelativeFilePaths => Data.AudioRelativeFilePaths;
-    public IReadOnlyList<string> TextureRelativeFilePaths => Data.TextureRelativeFilePaths;
+    public IReadOnlyList<string> TextureRelativeFilePaths => Data.SpriteRelativeFilePaths;
     public IReadOnlyList<string> XmlLibraryRelativeFilePaths => Data.XmlLibraryRelativeFilePaths;
     public IReadOnlyList<string> XmlPatchRelativeFilePaths => Data.XmlPatchRelativeFilePaths;
     public IReadOnlyList<string> JavaRelativeFilePaths => Data.JavaRelativeFilePaths;
@@ -80,7 +82,7 @@ internal sealed class ModBuildData : IAsyncDisposable
     public bool IsJavaMod => HasJava;
 
     public bool HasAudio => Data.HasAudio;
-    public bool HasTextures => Data.HasTextures;
+    public bool HasTextures => Data.HasSprites;
     public bool HasLibraryXml => Data.HasLibraryXml;
     public bool HasPatchXml => Data.HasPatchXml;
     public bool HasJava => Data.HasJava;
@@ -160,7 +162,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 // - a few bytes from content
                 List<string> resourceFilePaths = [];
                 resourceFilePaths.AddRange(AudioFilePaths);
-                resourceFilePaths.AddRange(TextureFilePaths);
+                resourceFilePaths.AddRange(SpritePaths);
                 resourceFilePaths.Sort();
 
                 ArrayPool<byte> arrayPool = new(1024, 32);

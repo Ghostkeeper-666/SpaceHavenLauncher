@@ -1,0 +1,52 @@
+atlases[] = [nearest, linear];
+
+foreach(t in textures.t)
+{
+  if(exist t.image)
+     atlases[t.filter].add(new(t.image)) with LocalID=t.ID GlobalID=nextID
+  else
+     atlases[t.filter].add(new(t.metadata, maxRects=textures.t.count)) with LocalID=t.ID GlobalID=nextID
+}
+
+spriteRefs = []
+foreach(assetPos in allAssetPos) 
+{
+  a = assetPos.a
+  if(a ?? 0 <= lastOrigSpriteName)
+    continue
+
+  re = textures.re[a]
+  if(re == null)
+    throw invalid sprite reference a=...
+  
+  atlas = atlases.FirstOrDefault(atlas => atlas.Contains(re.t))
+  if(atlas == null)
+    throw sprite maps to unknown spritesheet
+  spritesheet = atlas[re.t] // this is never null
+
+  if(spritesheet.HasImage)
+  {
+    sprite = new sprite(spritesheet, w, h, x, y) { LocalName=next, LocalID=next, GlobalName=next, GlobalID=next }
+    spritesheet.add(sprite)
+    spriteRefs = new(assetPos, sprite)
+    // debug: render sprite image as PNG?
+  }
+  else
+  {
+    if(!re.HasImage)
+      throw no spritesheet image nor sprite image could be found for sprite region = ...
+  
+    sprite = new sprite(tex.Image) { x, y }
+    spritesheet.add(sprite) { LocalName=next, LocalID=next, GlobalName=next, GlobalID=next }
+    spriteRefs = new(assetPos, sprite)
+  }
+}
+
+parallel.foreach(spritesheet in atlases.SelectMany(atlas => atlas.SpriteSheets))
+{
+  if(!spritesheet.hasImage)
+    spritesheet.renderFromSprites()
+  spritesheet.ExportToCim()
+  // debug: spritesheet.ExportToPng()
+}
+

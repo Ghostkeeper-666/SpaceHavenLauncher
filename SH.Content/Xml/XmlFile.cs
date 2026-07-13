@@ -101,9 +101,10 @@ public sealed class XmlFile
     public IEnumerable<XElement> GetNodes(NodeType nodeType) =>
         Xml.XPathSelectElements(nodeType.XPath) ?? [];
 
-    public bool TrySetXmlContent(string content, ILogger logger)
+    public bool TrySetXmlContent(string xml, ILogger logger)
     {
-        XDocument x = XDocument.Parse(content, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
+        xml = IOUtils.EraseXmlDeclaration(xml);
+        XDocument x = XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         if(x == null)
         {
             logger?.Error($@"Unable to parse new XML content");

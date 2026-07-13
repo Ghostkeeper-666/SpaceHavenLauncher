@@ -110,7 +110,8 @@ x:DataType="vm:ModPageViewModel"
             <ColumnDefinition Width="{Binding Mod.XmlLibraryFilesWidth}" />
             <ColumnDefinition Width="{Binding Mod.XmlPatchFilesWidth}" />
             <ColumnDefinition Width="{Binding Mod.AudioFilesWidth}" />
-            <ColumnDefinition Width="{Binding Mod.TextureFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.SpritesFilesWidth}" />
+            <ColumnDefinition Width="{Binding Mod.SpriteSheetFilesWidth}" />
             <ColumnDefinition Width="{Binding Mod.JarFilesWidth}" />
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
@@ -186,7 +187,7 @@ x:DataType="vm:ModPageViewModel"
           Margin="8"
           HorizontalAlignment="Stretch"
           VerticalAlignment="Stretch"
-          ToolTip.Tip="{Binding Mod.TextureFiles}" >
+          ToolTip.Tip="{Binding Mod.SpriteFiles}" >
             <TextBlock
             Foreground="Black"
             Background="Transparent"
@@ -199,9 +200,30 @@ x:DataType="vm:ModPageViewModel"
             Text="TEXTURE" />
           </Border>
 
-          <!-- JAVA TAG -->
+          <!-- CIM TAG -->
           <Border
           Grid.Column="4"
+          Background="{Binding Mod.ForegroundColor}"
+          CornerRadius="12"
+          Margin="8"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ToolTip.Tip="{Binding Mod.SpriteSheetFiles}" >
+            <TextBlock
+            Foreground="Black"
+            Background="Transparent"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            TextAlignment="Left"
+            FontSize="13"
+            FontWeight="Bold"
+            FontFamily="avares://SpaceHavenLauncher/Assets/Fonts/Roboto/#Roboto Condensed"
+            Text="CIM" />
+          </Border>
+
+          <!-- JAVA TAG -->
+          <Border
+          Grid.Column="5"
           Background="{Binding Mod.ForegroundColor}"
           CornerRadius="12"
           Margin="8"
