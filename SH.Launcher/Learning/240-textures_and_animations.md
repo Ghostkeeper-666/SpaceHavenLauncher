@@ -79,8 +79,7 @@ It is not a common image format outside the libGDX ecosystem, so few image edito
 
 - **Width** and **Height**
 - **Pixel Format** (RGBA8888)
-- **Raw Pixel Data** as uncompressed OR compressed with zlib/Deflate
-- For Space Haven, pixel data is **uncompressed**
+- **Raw Pixel Data** as compressed data (zlib/Deflate)
 
 # The "textures" XML file
 

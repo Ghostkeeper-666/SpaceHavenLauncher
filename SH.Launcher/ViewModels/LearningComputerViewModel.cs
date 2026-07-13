@@ -5,9 +5,9 @@ using SH.Framework.Logging;
 using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace SH.Launcher.ViewModels;
 
@@ -36,7 +36,7 @@ public partial class LearningComputerViewModel : ViewModelBase
     {
         State.ForcedBackground = BackgroundImage;
         LearningItems.Clear();
-        string[] learningFiles = Directory.GetFiles(Paths.LearningDir, "*.md", SearchOption.TopDirectoryOnly);
+        List<string> learningFiles = Paths.LearningDir.GetFiles(ESearchOption.TopDir);
         foreach (string learningFile in learningFiles.OrderBy(path => path))
         {
             LearningItem learningItem = new(this, learningFile);

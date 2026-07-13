@@ -67,7 +67,7 @@ public static class XxHash64Calculator
     {
         try
         {
-            if(!IOUtils.FileExists(path))
+            if(!path.FileExists())
                 return null;
             await using FileStream sourceStream = File.OpenRead(path);
             return await ComputeFromStreamAsync(sourceStream, logger, ct).ConfigureAwait(false);

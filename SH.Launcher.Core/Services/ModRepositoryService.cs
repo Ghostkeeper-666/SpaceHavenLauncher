@@ -30,9 +30,9 @@ public sealed class ModRepositoryService
         {
             // Mod Root Paths:
             List<string> modRootDirectories = [];
-            if (IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (IOUtils.DirExists(Paths.SteamModsDir))
                 modRootDirectories.Add(Paths.SteamModsDir);
-            if (IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (IOUtils.DirExists(Paths.ClassicModsDir))
                 modRootDirectories.Add(Paths.ClassicModsDir);
 
             // Load:

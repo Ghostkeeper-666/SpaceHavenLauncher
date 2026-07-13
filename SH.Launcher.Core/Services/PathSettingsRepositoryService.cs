@@ -5,8 +5,6 @@ using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -21,6 +19,8 @@ public sealed class PathSettingsRepositoryService
         Log = logger ?? new VoidLogger();
 
     private readonly ILogger Log;
+
+    private const string NOT_FOUND = "Not found";
 
     public async Task<bool> TrySaveAsync(PathData data, CancellationToken ct) =>
         await Task.Run(() => TrySaveInternalAsync(data, ct));
@@ -63,9 +63,14 @@ public sealed class PathSettingsRepositoryService
         {
             PathData data = new();
             data.AppDir = ResolveAppDir(); // force
-            data.WorkDir = ResolveWorkDir(); // force
+            if (data.AppDir == null)
+                return null;
 
-            if (data.PathSettingsPath.IsNullOrWhiteSpace() || !IOUtils.FileExists(data.PathSettingsPath))
+            data.WorkDir = ResolveWorkDir(); // force
+            if (data.WorkDir == null)
+                return null;
+
+            if (!data.PathSettingsPath.FileExists())
                 return null;
 
             XDocument doc = XDocument.Load(data.PathSettingsPath);
@@ -106,7 +111,7 @@ public sealed class PathSettingsRepositoryService
             data.AppDir = ResolveAppDir();
 
             // Launcher Work Directory:
-            if (!IOUtils.DirectoryExists(data.WorkDir))
+            if (!data.WorkDir.DirExists())
             {
                 data.WorkDir = ResolveWorkDir();
                 if (data.WorkDir.IsNullOrWhiteSpace())
@@ -114,7 +119,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Mod Values Directory:
-            if (!IOUtils.DirectoryExists(data.ModValuesDir))
+            if (!data.ModValuesDir.DirExists())
             {
                 data.ModValuesDir = ResolveModValuesDirFromWorkDir(data.WorkDir);
                 if (data.ModValuesDir.IsNullOrWhiteSpace())
@@ -125,7 +130,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Steam Directory:
-            if (!IOUtils.DirectoryExists(data.SteamDir))
+            if (!data.SteamDir.DirExists())
             {
                 data.SteamDir = ResolveSteamDirFromAppDir(data.AppDir);
                 if (data.SteamDir.IsNullOrWhiteSpace())
@@ -133,7 +138,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Steam Mods Directory:
-            if (!IOUtils.DirectoryExists(data.SteamModsDir))
+            if (!data.SteamModsDir.DirExists())
             {
                 data.SteamModsDir = ResolveSteamModsDirFromSteamDir(data.SteamDir);
                 if (data.SteamModsDir.IsNullOrWhiteSpace())
@@ -141,7 +146,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Space Haven JAR Directory:
-            if (!IOUtils.DirectoryExists(data.SpaceHavenJarDir))
+            if (!data.SpaceHavenJarDir.DirExists())
             {
                 data.SpaceHavenJarDir = ResolveSpaceHavenJarDirFromAppDir(data.AppDir);
                 if (data.SpaceHavenJarDir.IsNullOrWhiteSpace())
@@ -152,7 +157,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Space Haven Directory:
-            if (!IOUtils.DirectoryExists(data.SpaceHavenDir))
+            if (!data.SpaceHavenDir.DirExists())
             {
                 data.SpaceHavenDir = ResolveSpaceHavenDirFromSpaceHavenJarDir(data.SpaceHavenJarDir);
                 if (data.SpaceHavenDir.IsNullOrWhiteSpace())
@@ -163,7 +168,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // Classic Mods Directory:
-            if (!IOUtils.DirectoryExists(data.ClassicModsDir))
+            if (!data.ClassicModsDir.DirExists())
             {
                 data.ClassicModsDir = ResolveClassicModsDirFromSpaceHavenJarDir(data.SpaceHavenJarDir);
                 if (data.ClassicModsDir.IsNullOrWhiteSpace())
@@ -174,7 +179,7 @@ public sealed class PathSettingsRepositoryService
             }
 
             // JRE Path:
-            if (!IOUtils.FileExists(data.JREPath))
+            if (!data.JREPath.FileExists())
             {
                 data.JREPath = ResolveJREPathFromSpaceHavenJarDir(data.SpaceHavenJarDir);
                 if (data.JREPath.IsNullOrWhiteSpace())
@@ -210,204 +215,139 @@ public sealed class PathSettingsRepositoryService
         // Windows C:\Users\<User>\AppData\Local
         // Linux   ~/.local/share
         // macOS   ~/Library/Application Support
-        string dir = IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SpaceHavenLauncher").AsOSPath();
-
         try
         {
-            if (!IOUtils.DirectoryExists(dir))
+            string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string dir = appDataDir.CombineAsOSPath("SpaceHavenLauncher");
+            if (!dir.DirExists())
                 IOUtils.TryCreateDirectory(dir, Log);
+            return dir;
         }
         catch (Exception ex)
         {
             Log.Error(ex);
+            return null;
         }
-
-        // Done.
-        Log.Debug($@"{nameof(ResolveWorkDir)}: Auto resolved as ""{dir}""");
-        return dir;
     }
 
 
 
     public string ResolveSteamDirFromAppDir(string appDir)
     {
-        appDir = appDir.AsOSPath();
-        if (!IOUtils.DirectoryExists(appDir))
-            return null;
-
-        // Detect Steam dir when this app was installed from workshop:
-        if (appDir.Contains("979110"))
+        try
         {
-            try
-            {
-                string dir =
-                    Path.GetDirectoryName(
-                    Path.GetDirectoryName(
-                    Path.GetDirectoryName(
-                    Path.GetDirectoryName(
-                    Path.GetDirectoryName(
-                    appDir
-                )))))
-                .AsOSPath();
+            if (!appDir.DirExists())
+                return null;
 
-                if (!dir.EndsWith("Steam", StringComparison.OrdinalIgnoreCase) || !IOUtils.DirectoryExists(dir))
-                    return null;
+            // Detect Steam dir when this app was installed from workshop:
+            if (appDir.Contains("979110"))
+            {
+                try
+                {
+                    string absoluteDir = appDir
+                        .GetParentDirAsOSPath()
+                        .GetParentDirAsOSPath()
+                        .GetParentDirAsOSPath()
+                        .GetParentDirAsOSPath()
+                        .GetParentDirAsOSPath();
+
+                    Log.Debug($@"{nameof(ResolveSteamDirFromAppDir)}: Testing ""{absoluteDir}""");
+
+                    if (!absoluteDir.EndsWith("Steam", StringComparison.OrdinalIgnoreCase) || !absoluteDir.DirExists())
+                        return null;
+
+                    Log.Debug($@"{nameof(ResolveSteamDirFromAppDir)}: Auto detected ""{absoluteDir}""");
+                    return absoluteDir;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex);
+                }
+            }
+
+            // Brute force:
+            foreach (string tentativeDir in PossibleSteamDirs)
+            {
+                Log.Debug($@"{nameof(ResolveSteamDirFromAppDir)}: Testing ""{tentativeDir}""");
+
+                string textativePath = tentativeDir;
+
+                // Relative to app directory:
+                if (textativePath.StartsWith('.'))
+                    textativePath = appDir.CombineAsEvaluatedOSPath(textativePath);
+
+                // Relative to home directory:
+                else if (textativePath.StartsWith("~/"))
+                    textativePath = textativePath.AsEvaluatedStdPath();
+
+                // Absolute:
+                textativePath = textativePath.FindDir();
 
                 // Done.
-                Log.Debug($@"{nameof(ResolveSteamDirFromAppDir)}: Auto detected ""{dir}""");
-                return dir;
+                Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Auto detected ""{textativePath}""");
+                return textativePath;
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex);
-            }
+
+            // Nothing was found.
+            Log.Error($@"{nameof(ResolveSteamDirFromAppDir)}: {NOT_FOUND}");
+            return null;
         }
-
-
-
-        // Brute force:
-        foreach (string possibleDir in PossibleSteamDirs)
+        catch (Exception ex)
         {
-            Log.Debug($@"{nameof(ResolveSteamDirFromAppDir)}: Testing ""{possibleDir}""");
-            
-            string dir = possibleDir.AsOSPath();
-            if (dir.IsNullOrWhiteSpace())
-                continue;
-
-            // Relative to app directory:
-            if (dir.StartsWith(".."))
-            {
-                try
-                {
-                    string baseDir = appDir;
-                    do
-                    {
-                        dir = dir.Substring(3);
-                        baseDir = Path.GetDirectoryName(baseDir) ?? string.Empty;
-                    } while (dir.StartsWith(".."));
-
-                    if (baseDir.IsNullOrWhiteSpace() || dir.IsNullOrWhiteSpace())
-                    {
-                        Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Failed to evaluate ""{dir}""");
-                        continue;
-                    }
-
-                    dir = IOUtils.CombineAsOSPath(baseDir, dir);
-                }
-                catch (Exception ex)
-                {
-                    Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Failed to evaluate ""{dir}"": {ex.Message}");
-                    continue;
-                }
-            }
-
-            // Relative to home directory:
-            else if (dir.StartsWith("~/"))
-            {
-                try
-                {
-                    string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).AsOSPath();
-                    dir = dir.Substring(2);
-                    dir = IOUtils.CombineAsOSPath(homeDir, dir);
-                }
-                catch (Exception ex)
-                {
-                    Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Failed to evaluate ""{dir}"": {ex.Message}");
-                    continue;
-                }
-            }
-
-            // Test it:
-            if (!IOUtils.DirectoryExists(dir))
-            {
-                Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Path doesn't exist ""{dir}""");
-                continue;
-            }
-
-            // Done.
-            Log.Info($@"{nameof(ResolveSteamDirFromAppDir)}: Auto detected ""{dir}""");
-            return dir;
+            Log.Error($@"{nameof(ResolveSteamDirFromAppDir)}: {ex}");
+            return null;
         }
-
-        // Nothing was found.
-        Log.Error($@"{nameof(ResolveSteamDirFromAppDir)}: Nothing could be found");
-        return null;
     }
 
 
 
     public string ResolveSpaceHavenJarDirFromAppDir(string appDir)
     {
-        appDir = appDir.AsOSPath();
-        if (!IOUtils.DirectoryExists(appDir))
-            return null;
-
-        // Brute force:
-        foreach (string possibleDir in PossibleSpaceHavenJarDirs)
+        try
         {
-            Log.Debug($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Testing ""{possibleDir}""");
+            if (!appDir.DirExists())
+                return null;
 
-            string path = IOUtils.CombineAsOSPath(possibleDir, SpaceHavenConstants.SPACEHAVEN_JAR).AsOSPath();
-
-            // Relative to app directory:
-            if (path.StartsWith(".."))
+            // Brute force:
+            foreach (string tentativeDir in PossibleSpaceHavenJarDirs)
             {
-                try
-                {
-                    string baseDir = appDir;
-                    do
-                    {
-                        path = path.Substring(3);
-                        baseDir = Path.GetDirectoryName(baseDir);
-                    } while (path.StartsWith(".."));
+                Log.Debug($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Testing ""{tentativeDir}""");
 
-                    if (baseDir.IsNullOrWhiteSpace() || path.IsNullOrWhiteSpace())
-                    {
-                        Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Failed to evaluate ""{path}""");
-                        continue;
-                    }
+                string textativePath = tentativeDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
 
-                    path = IOUtils.CombineAsOSPath(baseDir, path);
-                }
-                catch (Exception ex)
-                {
-                    Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Failed to evaluate ""{path}"": {ex.Message}");
+                // Relative to app directory:
+                if (textativePath.StartsWith('.'))
+                    textativePath = appDir.CombineAsEvaluatedOSPath(textativePath);
+
+                // Relative to home directory:
+                else if (textativePath.StartsWith("~/"))
+                    textativePath = textativePath.AsEvaluatedStdPath();
+
+                // Absolute:
+                textativePath = textativePath.FindFile();
+
+                // Test it:
+                if (textativePath.IsNullOrWhiteSpace())
                     continue;
-                }
-            }
 
-            // Relative to home directory:
-            else if (path.StartsWith("~/"))
-            {
-                try
-                {
-                    string homeDir = Path.TrimEndingDirectorySeparator(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-                    path = path.Substring(2);
-                    path = IOUtils.CombineAsOSPath(homeDir, path);
-                }
-                catch (Exception ex)
-                {
-                    Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Failed to evaluate ""{path}"": {ex.Message}");
+                // Done.
+                string absoluteDir = textativePath.GetParentDirAsOSPath().FindDir();
+                if (absoluteDir.IsNullOrWhiteSpace())
                     continue;
-                }
+
+                Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Auto detected ""{absoluteDir}""");
+                return absoluteDir;
             }
 
-            // Test it:
-            if (!IOUtils.FileExists(path))
-            {
-                Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Path doesn't exist ""{path}""");
-                continue;
-            }
-
-            // Done.
-            string dir = Path.GetDirectoryName(path).AsOSPath();
-            Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Auto detected ""{dir}""");
-            return dir;
+            // Nothing was found.
+            Log.Error($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: {NOT_FOUND}");
+            return null;
         }
-
-        // Nothing was found.
-        Log.Error($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: Nothing could be found");
-        return null;
+        catch (Exception ex)
+        {
+            Log.Error($@"{nameof(ResolveSpaceHavenJarDirFromAppDir)}: {ex}");
+            return null;
+        }
     }
 
 
@@ -416,32 +356,20 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            spaceHavenJarDir = spaceHavenJarDir.AsOSPath();
-            if (!IOUtils.DirectoryExists(spaceHavenJarDir))
+            if (!spaceHavenJarDir.DirExists())
                 return null;
 
-            string dir;
             switch (OS.Type)
             {
                 case EOSType.Windows:
-                    dir = spaceHavenJarDir;
-                    break;
+                    return spaceHavenJarDir;
                 case EOSType.OSX:
-                    dir = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(spaceHavenJarDir))).AsOSPath();
-                    break;
+                    return spaceHavenJarDir.GetParentDirAsOSPath().GetParentDirAsOSPath().FindDir();
                 case EOSType.Linux:
-                    dir = spaceHavenJarDir;
-                    break;
+                    return spaceHavenJarDir;
                 default:
-                    throw new NotImplementedException($"OS = {OS.Type}");
+                    throw new OSException();
             }
-
-            Log.Info($@"{nameof(ResolveSpaceHavenDirFromSpaceHavenJarDir)}: Testing path ""{dir}""");
-            if (!IOUtils.DirectoryExists(dir))
-                return null;
-
-            Log.Info($@"{nameof(ResolveSpaceHavenDirFromSpaceHavenJarDir)}: Auto detected ""{dir}""");
-            return dir;
         }
         catch (Exception ex)
         {
@@ -455,39 +383,20 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            spaceHavenDir = spaceHavenDir.AsOSPath();
-            if (!IOUtils.DirectoryExists(spaceHavenDir))
+            if (!spaceHavenDir.DirExists())
                 return null;
 
-            string dir;
             switch (OS.Type)
             {
                 case EOSType.Windows:
-                    dir = spaceHavenDir;
-                    break;
-
+                    return spaceHavenDir.FindDir();
                 case EOSType.OSX:
-                    spaceHavenDir.RemoveSuffix("/spacehaven.app", StringComparison.OrdinalIgnoreCase);
-                    string[] dirs = Directory.GetDirectories(spaceHavenDir).Where(d => d.Equals("spacehaven.app", StringComparison.OrdinalIgnoreCase)).ToArray();
-                    if (dirs.Length != 1)
-                        return null;
-                    dir = IOUtils.CombineAsOSPath(dirs[0], "Contents", "Resources").AsOSPath();
-                    break;
-
+                    return spaceHavenDir.CombineAsOSPath("Contents", "Resources").FindDir();
                 case EOSType.Linux:
-                    dir = spaceHavenDir;
-                    break;
-
+                    return spaceHavenDir.FindDir();
                 default:
-                    throw new NotImplementedException($"OS = {OS.Type}");
+                    throw new OSException();
             }
-
-            Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromSpaceHavenDir)}: Testing path ""{dir}""");
-            if (!IOUtils.DirectoryExists(dir))
-                return null;
-
-            Log.Info($@"{nameof(ResolveSpaceHavenJarDirFromSpaceHavenDir)}: Auto detected ""{dir}""");
-            return dir;
         }
         catch (Exception ex)
         {
@@ -501,16 +410,10 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            spaceHavenJarDir = spaceHavenJarDir.AsOSPath();
-            if (!IOUtils.DirectoryExists(spaceHavenJarDir))
+            if (!spaceHavenJarDir.DirExists())
                 return null;
 
-            string path = IOUtils.CombineAsOSPath(spaceHavenJarDir, "jre", "bin", SpaceHavenConstants.JRE_FILENAME).AsOSPath();
-            if (!IOUtils.FileExists(path))
-                return null;
-
-            Log.Debug($@"{nameof(ResolveJREPathFromSpaceHavenJarDir)}: Auto detected ""{path}""");
-            return path;
+            return spaceHavenJarDir.CombineAsOSPath("jre", "bin", SpaceHavenConstants.JRE_FILENAME).FindFile();
         }
         catch (Exception ex)
         {
@@ -524,16 +427,10 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            steamDir = steamDir.AsOSPath();
-            if (!IOUtils.DirectoryExists(steamDir))
-                return null;
-            
-            string dir = IOUtils.CombineAsOSPath(steamDir, "steamapps", "workshop", "content", "979110").AsOSPath();
-            if (!IOUtils.DirectoryExists(dir))
+            if (!steamDir.DirExists())
                 return null;
 
-            Log.Debug($@"{nameof(ResolveSteamModsDirFromSteamDir)}: Auto detected ""{dir}""");
-            return dir;
+            return steamDir.CombineAsOSPath("steamapps", "workshop", "content", "979110").FindDir();
         }
         catch (Exception ex)
         {
@@ -548,17 +445,19 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            spaceHavenJarDir = spaceHavenJarDir.AsOSPath();
-            if (!IOUtils.DirectoryExists(spaceHavenJarDir))
+            if (!spaceHavenJarDir.DirExists())
                 return null;
 
-            string dir = IOUtils.CombineAsOSPath(spaceHavenJarDir, "mods").AsOSPath();
-            if (!IOUtils.DirectoryExists(dir))
-                if (!IOUtils.TryCreateDirectory(dir, Log))
-                    return null;
+            string tentativeDir = spaceHavenJarDir.CombineAsOSPath("mods");
 
-            Log.Debug($@"{nameof(ResolveClassicModsDirFromSpaceHavenJarDir)}: Auto detected ""{dir}""");
-            return dir;
+            string absoluteDir = tentativeDir.FindDir();
+            if (absoluteDir != null)
+                return absoluteDir;
+
+            if (!IOUtils.TryCreateDirectory(tentativeDir, Log))
+                return null;
+
+            return tentativeDir;
         }
         catch (Exception ex)
         {
@@ -573,17 +472,19 @@ public sealed class PathSettingsRepositoryService
     {
         try
         {
-            workDir = workDir.AsOSPath();
-            if (workDir.IsNullOrWhiteSpace())
+            if (!workDir.DirExists())
                 return null;
 
-            string dir = IOUtils.CombineAsOSPath(workDir, "values").AsOSPath();
-            if (!IOUtils.DirectoryExists(dir))
-                if (!IOUtils.TryCreateDirectory(dir, Log))
-                    return null;
+            string tentativeDir = workDir.CombineAsOSPath("values");
 
-            Log.Debug($@"{nameof(ResolveModValuesDirFromWorkDir)}: Auto detected ""{dir}""");
-            return dir;
+            string absoluteDir = tentativeDir.FindDir();
+            if (absoluteDir != null)
+                return absoluteDir;
+
+            if (!IOUtils.TryCreateDirectory(tentativeDir, Log))
+                return null;
+
+            return tentativeDir;
         }
         catch (Exception ex)
         {
@@ -601,8 +502,8 @@ public sealed class PathSettingsRepositoryService
         //E:\SteamLibrary\steamapps\common\SpaceHaven
 
         // Steam:
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Steam\steamapps\common\SpaceHaven"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Steam\steamapps\common\SpaceHaven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath( @"Steam\steamapps\common\SpaceHaven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath( @"Steam\steamapps\common\SpaceHaven"),
         @"C:\Steam\steamapps\common\SpaceHaven",
         @"C:\Games\Steam\steamapps\common\SpaceHaven",
         @"D:\Steam\steamapps\common\SpaceHaven",
@@ -657,15 +558,14 @@ public sealed class PathSettingsRepositoryService
         @"G:\GOG Games\SpaceHaven\game",
         @"G:\GOG Games\Space Haven\game",
 
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"GOG Galaxy\Games\SpaceHaven"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"GOG Galaxy\Games\Space Haven"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"GOG Galaxy\Games\SpaceHaven\game"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"GOG Galaxy\Games\Space Haven\game"),
-
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"GOG Galaxy\Games\SpaceHaven"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"GOG Galaxy\Games\Space Haven"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"GOG Galaxy\Games\SpaceHaven\game"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"GOG Galaxy\Games\Space Haven\game"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath(@"GOG Galaxy\Games\SpaceHaven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath(@"GOG Galaxy\Games\Space Haven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath(@"GOG Galaxy\Games\SpaceHaven\game"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath(@"GOG Galaxy\Games\Space Haven\game"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath(@"GOG Galaxy\Games\SpaceHaven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath(@"GOG Galaxy\Games\Space Haven"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath(@"GOG Galaxy\Games\SpaceHaven\game"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath(@"GOG Galaxy\Games\Space Haven\game"),
     ] :
 
     OS.IsMac ?
@@ -769,8 +669,8 @@ public sealed class PathSettingsRepositoryService
 
     OS.IsWin ?
     [
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam"),
-        IOUtils.CombineAsOSPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Steam"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).CombineAsOSPath("Steam"),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).CombineAsOSPath("Steam"),
         @"C:\Games\Steam",
         @"C:\Steam",
         @"D:\Games\Steam",

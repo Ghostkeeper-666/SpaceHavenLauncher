@@ -3,7 +3,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -87,7 +86,7 @@ public sealed class XmlFile
     public string BaseDir { get; set; }
     public string RelativePath => Path.RemovePrefix(BaseDir).TrimStart('/', '\\');
 
-    public string FileName => System.IO.Path.GetFileName(Path);
+    public string FileName => Path.GetFileName();
 
     public XDocument Xml { get; internal set; }
 
@@ -171,7 +170,7 @@ public sealed class XmlFile
         {
             logger?.Debug($@"Sanitizing XML document: ""{Path}""");
 
-            string dirty = File.ReadAllText(Path);
+            string dirty = await IOUtils.TryReadAllTextAsync(Path, logger, ct);
             string sanitized = FixAmpersandAndInvalidCharacters(dirty, new char[] { (char)0x1B });
             return await IOUtils.TryWriteAllTextAsync(Path, sanitized, logger, ct);
         }

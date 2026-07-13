@@ -2,7 +2,6 @@
 using SH.Framework.IO;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -47,7 +46,7 @@ public sealed class FileLogger : ILogger
                 return;
             }
 
-            string dir = Path.GetDirectoryName(path);
+            string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, out string error))
                 throw new Exception(error);
 
@@ -189,7 +188,7 @@ public sealed class FileLogger : ILogger
             StringBuilder sb = new(messages.Count * 256);
             foreach (LogMessage m in messages)
                 sb.AppendLine(m.ToString());
-            await File.AppendAllTextAsync(path, sb.ToString(), Encoding.UTF8);
+            await IOUtils.TryAppendAllTextAsync(path, sb.ToString(), null, CTS.Token);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }

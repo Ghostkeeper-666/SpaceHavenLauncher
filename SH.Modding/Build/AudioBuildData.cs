@@ -5,7 +5,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -47,7 +46,7 @@ internal sealed class AudioBuildData
     public EAudioFormat AudioFormat { get; private set; }
     public string FileExtension => AudioFormat.ToString();
 
-    public string Filename => Path.GetFileName(TargetRelativePath ?? string.Empty);
+    public string Filename => TargetRelativePath.GetFileName();
     public string TargetRelativePath { get; private set; }
     public string SourceRelativePath { get; private set; }
     public string SourceAbsolutePath { get; private set; }
@@ -102,7 +101,7 @@ internal sealed class AudioBuildData
             TargetRelativePath = (mp3Path ?? oggPath).AsStdPath();
 
             // Audio format:
-            string fileExtension = Path.GetExtension(TargetRelativePath).Trim('.');
+            string fileExtension = TargetRelativePath.GetFileExtension().Trim('.');
             if (!fileExtension.TryParse(out EAudioFormat audioFormat))
             {
                 Log.Error($@"Unknown audio format '{fileExtension}' in {this}", Paths.BuildAudioFile);
@@ -187,12 +186,12 @@ internal sealed class AudioBuildData
             SourceRelativePath = Xml.Attribute(ATTRIBUTE_FILENAME)?.Value.AsOSPath();
             if (!SourceRelativePath.IsNullOrWhiteSpace())
             {
-                SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath);
+                SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath);
 
                 // Validate paths escaping mod audio dir:
-                if (!SourceAbsolutePath.StartsWith(Mod.AudioDirectory, StringComparison.OrdinalIgnoreCase))
+                if (!SourceAbsolutePath.StartsWith(Mod.AudioDir, StringComparison.OrdinalIgnoreCase))
                 {
-                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDirectory}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
+                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDir}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
                     return false;
                 }
 
@@ -211,7 +210,7 @@ internal sealed class AudioBuildData
 
             // Is it a relative path within the mod's audio directory?
             SourceRelativePath = relativePath.AsOSPath();
-            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath));
+            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath));
             if (IOUtils.FileExists(SourceAbsolutePath))
             {
                 Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
@@ -219,8 +218,8 @@ internal sealed class AudioBuildData
             }
 
             // Is it a file directly under the mod's audio directory?
-            SourceRelativePath = Path.GetFileName(relativePath).AsOSPath();
-            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDirectory, SourceRelativePath));
+            SourceRelativePath = relativePath.GetFileName();
+            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath));
             if (IOUtils.FileExists(SourceAbsolutePath))
             {
                 Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
@@ -250,7 +249,7 @@ internal sealed class AudioBuildData
     }
 
     private string GetAudioFilePath(string sourceAbsolutePath) =>
-        Mod.AudioFilePaths.FirstOrDefault(path => path.Equals(sourceAbsolutePath, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+        Mod.AudioPaths.FirstOrDefault(path => path.Equals(sourceAbsolutePath, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
 
     public override string ToString() =>
         $@"audio entry {ATTRIBUTE_ID}={Id} {ATTRIBUTE_NAME}=""{Name}"" in audio XML file line {Xml.Line()}, last modified by {LastOperation}";

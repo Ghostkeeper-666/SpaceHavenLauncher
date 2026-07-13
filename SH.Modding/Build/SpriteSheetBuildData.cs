@@ -35,7 +35,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         ArgumentNullException.ThrowIfNull(atlas);
         Atlas = atlas;
 
-        LocalId = int.TryParse(Path.GetFileNameWithoutExtension(cimPath), out int localID) ? localID : atlas.SpriteSheets.Count;
+        LocalId = int.TryParse(cimPath.GetFileNameWithoutExtension(), out int localID) ? localID : atlas.SpriteSheets.Count;
 
         static int readInt32BigEndian(Stream stream)
         {
@@ -228,13 +228,13 @@ internal sealed class SpriteSheetBuildData : IDisposable
     {
         try
         {
-            exportDir = Path.Combine(exportDir, LocalId.ToString());
+            exportDir = exportDir.CombineAsOSPath(LocalId.ToString());
             if (!IOUtils.TryCreateDirectory(exportDir, log))
                 return false;
 
             foreach (SpriteBuildData sprite in SpritesByName.Values)
             {
-                string exportPath = Path.Combine(exportDir, $"{sprite.LocalId}.png");
+                string exportPath = exportDir.CombineAsOSPath($"{sprite.LocalId}.png");
                 await sprite.TryExportToPngAsync(exportPath, log, ct);
             }
             return true;
@@ -252,7 +252,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
     {
         try
         {
-            string dir = Path.GetDirectoryName(path);
+            string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
                 return false;
 
@@ -284,7 +284,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
     {
         try
         {
-            string dir = Path.GetDirectoryName(path);
+            string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
                 return false;
 

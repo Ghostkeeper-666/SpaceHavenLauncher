@@ -2,11 +2,11 @@
 using SH.Content.Enums;
 using SH.Content.Xml;
 using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -119,11 +119,11 @@ public sealed class XmlAnnotator
 
     private async Task<bool> LoadAllAsync(string baseDir, IProgressInfo progress, int progressMax)
     {
-        string inputHavenXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.HAVEN);
-        string inputTextsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTS);
-        string inputAudioXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.AUDIO);
-        string inputTexturesXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTURES);
-        string inputAnimationsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, SpaceHavenConstants.ANIMATIONS);
+        string inputHavenXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, SpaceHavenConstants.HAVEN);
+        string inputTextsXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTS);
+        string inputAudioXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, SpaceHavenConstants.AUDIO);
+        string inputTexturesXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, SpaceHavenConstants.TEXTURES);
+        string inputAnimationsXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, SpaceHavenConstants.ANIMATIONS);
 
         HavenXml = new(EXmlFileType.Haven, baseDir, inputHavenXmlPath);
         if (!await HavenXml.TryLoadAsync(Log, CT))
@@ -155,11 +155,11 @@ public sealed class XmlAnnotator
 
     private async Task<bool> SaveAllAsync(string baseDir)
     {
-        string outputHavenXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.HAVEN}{ANNOTATED_FILE_SUFFIX}");
-        string outputTextsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTS}{ANNOTATED_FILE_SUFFIX}");
-        string outputAudioXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.AUDIO}{ANNOTATED_FILE_SUFFIX}");
-        string outputTexturesXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTURES}{ANNOTATED_FILE_SUFFIX}");
-        string outputAnimationsXmlPath = Path.Combine(baseDir, SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.ANIMATIONS}{ANNOTATED_FILE_SUFFIX}");
+        string outputHavenXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.HAVEN}{ANNOTATED_FILE_SUFFIX}");
+        string outputTextsXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTS}{ANNOTATED_FILE_SUFFIX}");
+        string outputAudioXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.AUDIO}{ANNOTATED_FILE_SUFFIX}");
+        string outputTexturesXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.TEXTURES}{ANNOTATED_FILE_SUFFIX}");
+        string outputAnimationsXmlPath = baseDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY, $"{SpaceHavenConstants.ANIMATIONS}{ANNOTATED_FILE_SUFFIX}");
 
         if (!await HavenXml.TrySaveToAsync(outputHavenXmlPath, Log, CT))
             return false;

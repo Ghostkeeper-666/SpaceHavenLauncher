@@ -1,15 +1,11 @@
-﻿using SH.Content.Enums;
-using SH.Content.Xml;
+﻿using SH.Content.Xml;
 using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SixLabors.ImageSharp.Drawing;
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -38,31 +34,32 @@ internal sealed class ModBuildData : IAsyncDisposable
     public string Name => Data.Name;
     public VersionInfo Version => Data.Version;
     public string Author => Data.Author;
-    public string Directory => Data.Directory;
+    public string Dir => Data.Dir;
     public int ID => Data.ID;
 
-    public string AudioDirectory => Data.AudioDirectory;
-    public string SpritesDirectory => Data.SpritesDirectory;
-    public string SpriteSheetsDirectory => Data.SpriteSheetsDirectory;
-    public string XmlLibraryDirectory => Data.XmlLibraryDirectory;
-    public string XmlPatchesDirectory => Data.XmlPatchesDirectory;
+    public string AudioDir => Data.AudioDir;
+    public string SpritesDir => Data.SpritesDir;
+    public string SpriteSheetsDir => Data.SpriteSheetsDir;
+    public string XmlLibraryDir => Data.XmlLibraryDir;
+    public string XmlPatchesDir => Data.XmlPatchesDir;
 
     // Mod Absolute Paths:
-    public IReadOnlyList<string> AudioFilePaths => Data.AudioFilePaths;
+    public IReadOnlyList<string> AudioPaths => Data.AudioPaths;
     public IReadOnlyList<string> SpritePaths => Data.SpritePaths;
     public IReadOnlyList<string> SpriteSheetPaths => Data.SpriteSheetPaths;
-    public IReadOnlyList<string> XmlLibraryFilePaths => Data.XmlLibraryFilePaths;
-    public IReadOnlyList<string> XmlPatchFilePaths => Data.XmlPatchFilePaths;
-    public IReadOnlyList<string> JavaFilePaths => Data.JarFilePaths;
-    public IReadOnlyList<string> OtherFilePaths => Data.OtherFilePaths;
+    public IReadOnlyList<string> XmlLibraryPaths => Data.XmlLibraryPaths;
+    public IReadOnlyList<string> XmlPatchPaths => Data.XmlPatchPaths;
+    public IReadOnlyList<string> JarFilePaths => Data.JarPaths;
+    public IReadOnlyList<string> OtherFilesPaths => Data.OtherFilePaths;
 
     // Mod Relative Paths:
-    public IReadOnlyList<string> AudioRelativeFilePaths => Data.AudioRelativeFilePaths;
-    public IReadOnlyList<string> TextureRelativeFilePaths => Data.SpriteRelativeFilePaths;
-    public IReadOnlyList<string> XmlLibraryRelativeFilePaths => Data.XmlLibraryRelativeFilePaths;
-    public IReadOnlyList<string> XmlPatchRelativeFilePaths => Data.XmlPatchRelativeFilePaths;
-    public IReadOnlyList<string> JavaRelativeFilePaths => Data.JavaRelativeFilePaths;
-    public IReadOnlyList<string> OtherRelativeFilePaths => Data.OtherRelativeFilePaths;
+    public IReadOnlyList<string> AudioRelativePaths => Data.AudioRelativePaths;
+    public IReadOnlyList<string> SpriteRelativePaths => Data.SpriteRelativePaths;
+    public IReadOnlyList<string> SpriteSheetRelativePaths => Data.SpriteSheetRelativePaths;
+    public IReadOnlyList<string> XmlLibraryRelativePaths => Data.XmlLibraryRelativePaths;
+    public IReadOnlyList<string> XmlPatchRelativePaths => Data.XmlPatchRelativePaths;
+    public IReadOnlyList<string> JarRelativePaths => Data.JarRelativePaths;
+    public IReadOnlyList<string> OtherFilesRelativePaths => Data.OtherFilesRelativePaths;
 
 
     public string BuildName => $"[{BuildSeqNum}] {Data.Name}";
@@ -78,14 +75,15 @@ internal sealed class ModBuildData : IAsyncDisposable
 
     public SortedDictionary<string, AudioBuildData> Audio { get; } = [];
 
-    public bool IsXmlMod => HasAudio || HasTextures || HasLibraryXml || HasPatchXml;
-    public bool IsJavaMod => HasJava;
+    public bool IsXmlMod => HasAudio || HasSprites || HasSpriteSheets || HasLibraryXml || HasPatchXml;
+    public bool IsJavaMod => HasJar;
 
     public bool HasAudio => Data.HasAudio;
-    public bool HasTextures => Data.HasSprites;
+    public bool HasSprites => Data.HasSprites;
+    public bool HasSpriteSheets => Data.HasSpriteSheets;
     public bool HasLibraryXml => Data.HasLibraryXml;
     public bool HasPatchXml => Data.HasPatchXml;
-    public bool HasJava => Data.HasJava;
+    public bool HasJar => Data.HasJar;
 
     // Mod Build Paths:
     public string FullLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDirectory, $"{BuildName} (full log).txt");
@@ -143,14 +141,14 @@ internal sealed class ModBuildData : IAsyncDisposable
 
                 // XML files: compute hash of full file content
                 List<string> xmlFilesPath = [];
-                xmlFilesPath.AddRange(XmlLibraryFilePaths);
-                xmlFilesPath.AddRange(XmlPatchFilePaths);
+                xmlFilesPath.AddRange(XmlLibraryPaths);
+                xmlFilesPath.AddRange(XmlPatchPaths);
                 xmlFilesPath.Sort();
                 foreach (string path in xmlFilesPath)
                 {
-                    if(!IOUtils.FileExists(path))
+                    if (!IOUtils.FileExists(path))
                         continue;
-                    string relativePath = path.Substring(Directory.Length + 1);
+                    string relativePath = path.Substring(Dir.Length + 1);
                     xmlHashes[$@"XmlFile:{relativePath}"""] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT);
                 }
 
@@ -161,7 +159,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 // - last modified time
                 // - a few bytes from content
                 List<string> resourceFilePaths = [];
-                resourceFilePaths.AddRange(AudioFilePaths);
+                resourceFilePaths.AddRange(AudioPaths);
                 resourceFilePaths.AddRange(SpritePaths);
                 resourceFilePaths.Sort();
 
@@ -171,12 +169,15 @@ internal sealed class ModBuildData : IAsyncDisposable
                     if (!IOUtils.FileExists(path))
                         return;
                     byte[] buffer = arrayPool.Get();
-                    FileInfo fi = new(path);
+                    
+                    if(!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
+                        return; // file not exists
+                    
                     Array.Clear(buffer, 0, buffer.Length);
-                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), fi.Length);
-                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), fi.LastWriteTimeUtc.Ticks);
-                    string relativePath = path.Substring(Directory.Length + 1);
-                    await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log);
+                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
+                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
+                    string relativePath = path.Substring(Dir.Length + 1);
+                    await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log, ct);
                     lock (xmlHashes)
                         xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
                     arrayPool.Return(buffer);
@@ -203,16 +204,16 @@ internal sealed class ModBuildData : IAsyncDisposable
                 javaHashes[$"InfoFile[{ModdingConstants.INFO_XML}]"] = infoXmlHash;
 
                 // JAVA files:
-                foreach (string path in JavaFilePaths)
+                foreach (string path in JarFilePaths)
                 {
-                    string relativePath = path.Substring(Directory.Length + 1);
+                    string relativePath = path.Substring(Dir.Length + 1);
                     javaHashes[$"JavaFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
                 }
 
                 // Other files:
-                foreach (string path in OtherFilePaths)
+                foreach (string path in OtherFilesPaths)
                 {
-                    string relativePath = path.Substring(Directory.Length + 1);
+                    string relativePath = path.Substring(Dir.Length + 1);
                     javaHashes[$"OtherFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
                 }
 
@@ -243,10 +244,10 @@ internal sealed class ModBuildData : IAsyncDisposable
     {
         try
         {
-            Log.Debug($"Loading XML files with evaluated variable values...", Directory);
+            Log.Debug($"Loading XML files with evaluated variable values...", Dir);
 
             // Library:
-            foreach (string path in Data.XmlLibraryFilePaths.OrderBy(path => path))
+            foreach (string path in Data.XmlLibraryPaths.OrderBy(path => path))
             {
                 CT.ThrowIfCancellationRequested();
 
@@ -261,7 +262,7 @@ internal sealed class ModBuildData : IAsyncDisposable
 
                 CT.ThrowIfCancellationRequested();
 
-                XmlFile xmlFile = dict[path] = new XmlFile(xmlFileType, Data.XmlLibraryDirectory, path);
+                XmlFile xmlFile = dict[path] = new XmlFile(xmlFileType, Data.XmlLibraryDir, path);
                 if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
                 {
                     Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
@@ -269,7 +270,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 }
 
                 string evaluatedPath = IOUtils.CombineAsOSPath(BuildMergeDirectory, "mod", xmlFile.RelativePath);
-                if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
+                if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
                     Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
                     return false;
@@ -279,11 +280,11 @@ internal sealed class ModBuildData : IAsyncDisposable
             // Patches:
             SortedDictionary<string, XmlFile> patchDict = new();
             XmlFiles[EXmlFileType.Patch] = patchDict;
-            foreach (string path in Data.XmlPatchFilePaths.OrderBy(path => path))
+            foreach (string path in Data.XmlPatchPaths.OrderBy(path => path))
             {
                 CT.ThrowIfCancellationRequested();
 
-                XmlFile xmlFile = patchDict[path] = new XmlFile(EXmlFileType.Patch, Data.XmlPatchesDirectory, path);
+                XmlFile xmlFile = patchDict[path] = new XmlFile(EXmlFileType.Patch, Data.XmlPatchesDir, path);
                 if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
                 {
                     Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
@@ -291,7 +292,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 }
 
                 string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDirectory, "mod", xmlFile.RelativePath);
-                if(!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
+                if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
                     Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
                     return false;
@@ -348,7 +349,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 logger?.Error($@"XML document could not be found at ""{xmlFile.Path}""", xmlFile.Path);
                 return false;
             }
-            string content = await File.ReadAllTextAsync(xmlFile.Path, ct);
+            string content = await IOUtils.TryReadAllTextAsync(xmlFile.Path, logger, ct);
             OrderedDictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
 
             // Replacements using the reserved variable '{id}'
@@ -401,9 +402,9 @@ internal sealed class ModBuildData : IAsyncDisposable
             ct.ThrowIfCancellationRequested();
 
             // Reload XML document after all replacements:
-            if(!xmlFile.TrySetXmlContent(content, Log))
+            if (!xmlFile.TrySetXmlContent(content, Log))
                 return false;
-            
+
             // Done.
             return true;
         }

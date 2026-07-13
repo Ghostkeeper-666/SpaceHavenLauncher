@@ -3,14 +3,27 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SkiaSharp;
 using System;
-using System.IO;
+using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SH.Content.Video;
 
 public static class WebpExporter
 {
-    public static bool TryExport(Clip clip, string outputDir, double scale = 1.0, double playbackSpeed = 1.0, ILogger logger = null)
+    /// <summary>
+    /// Exports an animation
+    /// </summary>
+    /// <param name="clip"></param>
+    /// <param name="outputDir"></param>
+    /// <param name="scale">default = 1.0</param>
+    /// <param name="playbackSpeed">default = 1.0</param>
+    /// <param name="logger"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<bool> TryExportAsync(Clip clip, string outputDir, double scale, double playbackSpeed, ILogger logger, CancellationToken ct)
     {
         try
         {
@@ -42,6 +55,7 @@ public static class WebpExporter
             int prevTimestamp = -1;
             foreach (Frame frame in clip.Frames)
             {
+                ct.ThrowIfCancellationRequested();
                 logger?.Debug($"Exporting frame {++frameId} of {clip.Frames.Length}...");
                 SKBitmap src = scale == 1.0 ? frame.Image : Scale(frame.Image, width, height);
                 using SKBitmap converted = new(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
@@ -53,13 +67,16 @@ public static class WebpExporter
             }
             byte[] animatedWebP = encoder.Assemble();
 
-            string dir = Path.GetDirectoryName(path);
-            if (!IOUtils.DirectoryExists(dir))
-                try { Directory.CreateDirectory(dir); } catch { }
-            File.WriteAllBytes(path, animatedWebP);
+            string dir = path.GetParentDirAsOSPath();
+            if (!IOUtils.DirExists(dir))
+                try { await IOUtils.TryCreateDirectoryAsync(dir, logger, ct); }
+                catch (Exception ex) { Debug.WriteLine(ex); }
+
+            await IOUtils.TryWriteAllBytesAsync(path, animatedWebP, logger, ct);
 
             return true;
         }
+        catch(OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             logger?.Error(ex);

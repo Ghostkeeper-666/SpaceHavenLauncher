@@ -1,8 +1,8 @@
 ﻿using SH.Content.Enums;
 using SH.Framework.Extensions;
+using SH.Framework.IO;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace SH.Content.Xml;
@@ -35,7 +35,7 @@ public sealed class NodeType
         IsNumericId = isNumericId;
         KeyPool = keyPool;
         XmlFileType = xmlFile;
-        ParentXPath = Path.GetDirectoryName(XPath).Replace("\\", "/");
+        ParentXPath = XPath.GetParentDirAsStdPath().Replace("\\", "/");
     }
 
     public string XPath { get; }

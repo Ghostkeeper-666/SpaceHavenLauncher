@@ -49,19 +49,19 @@ public partial class SystemCoreView : UserControl
             PathSettingsRepositoryService svc = new(Log);
 
             // First make sure space haven JAR dir is correctly located:
-            if (!IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) || IOUtils.FileExists(Paths.Data.SpaceHavenJarPath))
+            if (!IOUtils.DirExists(Paths.SpaceHavenJarDir) || IOUtils.FileExists(Paths.Data.SpaceHavenJarPath))
             {
                 string dir = svc.ResolveSpaceHavenJarDirFromAppDir(Paths.AppDir);
-                if (!IOUtils.DirectoryExists(dir))
+                if (!IOUtils.DirExists(dir))
                     return;
                 Paths.SpaceHavenJarDir = dir;
             }
 
             // Auto resolve space haven dir:
-            if (!IOUtils.DirectoryExists(Paths.SpaceHavenDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
+            if (!IOUtils.DirExists(Paths.SpaceHavenDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
             {
                 string dir = svc.ResolveSpaceHavenDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.SpaceHavenDir = dir;
             }
 
@@ -74,10 +74,10 @@ public partial class SystemCoreView : UserControl
             }
 
             // Also resolve classic mods dir if it's not defined yet:
-            if (!IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (!IOUtils.DirExists(Paths.ClassicModsDir))
             {
                 string dir = svc.ResolveClassicModsDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.ClassicModsDir = dir;
             }
         }
@@ -87,9 +87,9 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) ||
-                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirectoryExists(Paths.SpaceHavenDir) ||
-                classicModsDir != Paths.ClassicModsDir && IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
+                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
+                classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -110,16 +110,16 @@ public partial class SystemCoreView : UserControl
                 string dir = await picker.PickFolderAsync();
                 if (OS.IsMac) // we need the base dir, not the bundle one
                     dir = dir.RemoveSuffix("/spacehaven.app", StringComparison.OrdinalIgnoreCase);
-                if (!IOUtils.DirectoryExists(dir))
+                if (!IOUtils.DirExists(dir))
                     return;
                 Paths.SpaceHavenDir = dir;
             }
 
             // Auto resolve space haven JAR dir:
-            if (!IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
+            if (!IOUtils.DirExists(Paths.SpaceHavenJarDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
             {
                 string dir = svc.ResolveSpaceHavenJarDirFromSpaceHavenDir(Paths.SpaceHavenDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.SpaceHavenJarDir = dir;
             }
 
@@ -132,10 +132,10 @@ public partial class SystemCoreView : UserControl
             }
 
             // Also resolve classic mods dir if it's not defined yet:
-            if (!IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (!IOUtils.DirExists(Paths.ClassicModsDir))
             {
                 string dir = svc.ResolveClassicModsDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.ClassicModsDir = dir;
             }
         }
@@ -145,9 +145,9 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) ||
-                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirectoryExists(Paths.SpaceHavenDir) ||
-                classicModsDir != Paths.ClassicModsDir && IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
+                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
+                classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -167,16 +167,16 @@ public partial class SystemCoreView : UserControl
             // Pick space haven JAR dir:
             {
                 string dir = await picker.PickFolderAsync();
-                if (!IOUtils.DirectoryExists(dir))
+                if (!IOUtils.DirExists(dir))
                     return;
                 Paths.SpaceHavenJarDir = dir;
             }
 
             // Auto resolve space haven dir:
-            if (!IOUtils.DirectoryExists(Paths.SpaceHavenDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
+            if (!IOUtils.DirExists(Paths.SpaceHavenDir) || !Paths.SpaceHavenJarDir.StartsWith(Paths.SpaceHavenDir, StringComparison.Ordinal))
             {
                 string dir = svc.ResolveSpaceHavenDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.SpaceHavenDir = dir;
 
             }
@@ -190,10 +190,10 @@ public partial class SystemCoreView : UserControl
             }
 
             // Also resolve classic mods dir if it's not defined yet:
-            if (!IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (!IOUtils.DirExists(Paths.ClassicModsDir))
             {
                 string dir = svc.ResolveClassicModsDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.ClassicModsDir = dir;
             }
         }
@@ -203,9 +203,9 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) ||
-                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirectoryExists(Paths.SpaceHavenDir) ||
-                classicModsDir != Paths.ClassicModsDir && IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
+                spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
+                classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -224,16 +224,16 @@ public partial class SystemCoreView : UserControl
             // Auto resolve steam dir:
             {
                 string dir = svc.ResolveSteamDirFromAppDir(Paths.AppDir);
-                if (!IOUtils.DirectoryExists(dir))
+                if (!IOUtils.DirExists(dir))
                     return;
                 Paths.SteamDir = dir;
             }
 
             // Auto resolve steam mods dir:
-            if (!IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (!IOUtils.DirExists(Paths.SteamModsDir))
             {
                 string dir = svc.ResolveSteamModsDirFromSteamDir(Paths.SteamDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.SteamModsDir = dir;
             }
         }
@@ -243,8 +243,8 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (steamDir != Paths.SteamDir && IOUtils.DirectoryExists(Paths.SteamDir) ||
-                steamModsDir != Paths.SteamModsDir && IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (steamDir != Paths.SteamDir && IOUtils.DirExists(Paths.SteamDir) ||
+                steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -262,16 +262,16 @@ public partial class SystemCoreView : UserControl
             // Pick steam dir:
             {
                 string dir = await picker.PickFolderAsync();
-                if (!IOUtils.DirectoryExists(dir))
+                if (!IOUtils.DirExists(dir))
                     return;
                 Paths.SteamDir = dir;
             }
 
             // Auto resolve steam mods dir:
-            if (!IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (!IOUtils.DirExists(Paths.SteamModsDir))
             {
                 string dir = svc.ResolveSteamModsDirFromSteamDir(Paths.SteamDir);
-                if (IOUtils.DirectoryExists(dir))
+                if (IOUtils.DirExists(dir))
                     Paths.SteamModsDir = dir;
             }
         }
@@ -281,8 +281,8 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (steamDir != Paths.SteamDir && IOUtils.DirectoryExists(Paths.SteamDir) ||
-                steamModsDir != Paths.SteamModsDir && IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (steamDir != Paths.SteamDir && IOUtils.DirExists(Paths.SteamDir) ||
+                steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -300,7 +300,7 @@ public partial class SystemCoreView : UserControl
 
             // Auto resolve steam mods dir:
             string dir = svc.ResolveSteamModsDirFromSteamDir(Paths.SteamDir);
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.SteamModsDir = dir;
         }
@@ -310,7 +310,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (steamModsDir != Paths.SteamModsDir && IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -325,7 +325,7 @@ public partial class SystemCoreView : UserControl
 
             // Auto resolve steam mods dir:
             string dir = await picker.PickFolderAsync();
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.SteamModsDir = dir;
         }
@@ -335,7 +335,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (steamModsDir != Paths.SteamModsDir && IOUtils.DirectoryExists(Paths.SteamModsDir))
+            if (steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -352,7 +352,7 @@ public partial class SystemCoreView : UserControl
 
             // Auto resolve classic mods dir:
             string dir = svc.ResolveClassicModsDirFromSpaceHavenJarDir(Paths.SpaceHavenJarDir);
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.ClassicModsDir = dir;
         }
@@ -362,7 +362,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -377,7 +377,7 @@ public partial class SystemCoreView : UserControl
 
             // Pick classic mods dir:
             string dir = await picker.PickFolderAsync();
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.ClassicModsDir = dir;
         }
@@ -387,7 +387,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirectoryExists(Paths.ClassicModsDir))
+            if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -404,7 +404,7 @@ public partial class SystemCoreView : UserControl
 
             // Auto resolve mod values dir:
             string dir = svc.ResolveModValuesDirFromWorkDir(Paths.WorkDir);
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.ModValuesDir = dir;
         }
@@ -414,7 +414,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (modValuesDir != Paths.ModValuesDir && IOUtils.DirectoryExists(Paths.ModValuesDir))
+            if (modValuesDir != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -429,7 +429,7 @@ public partial class SystemCoreView : UserControl
 
             // Pick mod values dir:
             string dir = await picker.PickFolderAsync();
-            if (!IOUtils.DirectoryExists(dir))
+            if (!IOUtils.DirExists(dir))
                 return;
             Paths.ModValuesDir = dir;
         }
@@ -439,7 +439,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (modValuesDir != Paths.ModValuesDir && IOUtils.DirectoryExists(Paths.ModValuesDir))
+            if (modValuesDir != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -464,7 +464,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (jrePath != Paths.ModValuesDir && IOUtils.DirectoryExists(Paths.ModValuesDir))
+            if (jrePath != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }
@@ -489,7 +489,7 @@ public partial class SystemCoreView : UserControl
         }
         finally
         {
-            if (jrePath != Paths.ModValuesDir && IOUtils.DirectoryExists(Paths.ModValuesDir))
+            if (jrePath != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
                 DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
         }
     }

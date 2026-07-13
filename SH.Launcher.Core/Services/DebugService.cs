@@ -5,6 +5,7 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,8 +36,8 @@ public sealed class DebugService
         Add(Paths.SystemInformationFilePath);
 
         // Mod values:
-        if (IOUtils.DirectoryExists(Paths.ModValuesDir))
-            AddMany(Directory.GetFiles(Paths.ModValuesDir, "*.xml", SearchOption.TopDirectoryOnly));
+        if (IOUtils.DirExists(Paths.ModValuesDir))
+            AddMany(Paths.ModValuesDir.GetFiles(ESearchOption.TopDir));
 
         // Some backup files:
         Add(Paths.BackupConfigJsonPath);
@@ -51,22 +52,18 @@ public sealed class DebugService
         Add(Paths.LauncherAgentLogPath);
 
         // Some build files:
-        if (IOUtils.DirectoryExists(Paths.BuildDir))
-            AddMany(Directory.GetFiles(Paths.BuildDir, "*.*", SearchOption.TopDirectoryOnly));
-        if (IOUtils.DirectoryExists(Paths.BuildAudioDir))
-            AddMany(Directory.GetFiles(Paths.BuildAudioDir, "*.*", SearchOption.AllDirectories));
-        if (IOUtils.DirectoryExists(Paths.BuildLogsDir))
-            AddMany(Directory.GetFiles(Paths.BuildLogsDir, "*.*", SearchOption.AllDirectories));
-        if (IOUtils.DirectoryExists(Paths.BuildTextsDir))
-            AddMany(Directory.GetFiles(Paths.BuildTextsDir, "*.*", SearchOption.AllDirectories));
-        if (IOUtils.DirectoryExists(Paths.BuildTexturesDir))
-            AddMany(Directory.GetFiles(Paths.BuildTexturesDir, "*.*", SearchOption.AllDirectories));
-        string ignoreMergeLibrary = Path.Combine(Paths.BuildMergeDir, SpaceHavenConstants.LIBRARY);
-        if (IOUtils.DirectoryExists(Paths.BuildMergeDir))
-            AddMany(Directory.GetFiles(Paths.BuildMergeDir, "*.*", SearchOption.AllDirectories).Where(path => !path.StartsWith(ignoreMergeLibrary, StringComparison.OrdinalIgnoreCase)));
-        string ignorePatchLibrary = Path.Combine(Paths.BuildPatchDir, SpaceHavenConstants.LIBRARY);
-        if (IOUtils.DirectoryExists(Paths.BuildPatchDir))
-            AddMany(Directory.GetFiles(Paths.BuildPatchDir, "*.*", SearchOption.AllDirectories).Where(path => !path.StartsWith(ignorePatchLibrary, StringComparison.OrdinalIgnoreCase)));
+        AddMany(Paths.BuildDir.GetFiles(ESearchOption.TopDir));
+        AddMany(Paths.BuildAudioDir.GetFiles(ESearchOption.All));
+        AddMany(Paths.BuildLogsDir.GetFiles(ESearchOption.All));
+        AddMany(Paths.BuildTextsDir.GetFiles(ESearchOption.All));
+
+        AddMany(Paths.BuildTexturesDir.GetFiles(ESearchOption.TopDir));
+
+        string ignoreMergeLibrary = Paths.BuildMergeDir.CombineAsOSPath(ModdingConstants.LIBRARY);
+        AddMany(Paths.BuildMergeDir.GetFiles(ESearchOption.All).Where(path => !path.StartsWith(ignoreMergeLibrary, StringComparison.OrdinalIgnoreCase)));
+
+        string ignorePatchPatch = Paths.BuildPatchDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY);
+        AddMany(Paths.BuildPatchDir.GetFiles(ESearchOption.All).Where(path => !path.StartsWith(ignorePatchPatch, StringComparison.OrdinalIgnoreCase)));
 
         // Some build stage files:
         Add(Paths.BuildStageHavenXmlPath);
@@ -104,11 +101,8 @@ public sealed class DebugService
             ct.ThrowIfCancellationRequested();
 
             // Try to delete existing file:
-            string debugZipDir = Path.GetDirectoryName(Paths.DebugFilePath);
-            string[] debugZipPaths =
-                Directory.GetFiles(debugZipDir, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(path => Path.GetFileName(path).Equals(PathData.DebugFilename, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            string debugZipDir = Paths.DebugFilePath.GetParentDirAsOSPath();
+            List<string> debugZipPaths = debugZipDir.GetFiles(ESearchOption.TopDir, equalsAny: [ PathData.DebugFilename ]);
             foreach (string debugZipPath in debugZipPaths)
             {
                 if (!await IOUtils.TryDeleteFileAsync(Paths.DebugFilePath, Log, ct))
@@ -123,14 +117,8 @@ public sealed class DebugService
             double sumSize = 0;
             double totalSize = 0;
             foreach (string absolutePath in FilePaths)
-            {
-                try
-                {
-                    FileInfo fi = new(absolutePath);
-                    totalSize += fi.Length;
-                }
-                catch { }
-            }
+                if(absolutePath.TryGetFileInfo(out long fileSize, out _))
+                    totalSize += fileSize;
 
             // Pack files:
             using FileStream fsout = File.Create(Paths.DebugFilePath);
@@ -156,16 +144,15 @@ public sealed class DebugService
                         continue; // should never happen
 
                     // Read basic file information:
-                    FileInfo fi = new(absolutePath);
-                    if (!fi.Exists)
-                        continue; // should not happen
+                    if(!absolutePath.TryGetFileInfo(out long fileSize, out DateTime fileTime))
+                        continue;
 
                     // Generate new zip entry:
-                    sumSize += fi.Length;
+                    sumSize += fileSize;
                     ZipEntry eout = new(relativePath)
                     {
-                        Size = fi.Length,
-                        DateTime = fi.LastWriteTime,
+                        Size = fileSize,
+                        DateTime = fileTime,
                         CompressionMethod = CompressionMethod.Deflated,
                     };
                     zout.PutNextEntry(eout);
@@ -203,7 +190,7 @@ public sealed class DebugService
     {
         try
         {
-            Log.Info($@"Generating ""{Path.GetFileName(Paths.SystemInformationFilePath)}""...", Paths.BuildDir);
+            Log.Info($@"Generating ""{Paths.SystemInformationFilePath.GetFileName()}""...", Paths.BuildDir);
 
             // Try to delete existing file:
             if (!await IOUtils.TryDeleteFileAsync(Paths.SystemInformationFilePath, Log, ct))

@@ -7,7 +7,6 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,7 +61,9 @@ public sealed class ArtRepository
                 CancellationToken = ct,
             };
 
-            List<string> files = Directory.GetFiles(baseInputDir, "*.cim", SearchOption.TopDirectoryOnly)?.OrderBy(path => Path.GetFileNameWithoutExtension(path).PadLeft(3, '0'))?.ToList() ?? [];
+            List<string> files =
+                baseInputDir.GetFiles(ESearchOption.TopDir, endsWithAny: ["*.cim"])
+                .OrderBy(path => path.GetFileNameWithoutExtension().PadLeft(7, '0'))?.ToList() ?? [];
 
             double delta = 1.0 / files.Count;
 
@@ -103,8 +104,8 @@ public sealed class ArtRepository
     {
         try
         {
-            string filename = Path.GetFileName(cimFilePath);
-            string cimName = Path.GetFileNameWithoutExtension(cimFilePath);
+            string filename = cimFilePath.GetFileName();
+            string cimName = cimFilePath.GetFileNameWithoutExtension();
             if (!int.TryParse(cimName, out int textureId) || !TextureXmlRepository.ById.TryGetValue(textureId, out TextureXml texture))
             {
                 Log.Error($"[{filename}] Unable to locate the corresponding texture XML information for this CIM file");
@@ -258,7 +259,7 @@ public sealed class ArtRepository
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (!await sprite.TryExportToPngAsync(Path.Combine(exportDir, sprite.SpriteSheet.Name.ToString(), $"{sprite.Name}.png"), Log, ct))
+                if (!await sprite.TryExportToPngAsync(exportDir.CombineAsOSPath(sprite.SpriteSheet.Name.ToString(), $"{sprite.Name}.png"), Log, ct))
                     success = false;
 
                 await semaphore.WaitAsync(ct);

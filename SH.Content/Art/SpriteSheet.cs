@@ -150,7 +150,7 @@ public sealed class SpriteSheet
             logger?.Debug($"[{FileName}] Exporting individual sprites to PNG");
 
             exportDir = IOUtils.CombineAsOSPath(exportDir, Name.ToString());
-            if (!IOUtils.DirectoryExists(exportDir))
+            if (!IOUtils.DirExists(exportDir))
                 try { Directory.CreateDirectory(exportDir); } catch { }
 
             foreach (Sprite sprite in SpritesByName.Values)
@@ -173,7 +173,7 @@ public sealed class SpriteSheet
     {
         try
         {
-            if (!IOUtils.DirectoryExists(exportDir))
+            if (!IOUtils.DirExists(exportDir))
                 try { Directory.CreateDirectory(exportDir); } catch { }
 
             using Image<Rgba32> image = new(Width, Height, new Rgba32(0, 0, 0, 0));

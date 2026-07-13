@@ -3,7 +3,6 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Xml.Linq;
 
 namespace SH.Modding.Build;
@@ -18,7 +17,7 @@ internal sealed class SpriteReference
         LocalName = !localName.IsNullOrWhiteSpace() ? localName : throw new ArgumentNullException(nameof(localName));
         LocalID = localId;
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
-        BasePath = mod.SpritesDirectory.AsOSPath();
+        BasePath = mod.SpritesDir.AsOSPath();
         RelativePath = assetPosFilenameReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase).AsOSPath();
         AbsolutePathWithoutFileExtension = IOUtils.CombineAsOSPath(BasePath, RelativePath).AsOSPath();
         AbsolutePath = $"{AbsolutePathWithoutFileExtension}.png".AsOSPath();
@@ -38,7 +37,7 @@ internal sealed class SpriteReference
     public string RelativePath { get; }
     public string AbsolutePath { get; internal set; }
     public string AbsolutePathWithoutFileExtension { get; internal set; }
-    public string Filename => Path.GetFileName(RelativePath);
+    public string Filename => RelativePath.GetFileName();
 
     public override string ToString() => LocalName;
 }

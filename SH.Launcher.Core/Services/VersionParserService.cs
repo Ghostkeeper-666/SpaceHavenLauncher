@@ -2,7 +2,6 @@
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +24,7 @@ public sealed class VersionParserService
         catch (Exception ex)
         {
             string parent = null;
-            try { parent = Path.GetDirectoryName(versionTxtFilePath); } catch { }
+            parent = versionTxtFilePath.GetParentDirAsOSPath();
             logger?.Error(ex, parent);
             return null;
         }

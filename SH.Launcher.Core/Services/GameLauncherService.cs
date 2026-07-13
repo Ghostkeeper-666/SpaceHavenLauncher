@@ -8,7 +8,6 @@ using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -91,7 +90,7 @@ public sealed class GameLauncherService
 
             // Add class paths for AOP and spacehaven.jar:
             args.Add("-cp");
-            args.Add($@"""{IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJ)}{Path.PathSeparator}{gameJar.AsOSPath()}""");
+            args.Add($@"""{IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJ)}{IOUtils.PathSeparator}{gameJar.AsOSPath()}""");
 
             // And finally set the main class:
             if (mainClass.IsNullOrWhiteSpace())
@@ -115,7 +114,7 @@ public sealed class GameLauncherService
             await IOUtils.TryDeleteFileAsync(Paths.LauncherAgentLogPath, Log, ct);
 
             // Start monitoring the LauncherAgent log:
-            using LogMonitor monitor = new(Paths.LauncherAgentLogPath, FileShare.ReadWrite);
+            using LogMonitor monitor = new(Paths.LauncherAgentLogPath);
             monitor.OnLog += Monitor_OnLog;
             _ = monitor.RunAsync();
 

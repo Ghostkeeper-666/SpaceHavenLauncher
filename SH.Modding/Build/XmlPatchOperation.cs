@@ -1,10 +1,10 @@
 ﻿using SH.Content.Xml;
 using SH.Framework;
 using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -45,7 +45,7 @@ internal sealed class XmlPatchOperation
             patch.Variables = modVariables ?? throw new ArgumentNullException(nameof(modVariables));
             string operationStr = patchNode.Attribute("Class")?.Value ?? patchNode.Attribute("type")?.Value ?? string.Empty;
             patch.XPath = patchNode.Element("xpath")?.Value?.Trim() ?? string.Empty;
-            patch.PrettyName = $@"Patch Operation [op={operationStr} xpath='{patch.XPath}' file=""{Path.GetFileName(modXmlFile.Path)}"" line={patchNode.Line()}]";
+            patch.PrettyName = $@"Patch Operation [op={operationStr} xpath='{patch.XPath}' file=""{modXmlFile.Path.GetFileName()}"" line={patchNode.Line()}]";
 
             // node name validation:
             string name = patchNode.Name?.LocalName ?? string.Empty;
@@ -95,7 +95,7 @@ internal sealed class XmlPatchOperation
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Exception occurred while parsing the patch operation, file=""{Path.GetFileName(modXmlFile.Path)}"" line={patchNode.Line()} : {ex}", modXmlFile.Path);
+            logger?.Error($@"Exception occurred while parsing the patch operation, file=""{modXmlFile.Path.GetFileName()}"" line={patchNode.Line()} : {ex}", modXmlFile.Path);
             patch = null;
             return false;
         }

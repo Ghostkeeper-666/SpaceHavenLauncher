@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.ComponentModel;
@@ -15,7 +16,7 @@ public partial class LearningItem : ObservableObject
     {
         Parent = parent ?? throw new ArgumentNullException(nameof(parent));
         Path = path ?? throw new ArgumentNullException(nameof(path));
-        Label = System.IO.Path.GetFileNameWithoutExtension(Path).TrimStart(TrimStartChars).Replace('_', ' ').Trim();
+        Label = Path.GetFileNameWithoutExtension().TrimStart(TrimStartChars).Replace('_', ' ').Trim();
         Parent.PropertyChanged -= State_PropertyChanged;
         Parent.PropertyChanged += State_PropertyChanged;
     }

@@ -416,8 +416,8 @@ public sealed class ModBuilder : IAsyncDisposable
             Build.ModsJsonFile.GamePlatform = BuildSettings.GamePlatform;
             Build.ModsJsonFile.GameVersion = BuildSettings.SpaceHavenVersion.ToString();
             Build.ModsJsonFile.GameJarDir = Paths.SpaceHavenJarDir;
-            Build.ModsJsonFile.AOPLibs.Add(Path.Combine(Paths.CacheDirectory, ModdingConstants.ASPECTJ));
-            Build.ModsJsonFile.AOPLibs.Add(Path.Combine(Paths.CacheDirectory, ModdingConstants.ASPECTJWEAVER));
+            Build.ModsJsonFile.AOPLibs.Add(Paths.CacheAspectjPath);
+            Build.ModsJsonFile.AOPLibs.Add(Paths.CacheAspectjWeaverPath);
             Build.ModsJsonFile.AOPLibs.Sort();
 
             foreach (ModBuildData mod in Build.Mods)
@@ -426,12 +426,12 @@ public sealed class ModBuilder : IAsyncDisposable
                 modInfo.SchemaVersion = "1";
                 modInfo.Name = mod.Name;
                 modInfo.Version = mod.Version.ToString();
-                modInfo.Directory = mod.Directory.AsStdPath();
+                modInfo.Directory = mod.Dir.AsStdPath();
                 modInfo.ID = mod.ID;
                 modInfo.Textures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath()));
-                modInfo.Audio.AddRange(mod.AudioFilePaths.Select(path => path.AsStdPath()));
-                modInfo.Java.AddRange(mod.JavaFilePaths.Select(path => path.AsStdPath()));
-                modInfo.Other.AddRange(mod.OtherFilePaths.Select(path => path.AsStdPath()));
+                modInfo.Audio.AddRange(mod.AudioPaths.Select(path => path.AsStdPath()));
+                modInfo.Java.AddRange(mod.JarFilePaths.Select(path => path.AsStdPath()));
+                modInfo.Other.AddRange(mod.OtherFilesPaths.Select(path => path.AsStdPath()));
                 foreach (VarBuildData var in mod.Variables.Values)
                 {
                     VarInfo varInfo = new();
@@ -605,11 +605,11 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     if (!mod.HasLibraryXml)
                     {
-                        modLog.Debug($@"This mod has no XML library files", mod.Directory);
+                        modLog.Debug($@"This mod has no XML library files", mod.Dir);
                         continue;
                     }
 
-                    modLog.Debug($"Performing XML merge operations...", mod.Directory);
+                    modLog.Debug($"Performing XML merge operations...", mod.Dir);
 
                     HashSet<XmlFile> mergedModXmlFiles = [];
 
@@ -834,7 +834,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     if (!mod.HasPatchXml)
                     {
-                        modLog.Debug("This mod has no XML patch files", mod.Directory);
+                        modLog.Debug("This mod has no XML patch files", mod.Dir);
                         continue;
                     }
 
@@ -1233,11 +1233,10 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Copy audio files:
-            string escapedBuildStageDirectory = $"{Paths.BuildStageDirectory}{Path.DirectorySeparatorChar}";
             foreach (AudioBuildData audio in audioByName.Values)
             {
-                string targetAbsolutePath = Path.GetFullPath(IOUtils.CombineAsOSPath(Paths.BuildStageDirectory, audio.TargetRelativePath)).AsOSPath();
-                if (!targetAbsolutePath.StartsWith(escapedBuildStageDirectory, StringComparison.Ordinal))
+                string targetAbsolutePath = Paths.BuildStageDirectory.CombineAsOSPath(audio.TargetRelativePath);
+                if (!targetAbsolutePath.EscapesDirectory(Paths.BuildStageDirectory))
                 {
                     Log.Error($@"Invalid target audio file path ""{targetAbsolutePath}"" for {audio}");
                     return false;
@@ -1357,8 +1356,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Check for exiting sprite image:
                 string[] expectedAbsolutePaths =
                 [
-                    IOUtils.CombineAsOSPath(mod.SpritesDirectory, $"{spriteSheetKeyStr}.png"),
-                    IOUtils.CombineAsOSPath(mod.SpritesDirectory, spriteSheetKeyStr),
+                    IOUtils.CombineAsOSPath(mod.SpritesDir, $"{spriteSheetKeyStr}.png"),
+                    IOUtils.CombineAsOSPath(mod.SpritesDir, spriteSheetKeyStr),
                 ];
                 string absolutePath = mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.Ordinal)));
                 absolutePath ??= mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.OrdinalIgnoreCase)));
@@ -1807,7 +1806,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Select files to add to template JAR:
             DirectoryInfo di = new(Paths.BuildStageDirectory);
-            FileInfo[] files = di.GetFiles("*.*", SearchOption.AllDirectories);
+            FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
             JarAppender jar = new();
             if (!await jar.AppendTo(Paths.TemplateJarPath, Paths.CacheJarPath, Paths.BuildStageDirectory, files, Log, ParallelOptions))
                 return false;
@@ -1832,7 +1831,7 @@ public sealed class ModBuilder : IAsyncDisposable
             classPaths.AddRange(
                 Build.Mods
                 .Where(m => m.IsJavaMod)
-                .SelectMany(m => m.JavaFilePaths)
+                .SelectMany(m => m.JarFilePaths)
                 .Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) && IOUtils.FileExists(path))
                 .Select(path => path.AsStdPath())
                 .ToList());

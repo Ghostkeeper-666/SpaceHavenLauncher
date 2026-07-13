@@ -26,55 +26,57 @@ internal sealed class BuildPathData
 
     #region Derived Properties
 
-    public string TemplateDirectory => IOUtils.CombineAsOSPath(WorkDir, ModdingConstants.TEMPLATE);
-    public string TemplateStageDirectory => IOUtils.CombineAsOSPath(TemplateDirectory, ModdingConstants.STAGE);
+    public string TemplateDirectory => WorkDir.CombineAsOSPath(ModdingConstants.TEMPLATE);
+    public string TemplateStageDirectory => TemplateDirectory.CombineAsOSPath(ModdingConstants.STAGE);
 
-    public string TemplateJarPath => IOUtils.CombineAsOSPath(TemplateDirectory, ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
-    public string TemplateJarHashPath => IOUtils.CombineAsOSPath(TemplateDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string TemplateConfigJsonPath => IOUtils.CombineAsOSPath(TemplateDirectory, SpaceHavenConstants.CONFIG_JSON);
-    public string TemplateExtraCreditsTxtPath => IOUtils.CombineAsOSPath(TemplateDirectory, ModdingConstants.STAGE, SpaceHavenConstants.EXTRA_CREDITS_TXT);
-
-
-    public string BuildDirectory => IOUtils.CombineAsOSPath(WorkDir, ModdingConstants.BUILD);
-
-    public string BuildJarHashPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string BuildXmlHashPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.XML_BUILD_HASH_TXT);
-    public string BuildJavaHashPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.JAVA_BUILD_HASH_TXT);
-
-    public string BuildLogPath => IOUtils.CombineAsOSPath(BuildDirectory, "buildLog.txt");
-    public string BuildLogsDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "logs");
-    public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "textures");
-    public string BuildAudioDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "audio");
-    public string BuildMergeDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "merge");
-    public string BuildPatchDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "patch");
-    public string BuildTextsDirectory => IOUtils.CombineAsOSPath(BuildDirectory, "texts");
-    public string BuildStageDirectory => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.STAGE);
-    public string BuildModsJsonPath => IOUtils.CombineAsOSPath(BuildDirectory, ModdingConstants.MODS_JSON);
-    public string BuildAudioFile => IOUtils.CombineAsOSPath(BuildAudioDirectory, SpaceHavenConstants.AUDIO);
-    public string BuildTextsFile => IOUtils.CombineAsOSPath(BuildTextsDirectory, SpaceHavenConstants.TEXTS);
-
-    public string BuildStageVersionPath => IOUtils.CombineAsOSPath(BuildStageDirectory, SpaceHavenConstants.VERSION_TXT);
-
-    public string BuildStageLibraryDirectory => IOUtils.CombineAsOSPath(BuildStageDirectory, SpaceHavenConstants.LIBRARY);
-    public string BuildStageLibraryFilesDirectory => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.FILES);
-    public string BuildStageHavenXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.HAVEN);
-    public string BuildStageTextsXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.TEXTS);
-    public string BuildStageAudioXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.AUDIO);
-    public string BuildStageTexturesXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.TEXTURES);
-    public string BuildStageAnimationsXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryDirectory, SpaceHavenConstants.ANIMATIONS);
-    public string BuildStageSpaceHavenSettingsXmlPath => IOUtils.CombineAsOSPath(BuildStageLibraryFilesDirectory, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
-    public string BuildStageExtraCreditsTxtPath => IOUtils.CombineAsOSPath(BuildStageDirectory, SpaceHavenConstants.EXTRA_CREDITS_TXT);
+    public string TemplateJarPath => TemplateDirectory.CombineAsOSPath(ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
+    public string TemplateJarHashPath => TemplateDirectory.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string TemplateConfigJsonPath => TemplateDirectory.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
+    public string TemplateExtraCreditsTxtPath => TemplateDirectory.CombineAsOSPath(ModdingConstants.STAGE, SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
 
+    public string BuildDirectory => WorkDir.CombineAsOSPath(ModdingConstants.BUILD);
 
-    public string CacheDirectory => IOUtils.CombineAsOSPath(WorkDir, "cache");
-    public string CacheJarPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
-    public string CacheJarHashPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string CacheModifiedJarHashPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.MODIFIED_JAR_HASH_TXT);
-    public string CacheXmlHashPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.XML_BUILD_HASH_TXT);
-    public string CacheJavaHashPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.JAVA_BUILD_HASH_TXT);
-    public string CacheConfigJsonPath => IOUtils.CombineAsOSPath(CacheDirectory, SpaceHavenConstants.CONFIG_JSON);
-    public string CacheModsJsonPath => IOUtils.CombineAsOSPath(CacheDirectory, ModdingConstants.MODS_JSON);
+    public string BuildJarHashPath => BuildDirectory.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string BuildXmlHashPath => BuildDirectory.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH_TXT);
+    public string BuildJavaHashPath => BuildDirectory.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH_TXT);
+
+    public string BuildLogPath => BuildDirectory.CombineAsOSPath("buildLog.txt");
+    public string BuildLogsDirectory => BuildDirectory.CombineAsOSPath("logs");
+    public string BuildTexturesDirectory => BuildDirectory.CombineAsOSPath("textures");
+    public string BuildAudioDirectory => BuildDirectory.CombineAsOSPath("audio");
+    public string BuildMergeDirectory => BuildDirectory.CombineAsOSPath("merge");
+    public string BuildPatchDirectory => BuildDirectory.CombineAsOSPath("patch");
+    public string BuildTextsDirectory => BuildDirectory.CombineAsOSPath("texts");
+    public string BuildStageDirectory => BuildDirectory.CombineAsOSPath(ModdingConstants.STAGE);
+    public string BuildModsJsonPath => BuildDirectory.CombineAsOSPath(ModdingConstants.MODS_JSON);
+    public string BuildAudioFile => BuildAudioDirectory.CombineAsOSPath(SpaceHavenConstants.AUDIO);
+    public string BuildTextsFile => BuildTextsDirectory.CombineAsOSPath(SpaceHavenConstants.TEXTS);
+
+    public string BuildStageVersionPath => BuildStageDirectory.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
+
+    public string BuildStageLibraryDirectory => BuildStageDirectory.CombineAsOSPath(SpaceHavenConstants.LIBRARY);
+    public string BuildStageLibraryFilesDirectory => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.FILES);
+    public string BuildStageHavenXmlPath => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.HAVEN);
+    public string BuildStageTextsXmlPath => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.TEXTS);
+    public string BuildStageAudioXmlPath => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.AUDIO);
+    public string BuildStageTexturesXmlPath => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.TEXTURES);
+    public string BuildStageAnimationsXmlPath => BuildStageLibraryDirectory.CombineAsOSPath(SpaceHavenConstants.ANIMATIONS);
+    public string BuildStageSpaceHavenSettingsXmlPath => BuildStageLibraryFilesDirectory.CombineAsOSPath(SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
+    public string BuildStageExtraCreditsTxtPath => BuildStageDirectory.CombineAsOSPath(SpaceHavenConstants.EXTRA_CREDITS_TXT);
+
+
+
+    public string CacheDirectory => WorkDir.CombineAsOSPath("cache");
+    public string CacheJarPath => CacheDirectory.CombineAsOSPath(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
+    public string CacheJarHashPath => CacheDirectory.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string CacheModifiedJarHashPath => CacheDirectory.CombineAsOSPath(ModdingConstants.MODIFIED_JAR_HASH_TXT);
+    public string CacheXmlHashPath => CacheDirectory.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH_TXT);
+    public string CacheJavaHashPath => CacheDirectory.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH_TXT);
+    public string CacheConfigJsonPath => CacheDirectory.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
+    public string CacheModsJsonPath => CacheDirectory.CombineAsOSPath(ModdingConstants.MODS_JSON);
+    public string CacheAspectjPath => CacheDirectory.CombineAsOSPath(ModdingConstants.ASPECTJ);
+    public string CacheAspectjWeaverPath => CacheDirectory.CombineAsOSPath(ModdingConstants.ASPECTJWEAVER);
 
     #endregion Derived Properties
 

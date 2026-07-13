@@ -41,7 +41,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             ModId != 0 ? ModId :
             AutoId;
         Author = data.Author;
-        Directory = data.Directory;
+        Directory = data.Dir;
         Background = data.BackgroundImagePath;
 
         AppCompatibility = data.AppCompatibility.ToDisplayString() ?? "(any)";
@@ -64,12 +64,12 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         foreach (VarData modVariable in data.Variables)
             Variables.Add(new ModVariableViewModel(this, modVariable));
 
-        XmlLibraryFiles = data.XmlLibraryFilePaths.Count <= 0 ? string.Empty : $"XML library files:\n\n{data.XmlLibraryRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        XmlPatchFiles = data.XmlPatchFilePaths.Count <= 0 ? string.Empty : $"XML patch files:\n\n{data.XmlPatchRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        AudioFiles = data.AudioFilePaths.Count <= 0 ? string.Empty : $"Audio files:\n\n{data.AudioRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        SpriteFiles = data.SpritePaths.Count <= 0 ? string.Empty : $"Sprite Textures:\n\n{data.SpriteRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        SpriteSheetFiles = data.SpriteSheetPaths.Count <= 0 ? string.Empty : $"Spritesheet Textures (CIM):\n\n{data.SpriteRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
-        JarFiles = data.JarFilePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JavaRelativeFilePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        XmlLibraryFiles = data.XmlLibraryRelativePaths.Count <= 0 ? string.Empty : $"XML library files:\n\n{data.XmlLibraryRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        XmlPatchFiles = data.XmlPatchRelativePaths.Count <= 0 ? string.Empty : $"XML patch files:\n\n{data.XmlPatchRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        AudioFiles = data.AudioRelativePaths.Count <= 0 ? string.Empty : $"Audio files:\n\n{data.AudioRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        SpriteFiles = data.SpriteRelativePaths.Count <= 0 ? string.Empty : $"Sprite Textures:\n\n{data.SpriteRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        SpriteSheetFiles = data.SpriteSheetRelativePaths.Count <= 0 ? string.Empty : $"Spritesheet Textures (CIM):\n\n{data.SpriteSheetRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
+        JarFiles = data.JarRelativePaths.Count <= 0 ? string.Empty : $"JAR files:\n\n{data.JarRelativePaths.Select(path => $"- {path}").JoinToString("\n")}";
 
         XmlLibraryFilesWidth = new(XmlLibraryFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);
         XmlPatchFilesWidth = new(XmlPatchFiles.IsNullOrWhiteSpace() ? 0.0 : 100.0);

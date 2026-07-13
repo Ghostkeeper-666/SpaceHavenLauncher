@@ -392,7 +392,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     State.GamePlatform,
                     State.AppSettings.JavaMainClass,
                     State.AppSettings.JavaVMArgs,
-                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarFilePaths),
+                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarPaths),
                     Paths.Data.CacheJarPath,
                     ct))
                     Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
@@ -533,7 +533,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     Log.Warn($@"Skipping export of ORIGINAL files, accordingly to System Core settings", "tab://SystemCore");
                 }
-                else if (!IOUtils.FileExists(originalJarPath) || !IOUtils.DirectoryExists(originalFilesDir))
+                else if (!IOUtils.FileExists(originalJarPath) || !IOUtils.DirExists(originalFilesDir))
                 {
                     Log.Warn($"Unable to locate ORIGINAL files => {SpaceHavenLauncher.Name} was not properly initialized", workDir);
                     exportOriginalSuccess = false;
@@ -587,7 +587,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     Log.Warn($@"Skipping export of MODIFIED files, accordingly to System Core settings", "tab://SystemCore");
                 }
-                else if (!IOUtils.FileExists(modifiedJarPath) || !IOUtils.DirectoryExists(modifiedFilesDir))
+                else if (!IOUtils.FileExists(modifiedJarPath) || !IOUtils.DirExists(modifiedFilesDir))
                 {
                     Log.Warn($"Unable to locate MODIFIED files => The MODIFIED game must be built first", workDir);
                     exportModifiedSuccess = false;

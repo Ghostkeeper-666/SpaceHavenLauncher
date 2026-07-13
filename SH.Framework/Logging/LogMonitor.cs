@@ -33,7 +33,7 @@ public sealed class LogMonitor : IDisposable
             {
                 await Task.Delay(100, CTS.Token);
 
-                if (!IOUtils.FileExists(LogFilePath))
+                if (!LogFilePath.FileExists())
                     continue;
 
                 FileInfo fi = new(LogFilePath);

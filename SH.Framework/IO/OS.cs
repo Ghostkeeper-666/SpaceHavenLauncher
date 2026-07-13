@@ -99,7 +99,7 @@ public static class OS
 
     public static Task OpenDirectoryAsync(string directoryPath, ILogger log)
     {
-        if (!IOUtils.DirectoryExists(directoryPath))
+        if (!IOUtils.DirExists(directoryPath))
             return Task.CompletedTask;
 
         // Fire and forget:
@@ -147,7 +147,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
+                        throw new OSException();
                 }
             }
             catch (Exception ex)
@@ -207,7 +207,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
+                        throw new OSException();
                 }
             }
             catch (Exception ex)
@@ -258,7 +258,7 @@ public static class OS
                         return;
 
                     default:
-                        throw new NotImplementedException($"{nameof(EOSType)}={Type}");
+                        throw new OSException();
                 }
             }
             catch (Exception ex)
@@ -280,7 +280,7 @@ public static class OS
 
             string absolute = IOUtils.CombineAsOSPath(baseDir, link);
 
-            if (IOUtils.DirectoryExists(absolute))
+            if (IOUtils.DirExists(absolute))
                 return OpenDirectoryAsync(absolute, log);
 
             if (IOUtils.FileExists(absolute))

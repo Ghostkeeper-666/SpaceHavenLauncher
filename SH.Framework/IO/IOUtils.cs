@@ -1,9 +1,12 @@
 ﻿using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,22 +17,19 @@ namespace SH.Framework.IO;
 
 public static class IOUtils
 {
-    public static string CombineAsStdPath(string basePath, params string[] relativePaths)
+    public static readonly char PathSeparator = Path.PathSeparator;
+    public static readonly char DirSeparator = Path.DirectorySeparatorChar;
+
+    public static string CombineAsStdPath(this string basePath, params string[] relativePaths)
     {
         try
         {
-            basePath ??= string.Empty;
-            basePath = Environment.ExpandEnvironmentVariables(basePath).AsStdPath();
-
+            basePath = basePath.AsStdPath();
             if (relativePaths is null || relativePaths.Length <= 0)
-                return Path.GetFullPath(basePath);
-
-            string[] paths = relativePaths
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .Select(p => ExpandHome(Environment.ExpandEnvironmentVariables(p)).AsStdPath())
-                .ToArray();
-
-            return Path.GetFullPath(Path.Combine(new[] { basePath }.Concat(paths).ToArray()));
+                return basePath;
+            List<string> paths = [basePath];
+            paths.AddRange(relativePaths.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.AsStdPath()));
+            return Path.Combine(CollectionsMarshal.AsSpan(paths));
         }
         catch
         {
@@ -37,22 +37,16 @@ public static class IOUtils
         }
     }
 
-    public static string CombineAsOSPath(string basePath, params string[] relativePaths)
+    public static string CombineAsOSPath(this string basePath, params string[] relativePaths)
     {
         try
         {
-            basePath ??= string.Empty;
-            basePath = Environment.ExpandEnvironmentVariables(basePath).AsOSPath();
-
+            basePath = basePath.AsOSPath();
             if (relativePaths is null || relativePaths.Length <= 0)
-                return Path.GetFullPath(basePath);
-
-            string[] paths = relativePaths
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .Select(p => ExpandHome(Environment.ExpandEnvironmentVariables(p)).AsOSPath())
-                .ToArray();
-
-            return Path.GetFullPath(Path.Combine(new[] { basePath }.Concat(paths).ToArray()));
+                return basePath;
+            List<string> paths = [basePath];
+            paths.AddRange(relativePaths.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.AsOSPath()));
+            return Path.Combine(CollectionsMarshal.AsSpan(paths));
         }
         catch
         {
@@ -60,37 +54,120 @@ public static class IOUtils
         }
     }
 
-    private static string ExpandHome(string path)
+    public static string CombineAsEvaluatedStdPath(this string basePath, params string[] relativePaths)
     {
-        if (string.IsNullOrEmpty(path) || !path.StartsWith('~'))
-            return path;
-
-        string home =
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-
-        return Path.Combine(home, path[1..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        try
+        {
+            basePath = basePath.AsEvaluatedStdPath();
+            if (relativePaths is null || relativePaths.Length <= 0)
+                return basePath;
+            List<string> paths = [basePath];
+            paths.AddRange(relativePaths.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.AsEvaluatedStdPath()));
+            return Path.Combine(CollectionsMarshal.AsSpan(paths));
+        }
+        catch
+        {
+            return (relativePaths?.LastOrDefault(p => !string.IsNullOrWhiteSpace(p)) ?? basePath).AsStdPath();
+        }
     }
 
-
-    public static bool FileExists(string path)
+    public static string CombineAsEvaluatedOSPath(this string basePath, params string[] relativePaths)
     {
-        try { return File.Exists(path ?? string.Empty); }
+        try
+        {
+            basePath = basePath.AsEvaluatedOSPath();
+            if (relativePaths is null || relativePaths.Length <= 0)
+                return basePath;
+            List<string> paths = [basePath];
+            paths.AddRange(relativePaths.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.AsEvaluatedOSPath()));
+            return Path.Combine(CollectionsMarshal.AsSpan(paths));
+        }
+        catch
+        {
+            return (relativePaths?.LastOrDefault(p => !string.IsNullOrWhiteSpace(p)) ?? basePath).AsOSPath();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetFileInfo(this string path, out long size, out DateTime lastWriteTime)
+    {
+        try
+        {
+            FileInfo fi = new(path.AsOSPath());
+            if (fi.Exists)
+            {
+                size = fi.Length;
+                lastWriteTime = fi.LastWriteTime;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.ToString());
+        }
+        size = 0;
+        lastWriteTime = default;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetParentDirAsOSPath(this string path)
+    {
+        try { return Path.GetDirectoryName(path ?? string.Empty); }
+        catch { return string.Empty; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetParentDirAsStdPath(this string path)
+    {
+        try { return Path.GetDirectoryName(path ?? string.Empty); }
+        catch { return string.Empty; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetFileName(this string path)
+    {
+        try { return Path.GetFileName(path ?? string.Empty); }
+        catch { return string.Empty; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetFileNameWithoutExtension(this string path)
+    {
+        try { return Path.GetFileNameWithoutExtension(path ?? string.Empty); }
+        catch { return string.Empty; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string GetFileExtension(this string path)
+    {
+        try { return Path.GetExtension(path ?? string.Empty); }
+        catch { return string.Empty; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FileExists(this string path)
+    {
+        try { return File.Exists(path.AsOSPath()); }
         catch { return false; }
     }
 
-    public static bool DirectoryExists(string path)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool DirExists(this string path)
     {
-        try { return Directory.Exists(path ?? string.Empty); }
+        try { return Directory.Exists(path.AsOSPath()); }
         catch { return false; }
     }
 
-    public static void ThrowIfFileNotExists(string path)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfFileNotExists(this string path)
     {
         if (path.IsNullOrWhiteSpace() || !File.Exists(path))
             throw new FileNotFoundException($@"File does not exist: ""{path}""");
     }
 
-    public static void ThrowIfDirectoryNotExists(string dir)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfDirectoryNotExists(this string dir)
     {
         if (dir.IsNullOrWhiteSpace() || !Directory.Exists(dir))
             throw new DirectoryNotFoundException($@"Directory does not exist: ""{dir}""");
@@ -102,17 +179,340 @@ public static class IOUtils
         OS.IsWin ? path.Replace('/', '\\').Trim().TrimEnd('\\') :
         path.Replace('\\', '/').Trim().TrimEnd('/');
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string AsStdPath(this string path) =>
         string.IsNullOrWhiteSpace(path) ? string.Empty :
         path.Replace('\\', '/').Trim().TrimEnd('/');
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string AsEvaluatedOSPath(this string path) =>
+        path.EvaluatePath().AsOSPath();
 
-    public static async Task<bool> TryReadFirstBytesAsync(string path, int startPos, byte[] bytes, ILogger logger)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string AsEvaluatedStdPath(this string path) =>
+        path.EvaluatePath().AsStdPath();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool EscapesDirectory(this string path, string dir)
+    {
+        if (path.IsNullOrWhiteSpace())
+            return true;
+        path = path.AsEvaluatedStdPath();
+        dir = $"{dir.AsEvaluatedStdPath()}/";
+        return !path.StartsWith(dir);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameStartsWith(this string path, string prefix, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileName(path ?? string.Empty);
+        return filename.StartsWith(prefix ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameEndsWith(this string path, string suffix, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileName(path ?? string.Empty);
+        return filename.EndsWith(suffix ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameWithoutExtensionEndsWith(this string path, string suffix, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileNameWithoutExtension(path ?? string.Empty);
+        return filename.EndsWith(suffix ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameContains(this string path, string content, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileName(path ?? string.Empty);
+        return filename.Contains(content ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameWithoutExtensionContains(this string path, string content, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileNameWithoutExtension(path ?? string.Empty);
+        return filename.Contains(content ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameEquals(this string path, string name, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileName(path ?? string.Empty);
+        return filename.Equals(name ?? string.Empty, strCmp);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool FilenameWithoutExtensionEquals(this string path, string name, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        string filename = Path.GetFileNameWithoutExtension(path ?? string.Empty);
+        return filename.Equals(name ?? string.Empty, strCmp);
+    }
+
+#warning traverse in the opposite direction, to avoid permission issues accessing the root dir!
+    public static string FindFile(this string absoluteRegularFilePath, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(absoluteRegularFilePath))
+                return null;
+
+            absoluteRegularFilePath = absoluteRegularFilePath.AsEvaluatedOSPath();
+            if (absoluteRegularFilePath.FileExists())
+                return absoluteRegularFilePath;
+
+            string root = Path.GetPathRoot(absoluteRegularFilePath);
+            if (root.IsNullOrWhiteSpace())
+                return null;
+            FileSystemInfo info = new DirectoryInfo(root);
+            if (!info.Exists)
+                return null;
+            string[] parts = absoluteRegularFilePath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length;)
+            {
+                string part = parts[i++];
+                DirectoryInfo di = (DirectoryInfo)info;
+                info = i >= parts.Length ?
+                    di.EnumerateFiles().FirstOrDefault(file => part.Equals(file.Name, strCmp)) :
+                    di.EnumerateDirectories().FirstOrDefault(dir => part.Equals(dir.Name, strCmp));
+                if (info == null)
+                    return null;
+            }
+            return (info as FileInfo)?.FullName;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return null;
+        }
+    }
+
+#warning traverse in the opposite direction, to avoid permission issues accessing the root dir!
+    public static string FindDir(this string absoluteDirectoryPath, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(absoluteDirectoryPath))
+                return null;
+
+            absoluteDirectoryPath = absoluteDirectoryPath.AsEvaluatedOSPath();
+            if (absoluteDirectoryPath.DirExists())
+                return absoluteDirectoryPath;
+
+            string root = Path.GetPathRoot(absoluteDirectoryPath);
+            if (root.IsNullOrWhiteSpace())
+                return null;
+            DirectoryInfo di = new(root);
+            if (!di.Exists)
+                return null;
+            string[] parts = absoluteDirectoryPath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length;)
+            {
+                string part = parts[i++];
+                di = di.EnumerateDirectories().FirstOrDefault(dir => part.Equals(dir.Name, strCmp));
+                if (di == null)
+                    return null;
+            }
+            return di.FullName;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return null;
+        }
+    }
+
+    public static string EvaluatePath(this string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
+
+        // Initial cleanup:
+        path = path.AsOSPath();
+
+        // Expand environment variables:
+        path = Environment.ExpandEnvironmentVariables(path);
+
+        if (path.StartsWith('~'))
+            path = $"{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}{path.Substring(1)}";
+        else if (path.StartsWith($"~{Path.DirectorySeparatorChar}"))
+            path = $"{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}{path[1..]}";
+
+        // Normalize "." and "..":
+        path = Path.GetFullPath(path);
+
+        // Resolve the final symlink/junction if present:
+        FileSystemInfo fsi = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
+        if (fsi.Exists)
+        {
+            try
+            {
+                fsi = fsi.ResolveLinkTarget(true) ?? fsi;
+                path = fsi.FullName;
+            }
+            catch (Exception ex)
+            {
+                // Ignore unsupported filesystems, permissions, etc.
+                Debug.WriteLine(ex.ToString());
+            }
+        }
+
+        // Done
+        return path;
+    }
+
+    public static List<string> GetDirs(
+        this string dir,
+        ESearchOption search,
+        bool caseSensitive = false,
+        IEnumerable<string> equalsAny = null,
+        IEnumerable<string> startsWithAny = null,
+        IEnumerable<string> endsWithAny = null,
+        IEnumerable<string> containsAny = null)
+    {
+        dir = dir.AsOSPath();
+        if (!DirExists(dir))
+            return [];
+
+        string[] all = Directory.GetDirectories(dir, "*", search.ToSearchOption());
+        if (equalsAny == null && startsWithAny == null && endsWithAny == null && containsAny == null)
+            return all.ToList();
+
+        StringComparison strCmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        List<string> filtered = [];
+        foreach (string path in all)
+        {
+            string name = Path.GetFileName(path);
+            if (equalsAny != null && !equalsAny.Any(str => name.Equals(str, strCmp)))
+                continue;
+            if (startsWithAny != null && !startsWithAny.Any(str => name.StartsWith(str, strCmp)))
+                continue;
+            if (endsWithAny != null && !endsWithAny.Any(str => name.EndsWith(str, strCmp)))
+                continue;
+            if (containsAny != null && !containsAny.Any(str => name.Contains(str, strCmp)))
+                continue;
+            filtered.Add(path.AsOSPath());
+        }
+        return filtered;
+    }
+
+    public static List<string> GetRelativeDirs(
+    this string dir,
+    ESearchOption search,
+    bool caseSensitive = false,
+    IEnumerable<string> equalsAny = null,
+    IEnumerable<string> startsWithAny = null,
+    IEnumerable<string> endsWithAny = null,
+    IEnumerable<string> containsAny = null)
+    {
+        dir = dir.AsOSPath();
+        if (!DirExists(dir))
+            return [];
+
+        int substring = dir.Length + 1;
+
+        string[] all = Directory.GetDirectories(dir, "*", search.ToSearchOption());
+        if (equalsAny == null && startsWithAny == null && endsWithAny == null && containsAny == null)
+            return all.Select(path => path.AsOSPath().Substring(substring)).ToList();
+
+        StringComparison strCmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        List<string> filtered = [];
+        foreach (string path in all)
+        {
+            string name = Path.GetFileName(path);
+            if (equalsAny != null && !equalsAny.Any(str => name.Equals(str, strCmp)))
+                continue;
+            if (startsWithAny != null && !startsWithAny.Any(str => name.StartsWith(str, strCmp)))
+                continue;
+            if (endsWithAny != null && !endsWithAny.Any(str => name.EndsWith(str, strCmp)))
+                continue;
+            if (containsAny != null && !containsAny.Any(str => name.Contains(str, strCmp)))
+                continue;
+            filtered.Add(path.AsOSPath().Substring(substring));
+        }
+        return filtered;
+    }
+
+    public static List<string> GetFiles(
+        this string dir,
+        ESearchOption search,
+        bool caseSensitive = false,
+        IEnumerable<string> equalsAny = null,
+        IEnumerable<string> startsWithAny = null,
+        IEnumerable<string> endsWithAny = null,
+        IEnumerable<string> containsAny = null)
+    {
+        dir = dir.AsOSPath();
+        if (!DirExists(dir))
+            return [];
+
+        string[] all = Directory.GetFiles(dir, "*", search.ToSearchOption());
+        if (equalsAny == null && startsWithAny == null && endsWithAny == null && containsAny == null)
+            return all.ToList();
+
+        List<string> filtered = [];
+        StringComparison strCmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        foreach (string path in all)
+        {
+            string name = Path.GetFileName(path);
+            if (equalsAny != null && !equalsAny.Any(str => name.Equals(str, strCmp)))
+                continue;
+            if (startsWithAny != null && !startsWithAny.Any(str => name.StartsWith(str, strCmp)))
+                continue;
+            if (endsWithAny != null && !endsWithAny.Any(str => name.EndsWith(str, strCmp)))
+                continue;
+            if (containsAny != null && !containsAny.Any(str => name.Contains(str, strCmp)))
+                continue;
+            filtered.Add(path.AsOSPath());
+        }
+        return filtered;
+    }
+
+    public static List<string> GetRelativeFiles(
+    this string dir,
+    ESearchOption search,
+    bool caseSensitive = false,
+    IEnumerable<string> equalsAny = null,
+    IEnumerable<string> startsWithAny = null,
+    IEnumerable<string> endsWithAny = null,
+    IEnumerable<string> containsAny = null)
+    {
+        dir = dir.AsOSPath();
+        if (!DirExists(dir))
+            return [];
+
+        int substring = dir.Length + 1;
+
+        string[] all = Directory.GetFiles(dir, "*", search.ToSearchOption());
+        if (equalsAny == null && startsWithAny == null && endsWithAny == null && containsAny == null)
+            return all.Select(path => path.AsOSPath().Substring(substring)).ToList();
+
+        List<string> filtered = [];
+        StringComparison strCmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        foreach (string path in all)
+        {
+            string name = Path.GetFileName(path);
+            if (equalsAny != null && !equalsAny.Any(str => name.Equals(str, strCmp)))
+                continue;
+            if (startsWithAny != null && !startsWithAny.Any(str => name.StartsWith(str, strCmp)))
+                continue;
+            if (endsWithAny != null && !endsWithAny.Any(str => name.EndsWith(str, strCmp)))
+                continue;
+            if (containsAny != null && !containsAny.Any(str => name.Contains(str, strCmp)))
+                continue;
+            filtered.Add(path.AsOSPath().Substring(substring));
+        }
+        return filtered;
+    }
+
+    public static async Task<bool> TryReadFirstBytesAsync(string path, int startPos, byte[] bytes, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            ct.ThrowIfCancellationRequested();
+
             path = path.AsOSPath();
             ThrowIfFileNotExists(path);
             ArgumentNullException.ThrowIfNull(bytes);
@@ -127,7 +527,7 @@ public static class IOUtils
             if (size == 0)
                 return true;
 
-            int read = await fs.ReadAtLeastAsync(bytes.AsMemory(startPos, size), size, throwOnEndOfStream: false).ConfigureAwait(false);
+            int read = await fs.ReadAtLeastAsync(bytes.AsMemory(startPos, size), size, throwOnEndOfStream: false, cancellationToken: ct).ConfigureAwait(false);
             return read == size;
         }
         catch (OperationCanceledException) { throw; }
@@ -138,9 +538,10 @@ public static class IOUtils
         }
     }
 
-
     public static async Task<XDocument> TryReparseAsync(XDocument doc, XmlWriterSettings writeSettings, ILogger logger, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+
         writeSettings = writeSettings == null ?
             new()
             {
@@ -192,6 +593,8 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
+
             path = path.AsOSPath();
             if (!FileExists(path))
             {
@@ -235,6 +638,8 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
+
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
@@ -313,6 +718,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             return await Task.Run(() => TryCreateDirectory(directory, logger), ct);
         }
         catch (OperationCanceledException) { throw; }
@@ -337,6 +743,8 @@ public static class IOUtils
         {
             try
             {
+                ct.ThrowIfCancellationRequested();
+
                 if (directory.IsNullOrWhiteSpace())
                 {
                     logger?.Error("The provided directory path is empty");
@@ -368,6 +776,8 @@ public static class IOUtils
     }
     private static void DeleteDirectoryContents(string root, string current, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+
         foreach (string file in Directory.EnumerateFiles(current))
         {
             ct.ThrowIfCancellationRequested();
@@ -405,7 +815,6 @@ public static class IOUtils
 
 
 
-
     public static bool TryDeleteFile(string path, out string error)
     {
         try
@@ -437,6 +846,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             return await Task.Run(() => TryDeleteFile(path, logger), ct);
         }
         catch (OperationCanceledException) { throw; }
@@ -473,6 +883,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), logger, ct))
@@ -526,6 +937,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             if (!FileExists(path))
                 return null;
@@ -563,6 +975,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
@@ -577,7 +990,6 @@ public static class IOUtils
             return false;
         }
     }
-
 
 
 
@@ -603,6 +1015,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), logger, ct))
@@ -656,6 +1069,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             if (!FileExists(path))
                 return null;
@@ -693,6 +1107,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
             if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, logger, ct))
@@ -707,8 +1122,6 @@ public static class IOUtils
             return false;
         }
     }
-
-
 
 
 
@@ -765,6 +1178,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             sourcePath = sourcePath.AsOSPath();
             targetPath = targetPath.AsOSPath();
             if (ct.IsCancellationRequested)
@@ -797,7 +1211,7 @@ public static class IOUtils
         {
             // Source Dir:
             source = source.AsOSPath();
-            if (!DirectoryExists(source))
+            if (!DirExists(source))
             {
                 logger?.Error($@"Source directory not found: ""{source}""");
                 return false;
@@ -854,6 +1268,7 @@ public static class IOUtils
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
 
             ArgumentNullException.ThrowIfNull(path);

@@ -88,7 +88,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
 
     public int Area { get; }
 
-    public string FileName => Path.GetFileNameWithoutExtension(AbsoluteFilePath ?? string.Empty);
+    public string FileName => AbsoluteFilePath.GetFileNameWithoutExtension();
     public string AbsoluteFilePath { get; }
 
     public byte[] PixelData { get; private set; }
@@ -99,7 +99,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
     {
         try
         {
-            string dir = Path.GetDirectoryName(path);
+            string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
                 return false;
 
@@ -126,7 +126,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
     {
         try
         {
-            string dir = Path.GetDirectoryName(path);
+            string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
                 return false;
 

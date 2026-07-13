@@ -104,22 +104,22 @@ public partial class SystemCoreViewModel : ViewModelBase
     public void UpdateColors()
     {
         SpaceHavenDir_ForeColor =
-            IOUtils.DirectoryExists(Paths.SpaceHavenDir) ? Brushes.LightCyan : Brushes.OrangeRed;
+            IOUtils.DirExists(Paths.SpaceHavenDir) ? Brushes.LightCyan : Brushes.OrangeRed;
         
         SpaceHavenJarDir_ForeColor =
-            IOUtils.DirectoryExists(Paths.SpaceHavenJarDir) ? Brushes.LightCyan : Brushes.OrangeRed;
+            IOUtils.DirExists(Paths.SpaceHavenJarDir) ? Brushes.LightCyan : Brushes.OrangeRed;
         
         SteamDir_ForeColor =
-            IOUtils.DirectoryExists(Paths.SteamDir) ? Brushes.LightCyan : Brushes.Gold;
+            IOUtils.DirExists(Paths.SteamDir) ? Brushes.LightCyan : Brushes.Gold;
 
         SteamModsDir_ForeColor =
-            !IOUtils.DirectoryExists(Paths.SteamDir) ? Brushes.Gold :
-            !IOUtils.DirectoryExists(Paths.SteamModsDir) ? Brushes.OrangeRed :
+            !IOUtils.DirExists(Paths.SteamDir) ? Brushes.Gold :
+            !IOUtils.DirExists(Paths.SteamModsDir) ? Brushes.OrangeRed :
             Brushes.LightCyan;
 
         ClassicModsDir_ForeColor =
-            IOUtils.DirectoryExists(Paths.ClassicModsDir) ? Brushes.LightCyan :
-            IOUtils.DirectoryExists(Paths.SteamDir) && IOUtils.DirectoryExists(Paths.SteamModsDir) ? Brushes.Gold :
+            IOUtils.DirExists(Paths.ClassicModsDir) ? Brushes.LightCyan :
+            IOUtils.DirExists(Paths.SteamDir) && IOUtils.DirExists(Paths.SteamModsDir) ? Brushes.Gold :
             Brushes.OrangeRed;
 
         JREPath_ForeColor =
