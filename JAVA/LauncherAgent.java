@@ -7,47 +7,47 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Date;
 
 public class LauncherAgent
 {
-    private static PrintWriter log;
+    private static File logPath;
+    private static final StringBuilder logContent = new StringBuilder();
 
     public static void premain(String agentArgs, Instrumentation instrumentation) throws Exception
     {
         try
         {
-            File baseDirectory = GetAgentDirectory();
+            File baseDirectory = getAgentDirectory();
+            logPath = new File(baseDirectory, "LauncherAgent.log");
 
-            log = new PrintWriter(new FileWriter(new File(baseDirectory, "launcheragent.log")));
+            log("======================================================");
+            log("=== SPACE HAVEN LAUNCHER JAVA AGENT by GHOSTKEEPER ===");
+            log("======================================================");
+            log("Agent started");
+            log("Directory: " + baseDirectory.getAbsolutePath());
 
-            Log("=================================================");
-            Log("=== SPACE HAVEN LAUNCHER AGENT BY GHOSTKEEPER ===");
-            Log("=================================================");
-            Log("Agent started");
-            Log("Agent directory: " + baseDirectory.getAbsolutePath());
+            log("Java version: " + System.getProperty("java.version"));
+            log("Java runtime: " + System.getProperty("java.runtime.version"));
+            log("Java vendor: " + System.getProperty("java.vendor"));
+            log("JVM: " + System.getProperty("java.vm.name"));
 
-            File jarsFile = new File(baseDirectory, "jars.txt");
-
-            if (!jarsFile.isFile())
-            {
-                Log("jars.txt not found");
-                return;
-            }
-
+            log("Retrieving class loader...");
             URLClassLoader classLoader = (URLClassLoader)ClassLoader.getSystemClassLoader();
-
-            Log("System ClassLoader: " + classLoader);
-
             Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
             addURL.setAccessible(true);
+            log("Using class loader: " + classLoader);
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(jarsFile), StandardCharsets.UTF_8));
+            log("Reading jars.txt file...");
+            File jarsFile = new File(baseDirectory, "jars.txt");
+            if (!jarsFile.isFile())
+                throw new RuntimeException("The jars.txt file could not be found at " + jarsFile.getAbsolutePath());
 
-            try
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(jarsFile), StandardCharsets.UTF_8)))
             {
                 String line;
+                boolean success = true;
 
+                log("Modifying class loader's search paths...");
                 while ((line = reader.readLine()) != null)
                 {
                     line = line.trim();
@@ -56,64 +56,103 @@ public class LauncherAgent
                         continue;
 
                     Path path = Paths.get(line);
-
                     if (!path.isAbsolute())
                         path = baseDirectory.toPath().resolve(path);
-
                     URL url = path.toFile().toURI().toURL();
+                    log("Adding JAR: " + url);
 
-                    Log("Adding: " + url);
+                    if (!Files.isRegularFile(path))
+                    {
+                        success = false;
+                        log("ERROR: JAR file not found: " + path);
+                        continue;
+                    }
 
                     addURL.invoke(classLoader, url);
                 }
-            }
-            finally
-            {
-                reader.close();
+                
+                if(!success)
+                    throw new RuntimeException("Some JAR paths could not be added to the class loader");
             }
 
-            Log("Agent finished");
+            log("The agent has completed successfully");
+            return;
         }
         catch (Exception e)
         {
-            if (log != null)
+            // Try to read the stacktrace:
+            try
             {
-                Log("ERROR:");
-                e.printStackTrace(log);
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                String stackTrace = ("ERROR: " + sw.toString()).replaceAll("[\\r\\n]+", " ");
+                log(stackTrace);
+            }
+            catch (Exception ignored)
+            {
+                log("ERROR: " + e.toString());
             }
 
-            throw e;
-        }
-        finally
-        {
-            if (log != null)
-                log.close();
+            String failed = "The agent has failed!";
+            log(failed);
+
+            throw new RuntimeException(failed, e);
         }
     }
 
-    private static File GetAgentDirectory()
+    private static File getAgentDirectory()
     {
         try
         {
             File location = new File(LauncherAgent.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-
             if (location.isFile())
                 return location.getParentFile();
-
             return location;
         }
         catch (Exception e)
         {
-            throw new RuntimeException(e);
+            // Fallback: write to cwd ?!?
+            throw new RuntimeException("Cannot determine agent directory", e);
         }
     }
 
-    private static void Log(String message)
+    private static void log(String msg)
     {
-        if (log == null)
+        if(msg == null)
+            msg = "";
+        logContent.append("[LauncherAgent]  " + msg).append(System.lineSeparator());
+        tryWriteLog();
+    }
+
+    private static void tryWriteLog()
+    {
+        if (logPath == null)
             return;
 
-        log.println(message);
-        log.flush();
+        String content = logContent.toString();
+
+        for (int i = 0; i < 5; i++)
+        {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(logPath, false), StandardCharsets.UTF_8))
+            {
+                writer.write(content);
+                return;
+            }
+            catch (IOException e)
+            {
+                try
+                {
+                    Thread.sleep(50);
+                }
+                catch (InterruptedException ignored)
+                {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
     }
+
 }

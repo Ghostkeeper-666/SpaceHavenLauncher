@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SH.Content.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -8,13 +9,24 @@ namespace SH.Modding;
 public sealed class ModsJsonFile
 {
     [JsonPropertyOrder(0)]
-    public string Build { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");
+    public string SchemaVersion { get; set; } = "1";
 
     [JsonPropertyOrder(1)]
-    public List<string> AOPLibs { get; set; } = [];
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public EGamePlatform GamePlatform { get; set; }
 
     [JsonPropertyOrder(2)]
+    public string GameVersion { get; set; }
+
+    [JsonPropertyOrder(3)]
+    public string GameJarDir { get; set; }
+
+    [JsonPropertyOrder(4)]
+    public List<string> AOPLibs { get; set; } = [];
+
+    [JsonPropertyOrder(5)]
     public List<ModInfo> Mods { get; set; } = [];
+
 
     public string ToJsonString() => JsonSerializer.Serialize(this, new JsonSerializerOptions
     {

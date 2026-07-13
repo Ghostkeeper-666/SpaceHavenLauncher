@@ -27,7 +27,7 @@ public static class ModdingConstants
     public static readonly string MODS_JSON = "mods.json";
 
     public static readonly string TEMPLATE_SPACEHAVEN_JAR = "templatespacehaven.jar";
-    public static readonly string MODIFIED_SPACEHAVEN_JAR = "modifiedspacehaven.jar";
+    public static readonly string MODIFIED_SPACEHAVEN_JAR = SpaceHavenConstants.SPACEHAVEN_JAR;
 
     public static readonly string XML_BUILD_HASH_TXT = "xml.hash";
     public static readonly string JAVA_BUILD_HASH_TXT = "java.hash";

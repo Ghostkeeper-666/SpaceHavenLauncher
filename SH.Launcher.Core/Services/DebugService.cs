@@ -48,6 +48,7 @@ public sealed class DebugService
         // Some cache files:
         Add(Paths.CacheConfigJsonPath);
         Add(Paths.CacheModsJsonPath);
+        Add(Paths.LauncherAgentLogPath);
 
         // Some build files:
         if (IOUtils.DirectoryExists(Paths.BuildDir))

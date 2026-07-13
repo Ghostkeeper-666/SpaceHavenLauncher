@@ -110,6 +110,15 @@ public sealed class GameLauncherService
             }
             args.Add(mainClass);
 
+
+            // Clear any previously existing LauncherAgent log:
+            await IOUtils.TryDeleteFileAsync(Paths.LauncherAgentLogPath, Log, ct);
+
+            // Start monitoring the LauncherAgent log:
+            using LogMonitor monitor = new(Paths.LauncherAgentLogPath, FileShare.ReadWrite);
+            monitor.OnLog += Monitor_OnLog;
+            _ = monitor.RunAsync();
+
             // Create process:
             ProcessStartInfo info = new()
             {
@@ -146,11 +155,14 @@ public sealed class GameLauncherService
                 StartInfo = info,
             };
 
-            process.OutputDataReceived += (_, e) => Log.Debug(e?.Data);
-            process.ErrorDataReceived += (_, e) => Log.Debug(e?.Data);
+            process.OutputDataReceived += (_, e) => Log.Debug($"[java.exe]  ERROR: {e?.Data}");
+            process.ErrorDataReceived += (_, e) => Log.Debug($"[java.exe]  {e?.Data}");
 
             if (!process.Start())
+            {
+                await Task.Delay(200, ct);
                 return false;
+            }
 
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -168,15 +180,33 @@ public sealed class GameLauncherService
                         process.Kill(entireProcessTree: true);
                 }
                 catch { }
-
                 return false;
             }
         }
         catch (Exception ex)
         {
             Log.Error(ex);
+            if(!ct.IsCancellationRequested)
+                await Task.Delay(200, default);
             return false;
         }
+    }
+
+    private void Monitor_OnLog(object sender, string text)
+    {
+        try
+        {
+            if(text.IsNullOrWhiteSpace())
+                return;
+            LogMessage[] msgs =
+                text.Replace("\r", string.Empty)
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(text => new LogMessage(text.Contains("ERROR", StringComparison.Ordinal) ? ELogLevel.Error : ELogLevel.Debug, text.TrimEnd()))
+                .ToArray();
+            foreach(LogMessage msg in msgs)
+                Log.Add(msg);
+        }
+        catch { }
     }
 }
 

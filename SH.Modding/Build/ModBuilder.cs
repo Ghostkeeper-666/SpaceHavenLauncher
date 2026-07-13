@@ -20,19 +20,19 @@ namespace SH.Modding.Build;
 
 public sealed class ModBuilder : IAsyncDisposable
 {
-    private readonly BuildSettings Settings;
-    private BuildPathData Paths => Settings.Paths;
+    private readonly BuildSettings BuildSettings;
+    private BuildPathData Paths => BuildSettings.Paths;
 
     private readonly LoggerCollection Log;
     private FileLogger FileLogger;
 
     private BuildData Build;
-    private ParallelOptions ParallelOptions => Settings.ParallelOptions;
-    private CancellationToken CT => Settings.CT;
+    private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
+    private CancellationToken CT => BuildSettings.CT;
 
-    private IProgressInfo Initialization => Settings.InitializationProgress;
+    private IProgressInfo Initialization => BuildSettings.InitializationProgress;
 
-    private IProgressInfo XmlBuild => Settings.XmlBuildProgress;
+    private IProgressInfo XmlBuild => BuildSettings.XmlBuildProgress;
     private IProgressInfo ResetXmlBuild;
     private IProgressInfo CopyTemplateFiles;
     private IProgressInfo LoadXml;
@@ -47,7 +47,7 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo PatchXmlFiles;
     private IProgressInfo BuildJarFile;
 
-    private IProgressInfo JavaBuild => Settings.JavaBuildProgress;
+    private IProgressInfo JavaBuild => BuildSettings.JavaBuildProgress;
     private IProgressInfo ResetJavaBuild;
     private IProgressInfo PrepareJavaFiles;
 
@@ -82,8 +82,8 @@ public sealed class ModBuilder : IAsyncDisposable
 
     public ModBuilder(BuildSettings settings, ILogger logger)
     {
-        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        Settings.Paths = new(
+        BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
+        BuildSettings.Paths = new(
             settings.AppDir,
             settings.WorkDir,
             settings.SpaceHavenDir,
@@ -92,7 +92,7 @@ public sealed class ModBuilder : IAsyncDisposable
         Log = new LoggerCollection(logger);
     }
 
-    private void Fail() => Settings.Fail();
+    private void Fail() => BuildSettings.Fail();
 
 
 
@@ -115,10 +115,10 @@ public sealed class ModBuilder : IAsyncDisposable
         {
             Log.Info($"Starting Build...", Paths.BuildDirectory);
 
-            Build = new BuildData(Settings, Log);
+            Build = new BuildData(BuildSettings, Log);
 
             // No mods?
-            if ((Settings?.Mods?.Count ?? 0) <= 0)
+            if ((BuildSettings?.Mods?.Count ?? 0) <= 0)
             {
                 Log.Error("There are no mods enabled");
                 return false;
@@ -391,10 +391,10 @@ public sealed class ModBuilder : IAsyncDisposable
             Clock.Restart();
 
             // Initialize build data, and start logging build to file, right after the build directory reset:
-            Build = new(Settings, Log);
+            Build = new(BuildSettings, Log);
 
             // Add mods:
-            Build.AddMods(Settings.Mods);
+            Build.AddMods(BuildSettings.Mods);
             Initialization?.SetNormalized(0.45);
 
             // Load mod variables:
@@ -413,8 +413,11 @@ public sealed class ModBuilder : IAsyncDisposable
             Initialization?.Complete();
 
             // 'mods.json' file:
-            Build.ModsJsonFile.AOPLibs.Add(ModdingConstants.ASPECTJ);
-            Build.ModsJsonFile.AOPLibs.Add(ModdingConstants.ASPECTJWEAVER);
+            Build.ModsJsonFile.GamePlatform = BuildSettings.GamePlatform;
+            Build.ModsJsonFile.GameVersion = BuildSettings.SpaceHavenVersion.ToString();
+            Build.ModsJsonFile.GameJarDir = Paths.SpaceHavenJarDir;
+            Build.ModsJsonFile.AOPLibs.Add(Path.Combine(Paths.CacheDirectory, ModdingConstants.ASPECTJ));
+            Build.ModsJsonFile.AOPLibs.Add(Path.Combine(Paths.CacheDirectory, ModdingConstants.ASPECTJWEAVER));
             Build.ModsJsonFile.AOPLibs.Sort();
 
             foreach (ModBuildData mod in Build.Mods)
@@ -495,7 +498,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Is a new build required?
             NeedsXmlBuild = Build.HasXmlMods;
             NeedsJavaBuild = Build.HasJavaMods;
-            if (Settings.SkipRebuilding)
+            if (BuildSettings.SkipRebuilding)
             {
                 NeedsXmlBuild &=
                     IsNewJar ||
