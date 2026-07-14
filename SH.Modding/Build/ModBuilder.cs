@@ -135,18 +135,27 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await TryInitialize())
                 return false;
 
-            // JAVA build:
+            // Skip message:
             if (NeedsJavaBuild)
+                JavaBuild.Start();
+            else
             {
-                // Copy JAVA hash file to cache directory:
-                if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
-                    return false;
+                Log.Success("JAVA build skipped");
+                JavaBuild.Complete();
+                JavaBuild.RemoveAll();
             }
-            else Log.Success("JAVA build skipped");
-            JavaBuild.Complete();
 
-            // XML Build:
             if (NeedsXmlBuild)
+                XmlBuild.Start();
+            else
+            {
+                Log.Success("XML build skipped");
+                XmlBuild.Complete();
+                XmlBuild.RemoveAll();
+            }
+
+
+            if (NeedsJavaBuild || NeedsXmlBuild)
             {
                 // Clear build directories:
                 if (!await TryResetXmlBuild())
@@ -159,11 +168,18 @@ public sealed class ModBuilder : IAsyncDisposable
                 CopyTemplateFiles.Complete();
                 Log.Debug($"{CopyTemplateFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildDirectory);
 
-                // Load XML files:
-                Clock.Restart();
-                // Read base XML files:
+                // Read Space Haven XML files:
                 if (!await Build.TryLoadXmlFiles(CT))
                     return false;
+
+                // Write modified version:
+                if (!await Build.TryWriteVersion(Log, CT))
+                    return false;
+            }
+
+
+            if (NeedsXmlBuild)
+            {
                 // Read mod XML files, evaluating with previously loaded variable values:
                 await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
                 {
@@ -173,12 +189,6 @@ public sealed class ModBuilder : IAsyncDisposable
                         return;
                     }
                 });
-                LoadXml.Complete();
-                Log.Debug($"{LoadXml} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildDirectory);
-
-                // Write modified version:
-                if (!await Build.TryWriteVersion(Log, CT))
-                    return false;
 
                 // Merge XML:
                 if (!await TryMergeXML())
@@ -186,10 +196,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Patch XML:
                 if (!await TryPatchXML())
-                    return false;
-
-                // Fix Text entries:
-                if (!await TryFixTexts())
                     return false;
 
                 // Merge Audio:
@@ -200,6 +206,19 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await TryGenerateTextures())
                     return false;
 
+                // Fix Text entries:
+                if (!await TryFixTexts())
+                    return false;
+
+                // Copy XML hash file:
+                if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
+                    return false;
+            }
+            else Log.Success("XML build skipped");
+
+
+            if (NeedsJavaBuild || NeedsXmlBuild)
+            {
                 // Save all XML files:
                 foreach (XmlFile xmlFile in Build.XmlFile.Values)
                     if (!await xmlFile.TrySaveAsync(Log, CT))
@@ -210,24 +229,34 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Also, ignore errors
                 await TryComposeGameCredits();
 
-                // Copy XML hash file:
-                if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
+                // Always build the modifiedspacehaven.jar file:
+                if (!await TryCreateModifiedSpaceHavenJarFile())
+                    return false;
+
+                // Copy template config.json
+                if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
                     return false;
             }
-            else Log.Success("XML build skipped");
-            XmlBuild.Complete();
 
-            // Always build the modifiedspacehaven.jar file:
-            if (!await TryCreateModifiedSpaceHavenJarFile())
-                return false;
 
-            // Copy template config.json
-            if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
-                return false;
+            if (NeedsJavaBuild)
+            {
+                // Create mods.json file for JAVA modders:
+                if (!await TryWriteModsJson())
+                    return false;
 
-            // Create mods.json file for JAVA modders:
-            if (!await TryWriteModsJson())
-                return false;
+                // Copy JAVA hash file:
+                if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
+                    return false;
+            }
+
+
+            // Complete:
+            if(NeedsJavaBuild)
+                JavaBuild.Complete();
+            if(NeedsXmlBuild)
+                XmlBuild.Complete();
+
 
             // Done.
             Log.Success($"{this} has completed", Paths.BuildDirectory);
