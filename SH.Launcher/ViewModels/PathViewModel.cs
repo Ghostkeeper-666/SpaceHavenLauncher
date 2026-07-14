@@ -1,29 +1,69 @@
-﻿using SH.Framework.IO;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Content;
+using SH.Framework.IO;
 using SH.Framework.Logging;
-using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Launcher.Core.Models;
 using System;
 using System.ComponentModel;
-using System.Threading.Tasks;
 using System.Threading;
-using SH.Content;
+using System.Threading.Tasks;
 
 namespace SH.Launcher.ViewModels;
 
 public partial class PathViewModel : ObservableObject
 {
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
+
     public PathData Data { get; private set; }
 
-    public PathViewModel(PathData data) =>
-        SetData(data);
+    [ObservableProperty]
+    private string _SpaceHavenName;
 
-    public async Task<bool> TryReadSpaceHavenVersion(ILogger logger, CancellationToken ct)
+    [ObservableProperty]
+    private VersionInfo _SpaceHavenVersion;
+
+    [ObservableProperty]
+    private string _SteamDir;
+
+    [ObservableProperty]
+    private string _SteamModsDir;
+
+    [ObservableProperty]
+    private string _ClassicModsDir;
+
+    [ObservableProperty]
+    private string _SpaceHavenDir;
+
+    [ObservableProperty]
+    private string _SpaceHavenJarDir;
+
+    [ObservableProperty]
+    private string _AppDir;
+
+    [ObservableProperty]
+    private string _WorkDir;
+
+    [ObservableProperty]
+    private string _ExportDir;
+
+    [ObservableProperty]
+    private string _ModValuesDir;
+
+    [ObservableProperty]
+    private string _JREPath;
+
+
+
+    public PathViewModel(PathData data)
     {
-        if (!await Data.TryReadSpaceHavenVersion(logger, ct))
-            return false;
-        SpaceHavenVersion = Data.SpaceHavenVersion;
-        return true;
+        SetData(data);
     }
+
+
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -90,42 +130,12 @@ public partial class PathViewModel : ObservableObject
         catch { }
     }
 
-    public string LearningDir => Data.LearningDir;
-
-    [ObservableProperty]
-    private string _SpaceHavenName;
-
-    [ObservableProperty]
-    private VersionInfo _SpaceHavenVersion;
-
-    [ObservableProperty]
-    private string _SteamDir;
-
-    [ObservableProperty]
-    private string _SteamModsDir;
-
-    [ObservableProperty]
-    private string _ClassicModsDir;
-
-    [ObservableProperty]
-    private string _SpaceHavenDir;
-
-    [ObservableProperty]
-    private string _SpaceHavenJarDir;
-
-    [ObservableProperty]
-    private string _AppDir;
-
-    [ObservableProperty]
-    private string _WorkDir;
-
-    [ObservableProperty]
-    private string _ExportDir;
-
-    [ObservableProperty]
-    private string _ModValuesDir;
-
-    [ObservableProperty]
-    private string _JREPath;
+    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
+    {
+        if (!await Data.TryReadSpaceHavenVersion(log, ct))
+            return false;
+        SpaceHavenVersion = Data.SpaceHavenVersion;
+        return true;
+    }
 
 }

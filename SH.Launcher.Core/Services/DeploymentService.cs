@@ -22,10 +22,10 @@ public sealed class DeploymentService
     private readonly PathData Paths;
     private readonly ILogger Log;
 
-    public DeploymentService(PathData paths, ILogger logger)
+    public DeploymentService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     private async Task<bool> IsModifiedJar(string jarPath)

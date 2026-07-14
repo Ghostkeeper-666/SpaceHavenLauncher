@@ -32,8 +32,10 @@ public sealed class Asset
     public int StartFrame => (int)Xml.StartFrame;
     public int EndFrame => (int)Xml.EndFrame;
 
-    public Asset(AnimationXml_Item xml) =>
+    public Asset(AnimationXml_Item xml)
+    {
         Xml = xml;
+    }
 
     public bool IsVisibleInFrame(int frameId)
     {

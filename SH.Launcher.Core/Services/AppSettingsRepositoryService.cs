@@ -15,10 +15,10 @@ public sealed class AppSettingsRepositoryService
 
     private readonly ILogger Log;
 
-    public AppSettingsRepositoryService(PathData paths, ILogger logger)
+    public AppSettingsRepositoryService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     /// <summary>

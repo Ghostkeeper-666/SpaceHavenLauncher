@@ -2,50 +2,56 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
+using SH.Launcher.Extensions;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace SH.Launcher.ViewModels;
 
 public partial class LearningComputerViewModel : ViewModelBase
 {
-    public LearningComputerViewModel() { }
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/LearningComputer.jpg");
 
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
-    public AppSettingsViewModel AppSettings => State.AppSettings;
-
+    [ObservableProperty]
+    private LearningItemViewModel _SelectedItem;
 
     [ObservableProperty]
-    private LearningItem _SelectedItem;
-
-    [ObservableProperty]
-    private ObservableCollection<LearningItem> _LearningItems = [];
+    private ObservableCollection<LearningItemViewModel> _LearningItems = [];
 
     [ObservableProperty]
     private string _MarkdownText;
+
+
+
+    public LearningComputerViewModel()
+    {
+    }
+
+
 
     public async Task Start()
     {
         State.ForcedBackground = BackgroundImage;
         LearningItems.Clear();
-        List<string> learningFiles = Paths.LearningDir.GetFiles(ESearchOption.TopDir);
+        List<string> learningFiles = Paths.Data.LearningDir.GetFiles(ESearchOption.TopDir);
         foreach (string learningFile in learningFiles.OrderBy(path => path))
         {
-            LearningItem learningItem = new(this, learningFile);
+            LearningItemViewModel learningItem = new(this, learningFile);
             LearningItems.Add(learningItem);
         }
         SelectedItem = LearningItems.FirstOrDefault();
     }
 
-    async partial void OnSelectedItemChanged(LearningItem value) =>
+    async partial void OnSelectedItemChanged(LearningItemViewModel value) =>
         MarkdownText = await IOUtils.TryReadAllTextAsync(value?.Path, Log, default);
 
 }

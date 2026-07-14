@@ -8,28 +8,13 @@ using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class LeftScreen : ObservableObject
+public partial class LeftScreenViewModel : ObservableObject
 {
-    public LeftScreen()
-    {
-        for (int line = 0; line < LineCount; ++line)
-        {
-            Error.Add(false);
-            TextColor.Add(TextBrush_Standby);
-            ProgressBarBorder.Add(new());
-            ProgressBarBackground.Add(new());
-            for (int bar = 0; bar < ProgressBarStepCount; ++bar)
-            {
-                ProgressBarBorder[line].Add(BorderBrush_Standby);
-                ProgressBarBackground[line].Add(BackgroundBrush_Standby);
-            }
-        }
-        Reset();
-    }
-
-    private SharedState State => SharedState.State;
-    private DispatchQueue DispatchQueue => State.DispatchQueue;
-    private ILogger Log => State.Log;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private int LineCount => Texts.Count;
     private const int ProgressBarStepCount = 5;
@@ -94,8 +79,27 @@ public partial class LeftScreen : ObservableObject
     [ObservableProperty]
     private EControlState _LeftButtonsState;
 
-
     private readonly int Steps = EnumX.MaxValue<ELeftScreenStep>() + 1;
+
+
+
+    public LeftScreenViewModel()
+    {
+        for (int line = 0; line < LineCount; ++line)
+        {
+            Error.Add(false);
+            TextColor.Add(TextBrush_Standby);
+            ProgressBarBorder.Add(new());
+            ProgressBarBackground.Add(new());
+            for (int bar = 0; bar < ProgressBarStepCount; ++bar)
+            {
+                ProgressBarBorder[line].Add(BorderBrush_Standby);
+                ProgressBarBackground[line].Add(BackgroundBrush_Standby);
+            }
+        }
+        Reset();
+    }
+
 
 
     public void Reset()
@@ -105,13 +109,16 @@ public partial class LeftScreen : ObservableObject
     }
 
     public async void OnBackupOriginalProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Backup, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ELeftScreenStep.Backup, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+
     public async void OnCreateTemplateProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Template, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ELeftScreenStep.Template, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+
     public async void OnValidateCacheProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.Cache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ELeftScreenStep.Cache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+
     public async void OnLoadModsProgressAsync(object _, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public void SetError(ELeftScreenStep step)
     {
@@ -119,7 +126,7 @@ public partial class LeftScreen : ObservableObject
         LeftButtonsState = EControlState.Error;
     }
 
-    private void Set(ELeftScreenStep step, bool error, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
+    private void Set(ELeftScreenStep step, bool error, double progress, bool hasStarted) => AppViewModel.Dispatcher.Run(() =>
     {
         int line = (int)step;
 
@@ -168,10 +175,5 @@ public partial class LeftScreen : ObservableObject
             return;
         }
     });
-
-
-
-
-
 
 }

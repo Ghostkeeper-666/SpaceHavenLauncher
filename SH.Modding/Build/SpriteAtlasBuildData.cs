@@ -1,6 +1,5 @@
 ﻿using SH.Framework.Extensions;
 using SH.Framework.Logging;
-using SH.RectPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;

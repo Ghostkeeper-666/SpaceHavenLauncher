@@ -19,8 +19,10 @@ public sealed class JarRepositoryService
 {
     private readonly ILogger Log;
 
-    public JarRepositoryService(ILogger logger) =>
-        Log = logger ?? new VoidLogger();
+    public JarRepositoryService(ILogger log)
+    {
+        Log = log ?? new VoidLogger();
+    }
 
     public async Task<VersionInfo> TryReadVersionAsync(string jarPath) =>
         await Task.Run(() => TryReadVersionInternalAsync(jarPath));

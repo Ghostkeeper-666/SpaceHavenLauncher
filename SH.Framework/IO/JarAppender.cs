@@ -19,7 +19,7 @@ public sealed class JarAppender
     /// A simple class for adding uncompressed files to a JAR file as fast as possible.
     /// File sizes bigger than 2GB are not supported.
     /// </summary>
-    public async Task<bool> AppendTo(string sourcePath, string targetPath, string baseDir, FileInfo[] newFiles, ILogger logger, ParallelOptions parallelOptions)
+    public async Task<bool> AppendTo(string sourcePath, string targetPath, string baseDir, FileInfo[] newFiles, ILogger log, ParallelOptions parallelOptions)
     {
         const string tooBig = "JAR file is too big";
         try
@@ -34,7 +34,7 @@ public sealed class JarAppender
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(sourceFI.Length, int.MaxValue, nameof(sourceFileSize));
 
             // Read source bytes:
-            byte[] sourceBytes = await IOUtils.TryReadAllBytesAsync(sourcePath, logger, parallelOptions?.CancellationToken ?? default);
+            byte[] sourceBytes = await IOUtils.TryReadAllBytesAsync(sourcePath, log, parallelOptions?.CancellationToken ?? default);
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(sourceBytes.Length, int.MaxValue, nameof(sourceFileSize));
 
             // Find EOCD:
@@ -118,12 +118,12 @@ public sealed class JarAppender
                 {
                     if (fi.Length >= int.MaxValue)
                     {
-                        logger?.Error($@"File is too big: ""{fi.FullName}""");
+                        log?.Error($@"File is too big: ""{fi.FullName}""");
                         ownCTS.Cancel();
                         return;
                     }
 
-                    byte[] data = await IOUtils.TryReadAllBytesAsync(fi.FullName, logger, ct);
+                    byte[] data = await IOUtils.TryReadAllBytesAsync(fi.FullName, log, ct);
                     if (data == null)
                     {
                         ownCTS.Cancel();
@@ -135,7 +135,7 @@ public sealed class JarAppender
                     string path = fi.FullName.AsStdPath();
                     if (!path.StartsWith(baseDir))
                     {
-                        logger?.Error($@"File is not within base directory: ""{fi.FullName}""");
+                        log?.Error($@"File is not within base directory: ""{fi.FullName}""");
                         ownCTS.Cancel();
                         return;
                     }
@@ -143,7 +143,7 @@ public sealed class JarAppender
                     string relativePath = path.Substring(baseDir.Length);
                     if (relativePath.IsWhiteSpace())
                     {
-                        logger?.Error($@"Invalid file path: ""{fi.FullName}""");
+                        log?.Error($@"Invalid file path: ""{fi.FullName}""");
                         ownCTS.Cancel();
                         return;
                     }
@@ -168,7 +168,7 @@ public sealed class JarAppender
                     {
                         if (targetMS.Position >= int.MaxValue)
                         {
-                            logger?.Error(tooBig);
+                            log?.Error(tooBig);
                             ownCTS.Cancel();
                             return;
                         }
@@ -178,7 +178,7 @@ public sealed class JarAppender
                     }
                     catch (Exception ex)
                     {
-                        logger?.Error(ex);
+                        log?.Error(ex);
                         ownCTS.Cancel();
                         return;
                     }
@@ -203,7 +203,7 @@ public sealed class JarAppender
             long targetCDOffset = targetMS.Position;
             if (targetCDOffset + sourceCDSize >= int.MaxValue)
             {
-                logger?.Error(tooBig);
+                log?.Error(tooBig);
                 return false;
             }
             targetMS.Write(sourceBytes, (int)sourceCDOffset, (int)sourceCDSize);
@@ -217,7 +217,7 @@ public sealed class JarAppender
                 targetCDSize += cde.TotalLength;
                 if (targetCDSize >= int.MaxValue)
                 {
-                    logger?.Error(tooBig);
+                    log?.Error(tooBig);
                     return false;
                 }
                 cde.Write(targetBW);
@@ -230,7 +230,7 @@ public sealed class JarAppender
             long sourceEocdSize = sourceBytes.Length - (int)sourceEOCDOffset;
             if (targetEocdOffset + sourceEocdSize >= int.MaxValue)
             {
-                logger?.Error(tooBig);
+                log?.Error(tooBig);
                 return false;
             }
             targetMS.Write(sourceBytes, (int)sourceEOCDOffset, sourceBytes.Length - (int)sourceEOCDOffset);
@@ -239,7 +239,7 @@ public sealed class JarAppender
             long targetTotalEntries = lfes.Count + (long)sourceTotalEntries;
             if (targetTotalEntries > ushort.MaxValue)
             {
-                logger?.Error($@"Total number of entries ({targetTotalEntries}) exceeds maximum capacity");
+                log?.Error($@"Total number of entries ({targetTotalEntries}) exceeds maximum capacity");
                 return false;
             }
 
@@ -263,7 +263,7 @@ public sealed class JarAppender
 
             // Write file:
             targetMS.Position = 0;
-            if (!await IOUtils.TryWriteMemoryStreamToFileAsync(targetPath, targetMS, 0, targetEndOfStream, logger, ct))
+            if (!await IOUtils.TryWriteMemoryStreamToFileAsync(targetPath, targetMS, 0, targetEndOfStream, log, ct))
                 return false;
 
             // Done.
@@ -272,7 +272,7 @@ public sealed class JarAppender
         catch(OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }

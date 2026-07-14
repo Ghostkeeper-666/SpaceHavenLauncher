@@ -14,9 +14,9 @@ namespace SH.Content.Xml;
 
 public sealed class AnimationsXmlRepository
 {
-    public AnimationsXmlRepository(ILogger logger)
+    public AnimationsXmlRepository(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     private readonly ILogger Log;

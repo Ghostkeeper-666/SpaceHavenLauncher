@@ -17,7 +17,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        SharedState.State.Log.SetLogLevel(ELogLevel.Info);
+        AppViewModel.State.Log.SetLogLevel(ELogLevel.Info);
 
         ToolTip.ShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);
         ToolTip.BetweenShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);

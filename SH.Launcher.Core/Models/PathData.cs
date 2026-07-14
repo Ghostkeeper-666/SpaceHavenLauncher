@@ -30,18 +30,18 @@ public sealed class PathData
         JREPath = data.JREPath;
     }
 
-    public async Task<bool> TryReadSpaceHavenVersion(ILogger logger, CancellationToken ct)
+    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
     {
         try
         {
             VersionParserService svc = new();
-            SpaceHavenVersion = await svc.TryReadVersion(TemplateStageVersionPath, logger, ct);
+            SpaceHavenVersion = await svc.TryReadVersion(TemplateStageVersionPath, log, ct);
             return SpaceHavenVersion != null;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }

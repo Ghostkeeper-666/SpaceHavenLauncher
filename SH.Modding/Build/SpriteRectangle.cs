@@ -1,4 +1,4 @@
-﻿namespace SH.RectPack;
+﻿namespace SH.Modding.Build;
 
 public struct SpriteRectangle
 {

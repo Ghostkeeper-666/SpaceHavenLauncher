@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SH.RectPack;
+namespace SH.Modding.Build;
 
 public sealed class SpritePacker
 {

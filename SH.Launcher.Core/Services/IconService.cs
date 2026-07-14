@@ -10,8 +10,10 @@ public sealed class IconService
 {
     private readonly ILogger Log;
 
-    public IconService(ILogger logger) =>
-        Log = logger ?? new VoidLogger();
+    public IconService(ILogger log)
+    {
+        Log = log ?? new VoidLogger();
+    }
 
     public void CreateSpaceHavenLauncherWindowsDesktopIcon()
     {

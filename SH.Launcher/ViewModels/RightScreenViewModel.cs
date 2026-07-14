@@ -8,28 +8,13 @@ using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class RightScreen : ObservableObject
+public partial class RightScreenViewModel : ObservableObject
 {
-    public RightScreen()
-    {
-        for (int line = 0; line < LineCount; ++line)
-        {
-            Error.Add(false);
-            TextColor.Add(TextBrush_Standby);
-            ProgressBarBorder.Add(new());
-            ProgressBarBackground.Add(new());
-            for (int bar = 0; bar < ProgressBarStepCount; ++bar)
-            {
-                ProgressBarBorder[line].Add(BorderBrush_Standby);
-                ProgressBarBackground[line].Add(BackgroundBrush_Standby);
-            }
-        }
-        Reset();
-    }
-
-    private SharedState State => SharedState.State;
-    private DispatchQueue DispatchQueue => State.DispatchQueue;
-    private ILogger Log => State.Log;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private int LineCount => Texts.Count;
     private const int ProgressBarStepCount = 5;
@@ -88,7 +73,6 @@ public partial class RightScreen : ObservableObject
     [ObservableProperty]
     private ObservableCollection<ObservableCollection<IBrush>> _ProgressBarBackground = [];
 
-
     [ObservableProperty]
     private bool _RightButtonsHovered;
     [ObservableProperty]
@@ -96,8 +80,28 @@ public partial class RightScreen : ObservableObject
     [ObservableProperty]
     private EControlState _RightButtonsState;
 
-
     private readonly int Steps = EnumX.MaxValue<ERightScreenStep>() + 1;
+
+
+
+    public RightScreenViewModel()
+    {
+        for (int line = 0; line < LineCount; ++line)
+        {
+            Error.Add(false);
+            TextColor.Add(TextBrush_Standby);
+            ProgressBarBorder.Add(new());
+            ProgressBarBackground.Add(new());
+            for (int bar = 0; bar < ProgressBarStepCount; ++bar)
+            {
+                ProgressBarBorder[line].Add(BorderBrush_Standby);
+                ProgressBarBackground[line].Add(BackgroundBrush_Standby);
+            }
+        }
+        Reset();
+    }
+
+
 
     public void Reset()
     {
@@ -106,16 +110,16 @@ public partial class RightScreen : ObservableObject
     }
 
     public async void OnExportOriginalLibraryProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ERightScreenStep.ExportOriginalLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportOriginalTexturesProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportOriginalTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ERightScreenStep.ExportOriginalTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportModifiedLibraryProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ERightScreenStep.ExportModifiedLibrary, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnExportModifiedTexturesProgressAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(() => Set(ERightScreenStep.ExportModifiedTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(() => Set(ERightScreenStep.ExportModifiedTextures, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public void SetError(ERightScreenStep step)
     {
@@ -123,7 +127,7 @@ public partial class RightScreen : ObservableObject
         RightButtonsState = EControlState.Error;
     }
 
-    private void Set(ERightScreenStep step, bool error, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
+    private void Set(ERightScreenStep step, bool error, double progress, bool hasStarted) => Dispatcher.Run(() =>
     {
         int line = (int)step;
 
@@ -172,6 +176,5 @@ public partial class RightScreen : ObservableObject
             return;
         }
     });
-
 
 }

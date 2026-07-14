@@ -100,35 +100,35 @@ public sealed class XmlFile
     public IEnumerable<XElement> GetNodes(NodeType nodeType) =>
         Xml.XPathSelectElements(nodeType.XPath) ?? [];
 
-    public bool TrySetXmlContent(string xml, ILogger logger)
+    public bool TrySetXmlContent(string xml, ILogger log)
     {
         xml = IOUtils.EraseXmlDeclaration(xml);
         XDocument x = XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         if(x == null)
         {
-            logger?.Error($@"Unable to parse new XML content");
+            log?.Error($@"Unable to parse new XML content");
             return false;
         }
         Xml = x;
         return true;
     }
 
-    public async Task<bool> TryReparse(ILogger logger, CancellationToken ct)
+    public async Task<bool> TryReparse(ILogger log, CancellationToken ct)
     {
-        XDocument reparsed = await IOUtils.TryReparseAsync(Xml, null, logger, ct);
+        XDocument reparsed = await IOUtils.TryReparseAsync(Xml, null, log, ct);
         if(reparsed == null)
             return false;
         Xml = reparsed;
         return true;
     }
 
-    public async Task<bool> TrySaveAsync(ILogger logger, CancellationToken ct) =>
-        await IOUtils.TrySaveXDocumentAsync(Path, Xml, null, logger, ct);
+    public async Task<bool> TrySaveAsync(ILogger log, CancellationToken ct) =>
+        await IOUtils.TrySaveXDocumentAsync(Path, Xml, null, log, ct);
 
-    public async Task<bool> TrySaveToAsync(string path, ILogger logger, CancellationToken ct) =>
-        await IOUtils.TrySaveXDocumentAsync(path, Xml, null, logger, ct);
+    public async Task<bool> TrySaveToAsync(string path, ILogger log, CancellationToken ct) =>
+        await IOUtils.TrySaveXDocumentAsync(path, Xml, null, log, ct);
 
-    public bool TryRunXPath(string xpath, out List<XElement> targetNodes, ILogger logger)
+    public bool TryRunXPath(string xpath, out List<XElement> targetNodes, ILogger log)
     {
         targetNodes = [];
         try
@@ -138,46 +138,46 @@ public sealed class XmlFile
         }
         catch (Exception ex)
         {
-            logger?.Error(ex, Path);
+            log?.Error(ex, Path);
             return false;
         }
     }
 
-    public async Task<bool> TryLoadAsync(ILogger logger, CancellationToken ct)
+    public async Task<bool> TryLoadAsync(ILogger log, CancellationToken ct)
     {
         try
         {
-            logger?.Debug($@"Loading XML document: ""{Path}""", Path);
+            log?.Debug($@"Loading XML document: ""{Path}""", Path);
 
             // Workaround for removing syntax errors from XML documents:
             if (Type == EXmlFileType.Texts)
-                await TrySanitizeXmlDocument(logger, ct);
+                await TrySanitizeXmlDocument(log, ct);
 
-            Xml = await IOUtils.TryLoadXDocumentAsync(Path, logger, ct);
+            Xml = await IOUtils.TryLoadXDocumentAsync(Path, log, ct);
             return Xml != null;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex, Path);
+            log?.Error(ex, Path);
             return false;
         }
     }
 
-    private async Task<bool> TrySanitizeXmlDocument(ILogger logger, CancellationToken ct)
+    private async Task<bool> TrySanitizeXmlDocument(ILogger log, CancellationToken ct)
     {
         try
         {
-            logger?.Debug($@"Sanitizing XML document: ""{Path}""");
+            log?.Debug($@"Sanitizing XML document: ""{Path}""");
 
-            string dirty = await IOUtils.TryReadAllTextAsync(Path, logger, ct);
+            string dirty = await IOUtils.TryReadAllTextAsync(Path, log, ct);
             string sanitized = FixAmpersandAndInvalidCharacters(dirty, new char[] { (char)0x1B });
-            return await IOUtils.TryWriteAllTextAsync(Path, sanitized, logger, ct);
+            return await IOUtils.TryWriteAllTextAsync(Path, sanitized, log, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex, Path);
+            log?.Error(ex, Path);
             return false;
         }
     }

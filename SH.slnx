@@ -12,6 +12,7 @@
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="LICENSE.txt" />
+    <File Path="TODO.txt" />
   </Folder>
   <Project Path="SH.Content.Test/SH.Content.Test.csproj" Id="76bb90bc-ca07-487b-866d-3358b12c6da2">
     <Build Project="false" />
@@ -24,5 +25,4 @@
   <Project Path="SH.Launcher.Core/SH.Launcher.Core.csproj" Id="402170b2-5486-4ce9-a4bd-ad672d4f84be" />
   <Project Path="SH.Launcher/SH.Launcher.csproj" />
   <Project Path="SH.Modding/SH.Modding.csproj" Id="92319152-08ed-4fa1-acb6-00839b31df6b" />
-  <Project Path="SH.RectPack/SH.RectPack.csproj" Id="dc735e36-8e16-48e1-8d4d-1e2eee6e1bbd" />
 </Solution>

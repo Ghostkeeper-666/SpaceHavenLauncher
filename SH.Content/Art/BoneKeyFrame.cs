@@ -24,6 +24,8 @@ public sealed class BoneKeyFrame
         (byte)(Xml.ColorMask & 0xFF)
     );
 
-    public BoneKeyFrame(AnimationXml_BonePosition xml) =>
+    public BoneKeyFrame(AnimationXml_BonePosition xml)
+    {
         Xml = xml;
+    }
 }

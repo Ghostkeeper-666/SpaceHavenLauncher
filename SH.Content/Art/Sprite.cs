@@ -35,7 +35,7 @@ public sealed class Sprite : IEquatable<Sprite>
     public SKBitmap SKBitmap { get; private set; }
 
 
-    public bool TryReadPixelData(ILogger logger)
+    public bool TryReadPixelData(ILogger log)
     {
         try
         {
@@ -48,7 +48,7 @@ public sealed class Sprite : IEquatable<Sprite>
         }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }
@@ -62,7 +62,7 @@ public sealed class Sprite : IEquatable<Sprite>
         Marshal.Copy(PixelData, 0, SKBitmap.GetPixels(), PixelData.Length);
     }
 
-    public async Task<bool> TryExportToPngAsync(string path, ILogger logger, CancellationToken ct)
+    public async Task<bool> TryExportToPngAsync(string path, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -77,7 +77,7 @@ public sealed class Sprite : IEquatable<Sprite>
         catch (OperationCanceledException) { throw; }
         catch(Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }

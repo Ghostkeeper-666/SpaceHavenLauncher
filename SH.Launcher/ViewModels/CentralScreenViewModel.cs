@@ -8,26 +8,13 @@ using System.Threading.Tasks;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class CentralScreen : ObservableObject
+public partial class CentralScreenViewModel : ObservableObject
 {
-    public CentralScreen()
-    {
-        Title = Title_Empty;
-        for (int line = 0; line < LineCount; ++line)
-        {
-            Text.Add(string.Empty);
-            TextColor.Add(TextBrush_Offline);
-        }
-        for (int bar = 0; bar < ProgressBarCount; ++bar)
-        {
-            ProgressBarBorder.Add(BorderBrush_Inactive);
-            ProgressBarBackground.Add(BackgroundBrush_Inactive);
-        }
-    }
-
-    private SharedState State => SharedState.State;
-    private DispatchQueue DispatchQueue => State.DispatchQueue;
-    private ILogger Log => State.Log;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private const int LineCount = 4;
     private const int ProgressBarCount = 8;
@@ -61,7 +48,6 @@ public partial class CentralScreen : ObservableObject
         Brushes.GreenYellow,
         Brushes.Lime,
     ];
-
 
     private readonly string Title_Empty = " NAVIGATION CONSOLE ";
     private readonly string Title_Running = "HYPERDRIVE ACTIVATED";
@@ -112,25 +98,40 @@ public partial class CentralScreen : ObservableObject
     private EControlState _RightLeverState;
 
 
+    public CentralScreenViewModel()
+    {
+        Title = Title_Empty;
+        for (int line = 0; line < LineCount; ++line)
+        {
+            Text.Add(string.Empty);
+            TextColor.Add(TextBrush_Offline);
+        }
+        for (int bar = 0; bar < ProgressBarCount; ++bar)
+        {
+            ProgressBarBorder.Add(BorderBrush_Inactive);
+            ProgressBarBackground.Add(BackgroundBrush_Inactive);
+        }
+    }
+
+
+
     public async void OnProgress_CentralScreenProgressBarAsync(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetProgressBarAsync(e.Progress.NormalizedValue));
+        Dispatcher.Run(async () => await SetProgressBarAsync(e.Progress.NormalizedValue));
 
     public async void OnProgress_CentralScreenLine0Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(0, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(async () => await SetTextAsync(0, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine1Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(1, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(async () => await SetTextAsync(1, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine2Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(2, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(async () => await SetTextAsync(2, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_CentralScreenLine3Async(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTextAsync(3, e.Progress.NormalizedValue, e.Progress.HasStarted));
+        Dispatcher.Run(async () => await SetTextAsync(3, e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public async void OnProgress_Title(object sender, ProgressEventArgs e) =>
-        DispatchQueue.TryEnqueue(async () => await SetTitleAsync(e.Progress.NormalizedValue, e.Progress.HasStarted));
-
-
+        Dispatcher.Run(async () => await SetTitleAsync(e.Progress.NormalizedValue, e.Progress.HasStarted));
 
     public void ShowEmptyOnMonitor()
     {
@@ -173,7 +174,6 @@ public partial class CentralScreen : ObservableObject
         }
     }
 
-
     public void ShowLaunchModifiedTitleOnMonitor()
     {
         if (State.IsProcessing)
@@ -198,9 +198,7 @@ public partial class CentralScreen : ObservableObject
         }
     }
 
-
-
-    private async Task SetProgressBarAsync(double progress) => State.DispatchQueue.TryEnqueue(() =>
+    private async Task SetProgressBarAsync(double progress) => AppViewModel.Dispatcher.Run(() =>
     {
         if (progress <= 0.0)
         {
@@ -230,9 +228,7 @@ public partial class CentralScreen : ObservableObject
         }
     });
 
-
-
-    private async Task SetTextAsync(int line, double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
+    private async Task SetTextAsync(int line, double progress, bool hasStarted) => AppViewModel.Dispatcher.Run(() =>
     {
         TextColor[line] =
             !hasStarted ? TextBrush_Offline :
@@ -240,10 +236,9 @@ public partial class CentralScreen : ObservableObject
             TextBrush_Active;
     });
 
-
-    private async Task SetTitleAsync(double progress, bool hasStarted) => State.DispatchQueue.TryEnqueue(() =>
+    private async Task SetTitleAsync(double progress, bool hasStarted) => AppViewModel.Dispatcher.Run(() =>
     {
-        if(progress >= 1.0)
+        if (progress >= 1.0)
             Title = Title_Running;
     });
 

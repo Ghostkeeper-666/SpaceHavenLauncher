@@ -33,11 +33,11 @@ public sealed class ArtRepository
 
     private readonly Lock Lock = new();
 
-    public ArtRepository(TexturesXmlRepository textureXmlRepository, AnimationsXmlRepository animationsXmlRepository, ILogger logger)
+    public ArtRepository(TexturesXmlRepository textureXmlRepository, AnimationsXmlRepository animationsXmlRepository, ILogger log)
     {
         TextureXmlRepository = textureXmlRepository;
         AnimationsXmlRepository = animationsXmlRepository;
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryLoadAsync(string baseInputDir, CancellationToken ct, IProgressInfo progress)

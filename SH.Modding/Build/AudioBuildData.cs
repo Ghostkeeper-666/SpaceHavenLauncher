@@ -25,12 +25,12 @@ internal sealed class AudioBuildData
 
     public static readonly string ATTRIBUTE_FILENAME = "filename";
 
-    public AudioBuildData(BuildPathData paths, ModBuildData mod, XElement xml, ILogger logger)
+    public AudioBuildData(BuildPathData paths, ModBuildData mod, XElement xml, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
         Xml = xml ?? throw new ArgumentNullException(nameof(xml));
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public XElement Xml { get; }

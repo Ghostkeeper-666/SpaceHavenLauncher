@@ -14,10 +14,11 @@ namespace SH.Launcher.ViewModels;
 
 public partial class ModPageViewModel : ViewModelBase
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     public ModViewModel Mod { get; }
 
@@ -39,6 +40,8 @@ public partial class ModPageViewModel : ViewModelBase
     [ObservableProperty]
     private string _IncompatibleModsText;
 
+
+
     public ModPageViewModel(ModViewModel mod)
     {
         Mod = mod;
@@ -46,6 +49,8 @@ public partial class ModPageViewModel : ViewModelBase
         Mod.PropertyChanged += Mod_PropertyChanged;
         UpdateVisuals();
     }
+
+
 
     private void Mod_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
@@ -101,8 +106,6 @@ public partial class ModPageViewModel : ViewModelBase
         }
     }
 
-
-
     [RelayCommand]
     public async Task TitleClicked()
     {
@@ -118,7 +121,7 @@ public partial class ModPageViewModel : ViewModelBase
     public async Task DirectoryClicked()
     {
         State.CopyToClipboardAsync(Mod.Directory);
-        await Framework.IO.OS.OpenDirectoryAsync(Mod.Directory, Log);
+        State.OpenLink(Mod.Directory, Log);
     }
 
     [RelayCommand]
@@ -156,10 +159,5 @@ public partial class ModPageViewModel : ViewModelBase
         ModValuesRepositoryService repo = new(Paths.Data, Log);
         await repo.TrySaveModValuesAsync(Mod.Data, onlyModified, ct);
     }
-
-
-
-
-
 
 }

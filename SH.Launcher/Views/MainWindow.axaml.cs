@@ -11,6 +11,7 @@ using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels;
+using SH.Launcher.ViewModels.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,10 +25,11 @@ public partial class MainWindow : Window
 {
     internal static Window Window; // disgusting workaround for message box
 
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private Task SearchTask;
     private SemaphoreSlim SearchSignal;
@@ -118,12 +120,12 @@ public partial class MainWindow : Window
     }
 
     private void OnLog(object sender, LogMessage message) =>
-        Dispatcher.UIThread.Post(() => State.LogHistory.Add(message));
+        Dispatcher.Run(() => State.LogHistory.Add(message));
 
     private int GetLeftPaneIndexOf(EPageType paneItem)
     {
         for (int i = 0; i < LeftPaneListBox.ItemCount; ++i)
-            if (LeftPaneListBox.Items[i] is LeftPaneItem leftPaneItem && leftPaneItem.Type == paneItem)
+            if (LeftPaneListBox.Items[i] is LeftPaneItemViewModel leftPaneItem && leftPaneItem.Type == paneItem)
                 return i;
         return -1;
     }
@@ -157,7 +159,7 @@ public partial class MainWindow : Window
 
                 if (SearchText.IsNullOrWhiteSpace())
                 {
-                    State.DispatchQueue.TryEnqueue(() => State.FilteredLeftPaneItems = State.LeftPaneItems);
+                    Dispatcher.Run(() => State.FilteredLeftPaneItems = State.LeftPaneItems);
                     continue;
                 }
 
@@ -174,9 +176,9 @@ public partial class MainWindow : Window
                 if (State.IsProcessing)
                     continue;
 
-                List<LeftPaneItem> filteredMods = new();
+                List<LeftPaneItemViewModel> filteredMods = new();
 
-                foreach (LeftPaneItem item in State.LeftPaneItems)
+                foreach (LeftPaneItemViewModel item in State.LeftPaneItems)
                 {
                     if (searchText != SearchText)
                     {
@@ -191,7 +193,7 @@ public partial class MainWindow : Window
                 if (filteredMods == null || filteredMods.Count == 0)
                     continue;
 
-                State.DispatchQueue.TryEnqueue(() => State.FilteredLeftPaneItems = new(filteredMods));
+                Dispatcher.Run(() => State.FilteredLeftPaneItems = new(filteredMods));
 
                 previousSearchText = searchText;
             }
@@ -363,7 +365,7 @@ public partial class MainWindow : Window
             return;
         if (DataContext is not MainWindowViewModel vm)
             return;
-        LeftPaneItem selected = State.SelectedLeftPaneItem;
+        LeftPaneItemViewModel selected = State.SelectedLeftPaneItem;
         if (selected?.Type != EPageType.Mod)
             return;
         State.LeftPaneItems.MoveUp(selected, (int)Enum.GetValues<EPageType>().Max());
@@ -378,7 +380,7 @@ public partial class MainWindow : Window
             return;
         if (DataContext is not MainWindowViewModel vm)
             return;
-        LeftPaneItem selected = State.SelectedLeftPaneItem;
+        LeftPaneItemViewModel selected = State.SelectedLeftPaneItem;
         if (selected?.Type != EPageType.Mod)
             return;
         State.LeftPaneItems.MoveDown(selected);
@@ -391,31 +393,31 @@ public partial class MainWindow : Window
 
 
 
-    private void OnSliderPointerEntered(object sender, PointerEventArgs e) => State.DispatchQueue.TryEnqueue(async () =>
+    private void OnSliderPointerEntered(object sender, PointerEventArgs e) => Dispatcher.Run(async () =>
     {
         if (ToolTip.GetIsOpen(BackgroundDarknessSlider))
             return;
         ToolTip.SetIsOpen(BackgroundDarknessSlider, BackgroundDarknessSlider.IsPointerOver);
     });
 
-    private void OnSliderPointerExited(object sender, PointerEventArgs e) => State.DispatchQueue.TryEnqueue(async () =>
+    private void OnSliderPointerExited(object sender, PointerEventArgs e) => Dispatcher.Run(async () =>
     {
         ToolTip.SetIsOpen(BackgroundDarknessSlider, false);
     });
 
-    private void OnSliderPointerPressed(object sender, PointerPressedEventArgs e) => State.DispatchQueue.TryEnqueue(async () =>
+    private void OnSliderPointerPressed(object sender, PointerPressedEventArgs e) => Dispatcher.Run(async () =>
     {
         if (ToolTip.GetIsOpen(BackgroundDarknessSlider))
             return;
         ToolTip.SetIsOpen(BackgroundDarknessSlider, BackgroundDarknessSlider.IsPointerOver);
     });
 
-    private void OnSliderPointerReleased(object sender, PointerReleasedEventArgs e) => State.DispatchQueue.TryEnqueue(async () =>
+    private void OnSliderPointerReleased(object sender, PointerReleasedEventArgs e) => Dispatcher.Run(async () =>
     {
         ToolTip.SetIsOpen(BackgroundDarknessSlider, false);
     });
 
-    private async void OnSliderPropertyChangedAsync(object sender, AvaloniaPropertyChangedEventArgs e) => State.DispatchQueue.TryEnqueue(() =>
+    private async void OnSliderPropertyChangedAsync(object sender, AvaloniaPropertyChangedEventArgs e) => Dispatcher.Run(() =>
     {
         if (e.Property != Slider.ValueProperty)
             return;
@@ -428,7 +430,7 @@ public partial class MainWindow : Window
     {
         if (State.IsProcessing)
             return;
-        foreach (LeftPaneItem item in State.FilteredLeftPaneItems)
+        foreach (LeftPaneItemViewModel item in State.FilteredLeftPaneItems)
         {
             if (item.Type != EPageType.Mod)
                 continue;
@@ -445,7 +447,7 @@ public partial class MainWindow : Window
     {
         if (State.IsProcessing)
             return;
-        foreach (LeftPaneItem item in State.FilteredLeftPaneItems)
+        foreach (LeftPaneItemViewModel item in State.FilteredLeftPaneItems)
         {
             if (item.Type != EPageType.Mod)
                 continue;

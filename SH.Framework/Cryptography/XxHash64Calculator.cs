@@ -11,38 +11,38 @@ namespace SH.Framework.Cryptography;
 
 public static class XxHash64Calculator
 {
-    public static string ComputeFromBytes(byte[] bytes, ILogger logger)
+    public static string ComputeFromBytes(byte[] bytes, ILogger log)
     {
         try
         {
             if (bytes == null)
                 return null;
             using MemoryStream ms = new(bytes, writable: false);
-            return ComputeFromStream(ms, logger);
+            return ComputeFromStream(ms, log);
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Unable to compute hash of text: {ex}");
+            log?.Error($@"Unable to compute hash of text: {ex}");
             return null;
         }
     }
 
-    public static string ComputeFromString(string input, ILogger logger)
+    public static string ComputeFromString(string input, ILogger log)
     {
         try
         {
             byte[] bytes = Encoding.UTF8.GetBytes(input);
             using MemoryStream ms = new(bytes, writable: false);
-            return ComputeFromStream(ms, logger);
+            return ComputeFromStream(ms, log);
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Unable to compute hash of text: {ex}");
+            log?.Error($@"Unable to compute hash of text: {ex}");
             return null;
         }
     }
 
-    public static string ComputeFromStream(Stream stream, ILogger logger)
+    public static string ComputeFromStream(Stream stream, ILogger log)
     {
         try
         {
@@ -57,30 +57,30 @@ public static class XxHash64Calculator
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Unable to compute hash of stream: {ex}");
+            log?.Error($@"Unable to compute hash of stream: {ex}");
             return null;
         }
     }
 
 
-    public static async Task<string> ComputeFromFileAsync(string path, ILogger logger, CancellationToken ct)
+    public static async Task<string> ComputeFromFileAsync(string path, ILogger log, CancellationToken ct)
     {
         try
         {
             if(!path.FileExists())
                 return null;
             await using FileStream sourceStream = File.OpenRead(path);
-            return await ComputeFromStreamAsync(sourceStream, logger, ct).ConfigureAwait(false);
+            return await ComputeFromStreamAsync(sourceStream, log, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error($@"Unable to compute hash of file ""{path}"": {ex}");
+            log?.Error($@"Unable to compute hash of file ""{path}"": {ex}");
             return null;
         }
     }
 
-    public static async Task<string> ComputeFromStreamAsync(Stream stream, ILogger logger, CancellationToken ct)
+    public static async Task<string> ComputeFromStreamAsync(Stream stream, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -104,7 +104,7 @@ public static class XxHash64Calculator
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error($@"Unable to compute hash of stream: {ex}");
+            log?.Error($@"Unable to compute hash of stream: {ex}");
             return null;
         }
     }

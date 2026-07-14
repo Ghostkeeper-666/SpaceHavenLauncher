@@ -36,19 +36,19 @@ public sealed class SpriteSheet
     public OrderedDictionary<int, Sprite> SpritesByName { get; } = [];
     public OrderedDictionary<int, Sprite> SpritesById { get; } = [];
 
-    public static bool TryLoad(string cimFilePath, TextureXml textureXml, out SpriteSheet spriteSheet, ILogger logger)
+    public static bool TryLoad(string cimFilePath, TextureXml textureXml, out SpriteSheet spriteSheet, ILogger log)
     {
         try
         {
             spriteSheet = new(textureXml, cimFilePath);
-            spriteSheet.Load(logger);
+            spriteSheet.Load(log);
 
             foreach (TextureRegionXml region in spriteSheet.TextureXml.RegionsByName.Values)
             {
                 Sprite sprite = new(spriteSheet, region);
-                if (!sprite.TryReadPixelData(logger))
+                if (!sprite.TryReadPixelData(log))
                 {
-                    logger?.Error($"[{spriteSheet.Name}] Unable to read sprite pixel data from texture region {region.Name}");
+                    log?.Error($"[{spriteSheet.Name}] Unable to read sprite pixel data from texture region {region.Name}");
                     continue;
                 }
 
@@ -59,8 +59,8 @@ public sealed class SpriteSheet
                     string comparisonText = isSameImage ? "identical" : "DIFFERENT";
                     string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION NAME=""{name}"": it was reused for {comparisonText} sprite image content";
 
-                    if (isSameImage) logger?.Debug(message);
-                    else logger?.Warn(message);
+                    if (isSameImage) log?.Debug(message);
+                    else log?.Warn(message);
                 }
 
                 if (!spriteSheet.SpritesById.TryAdd(region.Id, sprite))
@@ -70,8 +70,8 @@ public sealed class SpriteSheet
                     string comparisonText = isSameImage ? "identical" : "DIFFERENT";
                     string message = $@"Ignoring sprite image in sprite sheet ""{spriteSheet.Name}"" with a DUPLICATE REGION ID=""{id}"": it was reused for {comparisonText} sprite image content";
 
-                    if (isSameImage || id == 0) logger?.Debug(message);
-                    else logger?.Warn(message);
+                    if (isSameImage || id == 0) log?.Debug(message);
+                    else log?.Warn(message);
                 }
             }
 
@@ -79,13 +79,13 @@ public sealed class SpriteSheet
         }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             spriteSheet = null;
             return false;
         }
     }
 
-    private void Load(ILogger logger)
+    private void Load(ILogger log)
     {
         static int readInt32BigEndian(Stream s)
         {
@@ -101,13 +101,13 @@ public sealed class SpriteSheet
             Height = readInt32BigEndian(zs);
             PixelFormat = readInt32BigEndian(zs);
             if (PixelFormat != 4)
-                logger?.Info($@"WARNING: Unexpected PixelFormat={PixelFormat}bytes for CIM file ""{CimFilePath}""");
+                log?.Info($@"WARNING: Unexpected PixelFormat={PixelFormat}bytes for CIM file ""{CimFilePath}""");
             PixelData = new byte[4 * Width * Height];
             zs.ReadExactly(PixelData);
         }
     }
 
-    public bool TryWrite(string cimFilePath, ILogger logger)
+    public bool TryWrite(string cimFilePath, ILogger log)
     {
         try
         {
@@ -138,16 +138,16 @@ public sealed class SpriteSheet
         }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }
 
-    public async Task<bool> TryExportSpritesToPngAsync(string exportDir, ILogger logger, CancellationToken ct)
+    public async Task<bool> TryExportSpritesToPngAsync(string exportDir, ILogger log, CancellationToken ct)
     {
         try
         {
-            logger?.Debug($"[{FileName}] Exporting individual sprites to PNG");
+            log?.Debug($"[{FileName}] Exporting individual sprites to PNG");
 
             exportDir = IOUtils.CombineAsOSPath(exportDir, Name.ToString());
             if (!IOUtils.DirExists(exportDir))
@@ -156,7 +156,7 @@ public sealed class SpriteSheet
             foreach (Sprite sprite in SpritesByName.Values)
             {
                 string exportPath = IOUtils.CombineAsOSPath(exportDir, $"{sprite.Name}.png");
-                await sprite.TryExportToPngAsync(exportPath, logger, ct);
+                await sprite.TryExportToPngAsync(exportPath, log, ct);
             }
 
             return true;
@@ -164,12 +164,12 @@ public sealed class SpriteSheet
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }
 
-    public async Task<bool> TryExportToPngAsync(string exportDir, ILogger logger, CancellationToken ct)
+    public async Task<bool> TryExportToPngAsync(string exportDir, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -205,7 +205,7 @@ public sealed class SpriteSheet
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }

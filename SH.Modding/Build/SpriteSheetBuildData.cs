@@ -1,7 +1,6 @@
 ﻿using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.RectPack;
 using SkiaSharp;
 using System;
 using System.Buffers.Binary;

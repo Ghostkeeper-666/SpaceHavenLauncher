@@ -7,23 +7,78 @@ using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-
 namespace SH.Launcher.ViewModels;
 
 public partial class AppSettingsViewModel : ObservableObject
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State?.Log;
-    public PathViewModel Paths => State?.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private volatile bool IsUpdating;
 
     private AppSettingsData Data;
+
+    // MONITOR:
+    [ObservableProperty]
+    private int _MonitorIndex;
+
+    // LEFT PANE:
+    [ObservableProperty]
+    private bool _IsLeftPaneCollapsed;
+
+    // LOG:
+    [ObservableProperty]
+    private ELogVerbosity _LogVerbosity;
+
+    // BACKGROUND:
+    [ObservableProperty]
+    private bool _IsBackgroundEnabled;
+
+    [ObservableProperty]
+    private double _BackgroundDarkness;
+
+    [ObservableProperty]
+    private string _BackgroundTransparencyText;
+
+    // MOD PAGE:
+    [ObservableProperty]
+    private int _ModPageSplitterHeight;
+
+    // BUILD:
+    [ObservableProperty]
+    private bool _StartSpaceHavenAutomatically;
+
+    [ObservableProperty]
+    private bool _SkipRebuilding;
+
+    // EXPORT:
+    [ObservableProperty]
+    private ELanguage _ExportXmlAnnotationLanguage;
+
+    [ObservableProperty]
+    private bool _ExportTextures;
+
+    [ObservableProperty]
+    private EExportOption _ExportOption;
+
+    [ObservableProperty]
+    private string _JavaVMArgs;
+
+    [ObservableProperty]
+    private string _JavaMainClass;
+
+
+
     public AppSettingsViewModel()
     {
         Data = AppSettingsData.GetDefault();
         SetData(Data);
     }
+
+
 
     protected override async void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -126,57 +181,10 @@ public partial class AppSettingsViewModel : ObservableObject
             }
         }
         finally
-        { 
+        {
             IsUpdating = false;
         }
     }
 
-    // MONITOR:
-    [ObservableProperty]
-    private int _MonitorIndex;
-    
-    // LEFT PANE:
-    [ObservableProperty]
-    private bool _IsLeftPaneCollapsed;
 
-    // LOG:
-    [ObservableProperty]
-    private ELogVerbosity _LogVerbosity;
-
-    // BACKGROUND:
-    [ObservableProperty]
-    private bool _IsBackgroundEnabled;
-
-    [ObservableProperty]
-    private double _BackgroundDarkness;
-
-    [ObservableProperty]
-    private string _BackgroundTransparencyText;
-
-    // MOD PAGE:
-    [ObservableProperty]
-    private int _ModPageSplitterHeight;
-
-    // BUILD:
-    [ObservableProperty]
-    private bool _StartSpaceHavenAutomatically;
-
-    [ObservableProperty]
-    private bool _SkipRebuilding;
-
-    // EXPORT:
-    [ObservableProperty]
-    private ELanguage _ExportXmlAnnotationLanguage;
-
-    [ObservableProperty]
-    private bool _ExportTextures;
-
-    [ObservableProperty]
-    private EExportOption _ExportOption;
-
-    [ObservableProperty]
-    private string _JavaVMArgs;
-
-    [ObservableProperty]
-    private string _JavaMainClass;
 }

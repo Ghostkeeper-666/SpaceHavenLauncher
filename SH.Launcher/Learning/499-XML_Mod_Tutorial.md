@@ -71,7 +71,7 @@ File: [XmlModTutorial/description.md](Learning/XmlModTutorial/description.md)
 
 This is mod for [Space Haven](https://bugbyte.fi/spacehaven)
 
-It is fully documented in the [Learning Computer](tab://LearningComputer) of Space Haven Launcher
+It is fully documented in the [Learning Computer](app://LearningComputer) of Space Haven Launcher
 
 Cheers,
 **Ghostkeeper**
@@ -401,7 +401,7 @@ File: [XmlModTutorial/patches/audio_patch_NewJukebox.xml](Learning/XmlModTutoria
 # (4) Deploy your mod
 
 Space Haven defines a classic "mods" folder location. Copy your root mod folder as a child of the "mods" folder:
-- The **Classic Mods Dir** is defined in [System Core](tab://SystemCore)
+- The **Classic Mods Dir** is defined in [System Core](app://SystemCore)
 
 ```
 mods
@@ -416,7 +416,7 @@ mods
 # (5) To Space Haven!
 
 Your mod should now be visible on Space Haven Launcher
-- Go to [Navigation Console](tab://NavigationConsole) and click on the **(M) Lever** to run the modded game!
+- Go to [Navigation Console](app://NavigationConsole) and click on the **(M) Lever** to run the modded game!
 
 
 **Congratulations, you have finished the tutorial!**

@@ -28,7 +28,7 @@ public static class OS
             EOSType.Unsupported;
     }
 
-    public static async Task<bool> TryStartApplication(string path, ILogger logger, CancellationToken ct)
+    public static async Task<bool> TryStartApplication(string path, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -50,7 +50,7 @@ public static class OS
 
             if (!process.Start())
             {
-                logger?.Error($@"Failed to start process: ""{path}""");
+                log?.Error($@"Failed to start process: ""{path}""");
                 return false;
             }
 
@@ -85,19 +85,17 @@ public static class OS
         }
         catch (OperationCanceledException)
         {
-            logger?.Error($@"Process ""{path}"" was cancelled");
+            log?.Error($@"Process ""{path}"" was cancelled");
             return false;
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Error executing process ""{path}"": {ex}");
+            log?.Error($@"Error executing process ""{path}"": {ex}");
             return false;
         }
     }
 
-
-
-    public static Task OpenDirectoryAsync(string directoryPath, ILogger log)
+    private static Task OpenDirectoryAsync(string directoryPath, ILogger log)
     {
         if (!IOUtils.DirExists(directoryPath))
             return Task.CompletedTask;
@@ -157,7 +155,7 @@ public static class OS
         });
     }
 
-    public static Task OpenFileAsync(string filePath, ILogger log)
+    private static Task OpenFileAsync(string filePath, ILogger log)
     {
         if (!IOUtils.FileExists(filePath))
             return Task.CompletedTask;
@@ -217,7 +215,7 @@ public static class OS
         });
     }
 
-    public static Task OpenHttpAsync(string httpUrl, ILogger log)
+    private static Task OpenHttpAsync(string httpUrl, ILogger log)
     {
         if (string.IsNullOrWhiteSpace(httpUrl))
             return Task.CompletedTask;
@@ -268,7 +266,7 @@ public static class OS
         });
     }
 
-    public static Task OpenLinkAsync(string baseDir, string link, ILogger log)
+    public static Task OpenLinkAsync(string link, ILogger log)
     {
         try
         {
@@ -278,13 +276,13 @@ public static class OS
             if (link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 return OpenHttpAsync(link, log);
 
-            string absolute = IOUtils.CombineAsOSPath(baseDir, link);
+            link = link.AsOSPath();
 
-            if (IOUtils.DirExists(absolute))
-                return OpenDirectoryAsync(absolute, log);
+            if (IOUtils.DirExists(link))
+                return OpenDirectoryAsync(link, log);
 
-            if (IOUtils.FileExists(absolute))
-                return OpenFileAsync(absolute, log);
+            if (IOUtils.FileExists(link))
+                return OpenFileAsync(link, log);
         }
         catch (Exception ex)
         {

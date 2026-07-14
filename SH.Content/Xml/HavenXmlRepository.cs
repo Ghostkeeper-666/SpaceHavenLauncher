@@ -13,9 +13,9 @@ public sealed class HavenXmlRepository
 {
     private readonly ILogger Log;
 
-    public HavenXmlRepository(ILogger logger)
+    public HavenXmlRepository(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public OrderedDictionary<int, ProductXml> Products { get; } = [];

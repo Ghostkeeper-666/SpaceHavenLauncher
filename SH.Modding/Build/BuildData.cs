@@ -15,11 +15,11 @@ namespace SH.Modding.Build;
 
 internal sealed class BuildData : IAsyncDisposable
 {
-    public BuildData(BuildSettings settings, ILogger logger)
+    public BuildData(BuildSettings settings, ILogger log)
     {
         Settings = settings ?? throw new ArgumentNullException(nameof(settings));
         FileLogger = new FileLogger(Paths.BuildLogPath);
-        Log = new LoggerCollection(logger, FileLogger);
+        Log = new LoggerCollection(log, FileLogger);
     }
 
     public ILogger Log { get; }
@@ -167,7 +167,7 @@ internal sealed class BuildData : IAsyncDisposable
         return isNum1 ? -1 : 1;
     }
 
-    public async Task<bool> TryWriteVersion(ILogger logger, CancellationToken ct)
+    public async Task<bool> TryWriteVersion(ILogger log, CancellationToken ct)
     {
         try
         {
@@ -177,12 +177,12 @@ internal sealed class BuildData : IAsyncDisposable
             XmlFile[EXmlFileType.Haven].Xml.Root.SetAttributeValue("libVersion", lines.JoinToString(" "));
 
             // Version.txt:
-            return await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), logger, ct);
+            return await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), log, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }

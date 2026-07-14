@@ -35,7 +35,7 @@ internal sealed class XmlPatchOperation
         EPatchOperation.MathAttribute,
     ];
 
-    public static bool TryCreate(XmlFile modXmlFile, IReadOnlyDictionary<string, VarBuildData> modVariables, XElement patchNode, out XmlPatchOperation patch, ILogger logger)
+    public static bool TryCreate(XmlFile modXmlFile, IReadOnlyDictionary<string, VarBuildData> modVariables, XElement patchNode, out XmlPatchOperation patch, ILogger log)
     {
         try
         {
@@ -51,7 +51,7 @@ internal sealed class XmlPatchOperation
             string name = patchNode.Name?.LocalName ?? string.Empty;
             if (!name.Equals(OPERATION, StringComparison.Ordinal))
             {
-                logger?.Warn($@"Ingoring patch node with INVALID NAME = '{name}', it must be '{OPERATION}' => {patch.PrettyName}", modXmlFile.Path);
+                log?.Warn($@"Ingoring patch node with INVALID NAME = '{name}', it must be '{OPERATION}' => {patch.PrettyName}", modXmlFile.Path);
                 patch = null;
                 return false;
             }
@@ -59,7 +59,7 @@ internal sealed class XmlPatchOperation
             // patch operation validation:
             if (!Enum.TryParse(operationStr.Trim(), out EPatchOperation operation) || operation == EPatchOperation.None)
             {
-                logger?.Error($"Unknown PATCH OPERATION => {patch.PrettyName} \nThe supported patch operations are: \n{PatchOperationNames.JoinToString(", ")}", modXmlFile.Path);
+                log?.Error($"Unknown PATCH OPERATION => {patch.PrettyName} \nThe supported patch operations are: \n{PatchOperationNames.JoinToString(", ")}", modXmlFile.Path);
                 patch = null;
                 return false;
             }
@@ -68,7 +68,7 @@ internal sealed class XmlPatchOperation
             // xpath validation:
             if (patch.XPath.IsNullOrWhiteSpace())
             {
-                logger?.Error($@"Missing XPATH in patch operation. {patch.PrettyName}", modXmlFile.Path);
+                log?.Error($@"Missing XPATH in patch operation. {patch.PrettyName}", modXmlFile.Path);
                 patch = null;
                 return false;
             }
@@ -79,7 +79,7 @@ internal sealed class XmlPatchOperation
                 patch.Attribute = patchNode.Element(ATTRIBUTE)?.Value;
                 if (patch.Attribute.IsNullOrWhiteSpace())
                 {
-                    logger?.Error($@"Missing '{ATTRIBUTE}' information in patch operation. {patch.PrettyName}", modXmlFile.Path);
+                    log?.Error($@"Missing '{ATTRIBUTE}' information in patch operation. {patch.PrettyName}", modXmlFile.Path);
                     patch = null;
                     return false;
                 }
@@ -95,7 +95,7 @@ internal sealed class XmlPatchOperation
         }
         catch (Exception ex)
         {
-            logger?.Error($@"Exception occurred while parsing the patch operation, file=""{modXmlFile.Path.GetFileName()}"" line={patchNode.Line()} : {ex}", modXmlFile.Path);
+            log?.Error($@"Exception occurred while parsing the patch operation, file=""{modXmlFile.Path.GetFileName()}"" line={patchNode.Line()} : {ex}", modXmlFile.Path);
             patch = null;
             return false;
         }
@@ -127,7 +127,7 @@ internal sealed class XmlPatchOperation
     public bool IsNodePatchOperation => NodeOperations.Contains(Operation);
     public bool IsAttributePatchOperation => AttributeOperations.Contains(Operation);
 
-    public bool TryRun(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    public bool TryRun(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         try
         {
@@ -136,36 +136,36 @@ internal sealed class XmlPatchOperation
                 // Node operation:
 
                 case EPatchOperation.AddNodeAsFirst:
-                    return AddNodesAsFirstChildren(targetNodes, logger);
+                    return AddNodesAsFirstChildren(targetNodes, log);
 
                 case EPatchOperation.AddNodeAsLast:
-                    return AddNodesAsLastChildren(targetNodes, logger);
+                    return AddNodesAsLastChildren(targetNodes, log);
 
                 case EPatchOperation.InsertNodeBefore:
-                    return InsertNodesBeforeSelf(targetNodes, logger);
+                    return InsertNodesBeforeSelf(targetNodes, log);
 
                 case EPatchOperation.InsertNodeAfter:
-                    return InsertNodesAfterSelf(targetNodes, logger);
+                    return InsertNodesAfterSelf(targetNodes, log);
 
                 case EPatchOperation.RemoveNode:
-                    return RemoveNode(targetNodes, logger);
+                    return RemoveNode(targetNodes, log);
 
                 case EPatchOperation.ReplaceNode:
-                    return ReplaceNode(targetNodes, logger);
+                    return ReplaceNode(targetNodes, log);
 
                 // Attribute operation:
 
                 case EPatchOperation.SetAttribute:
-                    return SetAttribute(targetNodes, logger);
+                    return SetAttribute(targetNodes, log);
 
                 case EPatchOperation.AddAttribute:
-                    return AddAttribute(targetNodes, logger);
+                    return AddAttribute(targetNodes, log);
 
                 case EPatchOperation.RemoveAttribute:
-                    return RemoveAttribute(targetNodes, logger);
+                    return RemoveAttribute(targetNodes, log);
 
                 case EPatchOperation.MathAttribute:
-                    return MathAttribute(targetNodes, logger);
+                    return MathAttribute(targetNodes, log);
 
                 // Invalid operation:
 
@@ -175,17 +175,17 @@ internal sealed class XmlPatchOperation
         }
         catch (Exception ex)
         {
-            logger?.Error(ex);
+            log?.Error(ex);
             return false;
         }
     }
 
-    private bool AddNodesAsFirstChildren(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool AddNodesAsFirstChildren(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         List<XElement> nodes = PatchNode.Element(VALUE)?.Nodes()?.Where(n => n is XElement).Cast<XElement>().ToList();
         if (nodes.Count <= 0)
         {
-            logger?.Error($@"Patch operation does not contain nodes. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not contain nodes. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -193,12 +193,12 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool AddNodesAsLastChildren(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool AddNodesAsLastChildren(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         List<XElement> nodes = PatchNode.Element(VALUE)?.Nodes()?.Where(n => n is XElement).Cast<XElement>().ToList();
         if (nodes.Count <= 0)
         {
-            logger?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -206,12 +206,12 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool InsertNodesBeforeSelf(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool InsertNodesBeforeSelf(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         List<XElement> nodes = PatchNode.Element(VALUE)?.Nodes()?.Where(n => n is XElement)?.Cast<XElement>()?.ToList() ?? [];
         if (nodes.Count <= 0)
         {
-            logger?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -219,12 +219,12 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool InsertNodesAfterSelf(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool InsertNodesAfterSelf(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         List<XElement> nodes = PatchNode.Element(VALUE)?.Nodes()?.Where(n => n is XElement)?.Cast<XElement>()?.ToList() ?? [];
         if (nodes.Count <= 0)
         {
-            logger?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -232,19 +232,19 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool RemoveNode(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool RemoveNode(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         foreach (XElement targetNode in targetNodes)
             targetNode.Remove();
         return true;
     }
 
-    private bool ReplaceNode(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool ReplaceNode(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         List<XElement> nodes = PatchNode.Element(VALUE)?.Nodes()?.Where(n => n is XElement)?.Cast<XElement>()?.ToList() ?? [];
         if (nodes.Count <= 0)
         {
-            logger?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not contain nodes in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -255,12 +255,12 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool SetAttribute(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool SetAttribute(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         string value = PatchNode.Element(VALUE)?.Value;
         if (value == null)
         {
-            logger?.Error($@"Patch operation does not have content in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not have content in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -268,12 +268,12 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool AddAttribute(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool AddAttribute(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         string value = PatchNode.Element("value")?.Value;
         if (value == null)
         {
-            logger?.Error($@"Patch operation does not have content in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not have content in its <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         foreach (XElement targetNode in targetNodes)
@@ -281,37 +281,37 @@ internal sealed class XmlPatchOperation
         return true;
     }
 
-    private bool RemoveAttribute(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool RemoveAttribute(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         foreach (XElement targetNode in targetNodes)
             targetNode.SetAttributeValue(Attribute, null);
         return true;
     }
 
-    private bool MathAttribute(IReadOnlyList<XElement> targetNodes, ILogger logger)
+    private bool MathAttribute(IReadOnlyList<XElement> targetNodes, ILogger log)
     {
         XElement valueNode = PatchNode.Element("value");
         if (valueNode == null)
         {
-            logger?.Error($@"Patch operation does not have a <value> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not have a <value> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         string opStr = valueNode.Attribute(MATH_OPTYPE)?.Value?.Trim();
         if (opStr.IsNullOrWhiteSpace())
         {
-            logger?.Error($@"Patch operation does not have the required '{MATH_OPTYPE}' attribute in the <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not have the required '{MATH_OPTYPE}' attribute in the <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
         if (!Enum.TryParse(opStr, true, out EXmlPatchAttributeMathOperator op))
         {
-            logger?.Error($@"Unknown math operation '{opStr}' defined by attribute '{MATH_OPTYPE}'. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Unknown math operation '{opStr}' defined by attribute '{MATH_OPTYPE}'. {PrettyName}", ModXmlFile.Path);
             return false;
         }
 
         string strValue = valueNode.Value?.Trim();
         if (strValue.IsNullOrWhiteSpace() || !decimal.TryParse(strValue, out decimal doubleValue))
         {
-            logger?.Error($@"Patch operation does not have a numeric content in the <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
+            log?.Error($@"Patch operation does not have a numeric content in the <{VALUE}> node. {PrettyName}", ModXmlFile.Path);
             return false;
         }
 
@@ -320,7 +320,7 @@ internal sealed class XmlPatchOperation
             string strTargetValue = targetNode.Attribute(Attribute)?.Value?.Trim();
             if (strTargetValue.IsNullOrWhiteSpace() || !decimal.TryParse(strTargetValue, out decimal doubleTargetValue))
             {
-                logger?.Warn($@"The target node '{targetNode.GetNodePath()}' does not have a numeric attribute '{Attribute}' for the math operation. This could be an error in the mod. {PrettyName}", ModXmlFile.Path);
+                log?.Warn($@"The target node '{targetNode.GetNodePath()}' does not have a numeric attribute '{Attribute}' for the math operation. This could be an error in the mod. {PrettyName}", ModXmlFile.Path);
                 continue;
             }
 

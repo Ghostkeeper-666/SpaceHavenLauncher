@@ -19,10 +19,11 @@ namespace SH.Launcher.Views;
 
 public partial class ModPageView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private string ModName => ViewModel?.Mod?.Name;
 
@@ -124,7 +125,7 @@ public partial class ModPageView : UserControl
 
                 if (SearchText.IsNullOrWhiteSpace())
                 {
-                    State.DispatchQueue.TryEnqueue(
+                    Dispatcher.Run(
                         () => ViewModel.Variables = ViewModel.Mod.Variables);
 
                     continue;
@@ -158,7 +159,7 @@ public partial class ModPageView : UserControl
 
                 vars.Add(ViewModel.Mod.Variables.LastOrDefault());
 
-                State.DispatchQueue.TryEnqueue(() => ViewModel.Variables = new(vars));
+                Dispatcher.Run(() => ViewModel.Variables = new(vars));
             }
             catch (OperationCanceledException)
             {

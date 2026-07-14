@@ -80,7 +80,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    public ModBuilder(BuildSettings settings, ILogger logger)
+    public ModBuilder(BuildSettings settings, ILogger log)
     {
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         BuildSettings.Paths = new(
@@ -89,7 +89,7 @@ public sealed class ModBuilder : IAsyncDisposable
             settings.SpaceHavenDir,
             settings.SpaceHavenJarDir
         );
-        Log = new LoggerCollection(logger);
+        Log = new LoggerCollection(log);
     }
 
     private void Fail() => BuildSettings.Fail();

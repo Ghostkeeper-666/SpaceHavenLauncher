@@ -21,10 +21,10 @@ public sealed class ModValuesRepositoryService
     private readonly ILogger Log;
     private readonly SemaphoreSlim Semaphore = new(1, 1);
 
-    public ModValuesRepositoryService(PathData paths, ILogger logger)
+    public ModValuesRepositoryService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryLoadCurrentModValuesAsync(ModData mod, CancellationToken ct) =>

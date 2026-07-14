@@ -17,11 +17,11 @@ public sealed class FrameBasedAnimationRenderer
     private readonly ILogger Log;
 
 
-    public FrameBasedAnimationRenderer(IReadOnlyDictionary<string, Animation> animationsByName, IReadOnlyDictionary<int, Sprite> sprites, ILogger logger)
+    public FrameBasedAnimationRenderer(IReadOnlyDictionary<string, Animation> animationsByName, IReadOnlyDictionary<int, Sprite> sprites, ILogger log)
     {
         Animations = animationsByName;
         Sprites = sprites;
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
 

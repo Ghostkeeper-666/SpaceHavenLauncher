@@ -12,9 +12,9 @@ public sealed class XmlAnnotationService
 {
     private readonly ILogger Log;
 
-    public XmlAnnotationService(ILogger logger)
+    public XmlAnnotationService(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryRunAsync(string baseDir, ELanguage language, CancellationToken ct, IProgressInfo progress) =>

@@ -10,8 +10,10 @@ public sealed class BuildService
 {
     private readonly LoggerCollection Log;
 
-    public BuildService(ILogger logger) =>
-        Log = new LoggerCollection(logger);
+    public BuildService(ILogger log)
+    {
+        Log = new LoggerCollection(log);
+    }
 
     public async Task<bool> TryBuildAsync(BuildSettings settings)
     {

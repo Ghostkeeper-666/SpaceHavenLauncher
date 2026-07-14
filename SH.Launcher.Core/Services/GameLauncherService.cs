@@ -20,10 +20,10 @@ public sealed class GameLauncherService
     private readonly PathData Paths;
     private readonly ILogger Log;
 
-    public GameLauncherService(PathData paths, ILogger logger)
+    public GameLauncherService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryLaunchModifiedGameAsync(

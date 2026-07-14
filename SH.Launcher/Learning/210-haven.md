@@ -16,9 +16,9 @@ However, **haven** XML file is huge...
 - This makes it very hard to find the right modding spots!
 
 Exporting **haven** with **XML Annotations** helps a lot:
-- Choose the language of **XML Annotations** in the [System Core](tab://SystemCore) settings
-- Optionally enable/disable export of textures, also in the [System Core](tab://SystemCore) settings
-- On [Navigation Console](tab://NavigationConsole) click on **right side buttons** to export assets
+- Choose the language of **XML Annotations** in the [System Core](app://SystemCore) settings
+- Optionally enable/disable export of textures, also in the [System Core](app://SystemCore) settings
+- On [Navigation Console](app://NavigationConsole) click on **right side buttons** to export assets
 
 Example of annotated **haven** file:
 

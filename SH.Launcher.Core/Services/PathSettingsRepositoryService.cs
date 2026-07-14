@@ -15,8 +15,10 @@ namespace SH.Launcher.Core.Services;
 
 public sealed class PathSettingsRepositoryService
 {
-    public PathSettingsRepositoryService(ILogger logger) =>
-        Log = logger ?? new VoidLogger();
+    public PathSettingsRepositoryService(ILogger log)
+    {
+        Log = log ?? new VoidLogger();
+    }
 
     private readonly ILogger Log;
 

@@ -11,12 +11,16 @@ namespace SH.Launcher.Views;
 
 public partial class LearningComputerView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
-    public LearningComputerView() => InitializeComponent();
+    public LearningComputerView()
+    {
+        InitializeComponent();
+    }
 
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {

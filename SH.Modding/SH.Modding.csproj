@@ -20,7 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="..\SH.Content\SH.Content.csproj" />
     <ProjectReference Include="..\SH.Framework\SH.Framework.csproj" />
-    <ProjectReference Include="..\SH.RectPack\SH.RectPack.csproj" />
   </ItemGroup>
 
 </Project>

@@ -11,8 +11,10 @@ public class FolderPickerService
 {
     private readonly Window Window;
 
-    public FolderPickerService(Window window) =>
+    public FolderPickerService(Window window)
+    {
         Window = window;
+    }
 
     public async Task<string> PickFolderAsync()
     {

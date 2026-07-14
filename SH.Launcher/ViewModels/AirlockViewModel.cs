@@ -5,14 +5,23 @@ namespace SH.Launcher.ViewModels;
 
 public partial class AirlockViewModel : ViewModelBase
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private bool PreviousIsLeftPaneCollapsed;
     private double PreviousBackgroundDarkness;
     private bool PreviousIsBackgroundEnabled;
+
+
+
+    public AirlockViewModel()
+    {
+    }
+
+
 
     public void Start()
     {

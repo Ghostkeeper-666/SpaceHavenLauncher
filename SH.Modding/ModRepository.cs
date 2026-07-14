@@ -13,8 +13,10 @@ public sealed class ModRepository
 {
     private readonly ILogger Log;
 
-    public ModRepository(ILogger logger) =>
-        Log = logger ?? new VoidLogger();
+    public ModRepository(ILogger log)
+    {
+        Log = log ?? new VoidLogger();
+    }
 
     /// <summary>
     /// Loads all mods

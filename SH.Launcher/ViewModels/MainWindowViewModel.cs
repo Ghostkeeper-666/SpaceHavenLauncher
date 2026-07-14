@@ -5,6 +5,7 @@ using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
+using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using System;
 using System.Linq;
@@ -15,10 +16,11 @@ namespace SH.Launcher.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     public bool IsNewInstall { get; private set; }
 
@@ -35,6 +37,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _ToolTipText_DisableModsButton = "HOW TO DISABLE MODS: \n\nThis button DISABLES the mods which are visible in the list below \n\nTo individually ENABLE or DISABLE a mod, click on the mod's ★ STAR icon, OR click on the mod's TITLE in the mod page \n\nYou may also restrict the visible mods using the SEARCH BOX and then clicking on THIS BUTTON to DISABLE them all";
 
 
+
     public MainWindowViewModel()
     {
         Title = string.Empty;
@@ -47,22 +50,24 @@ public partial class MainWindowViewModel : ViewModelBase
         State.LeftPaneItems.Clear();
         State.FilteredLeftPaneItems.Clear();
 
-        LeftPaneItem navigationConsole = new(EPageType.NavigationConsole, null);
+        LeftPaneItemViewModel navigationConsole = new(EPageType.NavigationConsole, null);
         State.LeftPaneItems.Add(navigationConsole);
         State.FilteredLeftPaneItems.Add(navigationConsole);
 
-        LeftPaneItem systemCore = new(EPageType.SystemCore, null);
+        LeftPaneItemViewModel systemCore = new(EPageType.SystemCore, null);
         State.LeftPaneItems.Add(systemCore);
         State.FilteredLeftPaneItems.Add(systemCore);
 
-        LeftPaneItem learningComputer = new(EPageType.LearningComputer, null);
+        LeftPaneItemViewModel learningComputer = new(EPageType.LearningComputer, null);
         State.LeftPaneItems.Add(learningComputer);
         State.FilteredLeftPaneItems.Add(learningComputer);
 
-        LeftPaneItem airlock = new(EPageType.Airlock, null);
+        LeftPaneItemViewModel airlock = new(EPageType.Airlock, null);
         State.LeftPaneItems.Add(airlock);
         State.FilteredLeftPaneItems.Add(airlock);
     }
+
+
 
     public async Task OnViewLoadedAsync(CancellationToken ct)
     {
@@ -85,7 +90,7 @@ public partial class MainWindowViewModel : ViewModelBase
             catch (Exception ex) { Log?.Debug(ex); }
 #endif
             // Also automatically initialize build system:
-            State.DispatchQueue.TryEnqueue(() => State.NavigationConsolePage.InitializeBuildSystemAsync(false));
+            Dispatcher.Run(() => State.NavigationConsolePage.InitializeBuildSystemAsync(false));
         }
         await FadeOutLogo();
     }
@@ -217,6 +222,5 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex) { Log.Error(ex); }
     }
-
 
 }

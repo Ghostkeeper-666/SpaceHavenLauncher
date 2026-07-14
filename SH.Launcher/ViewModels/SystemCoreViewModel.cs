@@ -18,15 +18,17 @@ namespace SH.Launcher.ViewModels;
 
 public partial class SystemCoreViewModel : ViewModelBase
 {
-    public SystemCoreViewModel() { }
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
+
+    private CancellationTokenSource DebugCTS;
+
+    private IProgressInfo DebugProgress;
 
     private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/SystemCore.jpg");
-
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
-    public AppSettingsViewModel AppSettings => State.AppSettings;
-
 
     [ObservableProperty]
     private bool _IsWin = OS.IsWin;
@@ -68,9 +70,8 @@ public partial class SystemCoreViewModel : ViewModelBase
 
 
 
-    private CancellationTokenSource DebugCTS;
+    public SystemCoreViewModel() { }
 
-    private IProgressInfo DebugProgress;
 
 
     public void OnDeactivated()
@@ -154,7 +155,7 @@ public partial class SystemCoreViewModel : ViewModelBase
             using ProgressInfo debugProgress = new() { Max = 100 };
             DebugProgress = debugProgress;
             DebugProgress.ProgressChanged += (object sender, ProgressEventArgs e) =>
-                State.DispatchQueue.TryEnqueue(() => DebugProgressText = $"Generating {PathData.DebugFilename}... ({e?.Progress?.NormalizedValue.ToString("0%")})");
+                AppViewModel.Dispatcher.Run(() => DebugProgressText = $"Generating {PathData.DebugFilename}... ({e?.Progress?.NormalizedValue.ToString("0%")})");
 
             using CancellationTokenSource debugCTS = new();
             DebugCTS = debugCTS;
@@ -186,4 +187,5 @@ public partial class SystemCoreViewModel : ViewModelBase
             catch { }
         }
     }
+
 }

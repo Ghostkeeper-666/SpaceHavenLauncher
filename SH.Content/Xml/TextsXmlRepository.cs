@@ -21,9 +21,9 @@ public sealed class TextsXmlRepository
 
     private readonly ILogger Log;
 
-    public TextsXmlRepository(ILogger logger)
+    public TextsXmlRepository(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryReadAsync(string textsXmlPath, CancellationToken ct, IProgressInfo progress)

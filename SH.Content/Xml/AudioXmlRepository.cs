@@ -14,9 +14,9 @@ namespace SH.Content.Xml;
 
 public sealed class AudioXmlRepository
 {
-    public AudioXmlRepository(ILogger logger)
+    public AudioXmlRepository(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     private readonly ILogger Log;

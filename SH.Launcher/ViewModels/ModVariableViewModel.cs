@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SH.Framework.Logging;
 using SH.Modding;
 using System;
 using System.ComponentModel;
@@ -9,42 +10,14 @@ namespace SH.Launcher.ViewModels;
 
 public partial class ModVariableViewModel : ObservableObject
 {
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
+    public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
+
     public ModViewModel Mod { get; }
     public VarData Data { get; }
-
-    public ModVariableViewModel(ModViewModel mod, VarData data)
-    {
-        Mod = mod ?? throw new ArgumentNullException(nameof(mod));
-        Data = data ?? throw new ArgumentNullException(nameof(data));
-
-        IsSeparator = data.IsSeparator;
-        Name = data.Name;
-        CurrentValue = data.CurrentValue;
-        OriginalValue = data.OriginalValue;
-        SuggestedValue = data.SuggestedValue;
-        PreviousValue = data.PreviousValue;
-        Description = data.Description;
-        NormalBrush = mod.ForegroundColor ?? Brushes.Gold;
-
-        mod.PropertyChanged += Mod_PropertyChanged;
-        PropertyChanged += OnPropertyChanged;
-        UpdateForegrounds();
-    }
-
-    private void Mod_PropertyChanged(object sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == "ForegroundColor")
-            NormalBrush = Mod.ForegroundColor;
-    }
-
-    private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(CurrentValue) && Data.CurrentValue != CurrentValue)
-        {
-            Data.CurrentValue = CurrentValue;
-            Mod.Data.IsModified = Data.IsModified = true;
-        }
-    }
 
     [ObservableProperty]
     private bool _IsSeparator;
@@ -84,6 +57,42 @@ public partial class ModVariableViewModel : ObservableObject
     private IBrush _DarkBrush = new SolidColorBrush(Color.Parse("#8f8f8f"));
 
 
+
+    public ModVariableViewModel(ModViewModel mod, VarData data)
+    {
+        Mod = mod ?? throw new ArgumentNullException(nameof(mod));
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+
+        IsSeparator = data.IsSeparator;
+        Name = data.Name;
+        CurrentValue = data.CurrentValue;
+        OriginalValue = data.OriginalValue;
+        SuggestedValue = data.SuggestedValue;
+        PreviousValue = data.PreviousValue;
+        Description = data.Description;
+        NormalBrush = mod.ForegroundColor ?? Brushes.Gold;
+
+        mod.PropertyChanged += Mod_PropertyChanged;
+        PropertyChanged += OnPropertyChanged;
+        UpdateForegrounds();
+    }
+
+
+
+    private void Mod_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == "ForegroundColor")
+            NormalBrush = Mod.ForegroundColor;
+    }
+
+    private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CurrentValue) && Data.CurrentValue != CurrentValue)
+        {
+            Data.CurrentValue = CurrentValue;
+            Mod.Data.IsModified = Data.IsModified = true;
+        }
+    }
 
     [RelayCommand]
     private void UseOriginal()

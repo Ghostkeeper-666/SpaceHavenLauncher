@@ -332,3 +332,6 @@ dotnet_diagnostic.NU1900.severity = none
 
 #Use UTF-8 string literal
 dotnet_diagnostic.IDE0230.severity = none
+
+#Use block body for constructors
+dotnet_diagnostic.IDE0021.severity = error

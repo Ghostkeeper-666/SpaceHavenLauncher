@@ -23,14 +23,11 @@ namespace SH.Launcher.Views;
 
 public partial class NavigationConsoleView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
-
-    private readonly Image[] NavigationConsoleControlImages;
-
-    #region Control Areas
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private readonly Point[] Polygon_LeftButtons =
     [
@@ -64,13 +61,13 @@ public partial class NavigationConsoleView : UserControl
         new(0.769, 0.800)
     ];
 
-    #endregion
+    private readonly Image[] Images;
 
     public NavigationConsoleView()
     {
         InitializeComponent();
 
-        NavigationConsoleControlImages =
+        Images =
         [
             LeftButtonsImage,
             LeftLeverImage,
@@ -145,9 +142,9 @@ public partial class NavigationConsoleView : UserControl
             return;
         switch (e.PropertyName)
         {
-            case nameof(LeftScreen.LeftButtonsState):
-            case nameof(LeftScreen.LeftButtonsPressed):
-            case nameof(LeftScreen.LeftButtonsHovered):
+            case nameof(LeftScreenViewModel.LeftButtonsState):
+            case nameof(LeftScreenViewModel.LeftButtonsPressed):
+            case nameof(LeftScreenViewModel.LeftButtonsHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.LeftButtons, vm.LeftScreen.LeftButtonsState, vm.LeftScreen.LeftButtonsPressed, vm.LeftScreen.LeftButtonsHovered);
                 return;
             default:
@@ -162,14 +159,14 @@ public partial class NavigationConsoleView : UserControl
 
         switch (e.PropertyName)
         {
-            case nameof(CentralScreen.LeftLeverState):
-            case nameof(CentralScreen.LeftLeverPressed):
-            case nameof(CentralScreen.LeftLeverHovered):
+            case nameof(CentralScreenViewModel.LeftLeverState):
+            case nameof(CentralScreenViewModel.LeftLeverPressed):
+            case nameof(CentralScreenViewModel.LeftLeverHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.LeftLever, vm.CentralScreen.LeftLeverState, vm.CentralScreen.LeftLeverPressed, vm.CentralScreen.LeftLeverHovered);
                 return;
-            case nameof(CentralScreen.RightLeverState):
-            case nameof(CentralScreen.RightLeverPressed):
-            case nameof(CentralScreen.RightLeverHovered):
+            case nameof(CentralScreenViewModel.RightLeverState):
+            case nameof(CentralScreenViewModel.RightLeverPressed):
+            case nameof(CentralScreenViewModel.RightLeverHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.RightLever, vm.CentralScreen.RightLeverState, vm.CentralScreen.RightLeverPressed, vm.CentralScreen.RightLeverHovered);
                 return;
             default:
@@ -183,9 +180,9 @@ public partial class NavigationConsoleView : UserControl
             return;
         switch (e.PropertyName)
         {
-            case nameof(RightScreen.RightButtonsState):
-            case nameof(RightScreen.RightButtonsPressed):
-            case nameof(RightScreen.RightButtonsHovered):
+            case nameof(RightScreenViewModel.RightButtonsState):
+            case nameof(RightScreenViewModel.RightButtonsPressed):
+            case nameof(RightScreenViewModel.RightButtonsHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.RightButtons, vm.RightScreen.RightButtonsState, vm.RightScreen.RightButtonsPressed, vm.RightScreen.RightButtonsHovered);
                 return;
             default:
@@ -196,19 +193,19 @@ public partial class NavigationConsoleView : UserControl
     private void UpdateNavigationConsoleControlImage(ENavigationConsoleControl control, EControlState state, bool isPressed, bool isHovered)
     {
         if (isHovered && !isPressed && state != EControlState.Running)
-            NavigationConsoleControlImages[(int)control].Set(
+            Images[(int)control].Set(
                 $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-Hovered.jpg"
                 .Replace("CONTROL", control.ToString())
             );
 
         else if (isPressed && state != EControlState.Running)
-            NavigationConsoleControlImages[(int)control].Set(
+            Images[(int)control].Set(
                 $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-Running.jpg"
                 .Replace("CONTROL", control.ToString())
             );
 
         else
-            NavigationConsoleControlImages[(int)control].Set(
+            Images[(int)control].Set(
                 $"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/NavigationConsole/CONTROL-STATE.jpg"
                 .Replace("CONTROL", control.ToString())
                 .Replace("STATE", state.ToString())
@@ -222,7 +219,7 @@ public partial class NavigationConsoleView : UserControl
     {
         try
         {
-            State.DispatchQueue.TryEnqueue(() =>
+            Dispatcher.Run(() =>
             {
                 if (!IsLoaded || LogListBox.ItemCount <= 0)
                     return;
@@ -420,7 +417,7 @@ public partial class NavigationConsoleView : UserControl
                 State.CopyToClipboardAsync(logMessage.Text);
 
             else if (point.Properties.IsRightButtonPressed)
-                State.DispatchQueue.TryEnqueue(() => OS.OpenLinkAsync(SpaceHavenLauncher.Directory, logMessage.Link, Log));
+                State.OpenLink(logMessage.Link, Log);
         }
         catch (Exception ex)
         {

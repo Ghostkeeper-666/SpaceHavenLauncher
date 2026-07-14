@@ -3,20 +3,20 @@
 Let's go through this FAQ before asking questions...
 
 **Space Haven Launcher** mimics the game's theme:
-- [Learning Computer](tab://LearningComputer): the right place to **understand** the basics
-- [System Core](tab://SystemCore): the **settings** central - check this page if any directory was not auto-detected
-- [Navigation Console](tab://NavigationConsole): **launches original** or **modified games**, re-initializes Space Haven Launcher, exports game assets
-- [Airlock](tab://Airlock): a relaxing **screensaver**, with some fan art and screenshots from early stages of the game
+- [Learning Computer](app://LearningComputer): the right place to **understand** the basics
+- [System Core](app://SystemCore): the **settings** central - check this page if any directory was not auto-detected
+- [Navigation Console](app://NavigationConsole): **launches original** or **modified games**, re-initializes Space Haven Launcher, exports game assets
+- [Airlock](app://Airlock): a relaxing **screensaver**, with some fan art and screenshots from early stages of the game
 
 # Directories and paths
 
 The list of mods is presented after Space Haven is successfully found. If not found automatically, you can:
-- Go to [System Core](tab://SystemCore) and set the directories manually
+- Go to [System Core](app://SystemCore) and set the directories manually
 
 # The MOD list
 
 The mod list presents the mods and sets the mod build order too:
-- The mod list can be reloaded by clicking on the left side buttons of [Navigation Console](tab://NavigationConsole)
+- The mod list can be reloaded by clicking on the left side buttons of [Navigation Console](app://NavigationConsole)
 - Auto-detected: Mod conflicts, mod dependency issues, incompatibilities, ID issues
 - You can change the order of your a mod by using the arrows at the top left area
 
@@ -32,7 +32,7 @@ The mod list presents the mods and sets the mod build order too:
 - **Reliable Method**: Download mods from [Nexus Mods](https://www.nexusmods.com/games/spacehaven/mods?sort=createdAt&timeRange=allTime) webpage and extract them to the classic mods directory
 - **Alternative Way**: Subcribe them on [Steam Workshop](https://steamcommunity.com/app/979110/workshop/) - You must do it from the Steam application, otherwise it may not sync correctly!
 - Make sure you don't download the same mod from both sources, since duplicate mods will cause issues
-- The **Classic Mods Directory** and the **Steam Directory** must be correctly defined on [System Core](tab://SystemCore) tab
+- The **Classic Mods Directory** and the **Steam Directory** must be correctly defined on [System Core](app://SystemCore) tab
 - Use the mods from the [My Series](https://www.nexusmods.com/games/spacehaven/mods?sort=uniqueDownloads&timeRange=allTime&author=Ghostkeeper666) to adjust basic game settings and much more
 
 # How do I enable or disable mods ?
@@ -44,11 +44,11 @@ The mod list presents the mods and sets the mod build order too:
 
 # How do I start a modified game ?
 
-Go to [Navigation Console](tab://NavigationConsole) and click on the **(M) Lever** to the game modifed by mods
+Go to [Navigation Console](app://NavigationConsole) and click on the **(M) Lever** to the game modifed by mods
 
 # How do I reset to original "vanilla" game ?
 
-Go to [Navigation Console](tab://NavigationConsole) and click on the **(V) Lever** to run the original game
+Go to [Navigation Console](app://NavigationConsole) and click on the **(V) Lever** to run the original game
 
 # Can I close Space Haven Launcher while Space Haven is running ?
 

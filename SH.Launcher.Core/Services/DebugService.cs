@@ -77,10 +77,10 @@ public sealed class DebugService
     }
 
 
-    public DebugService(PathData paths, ILogger logger)
+    public DebugService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = new LoggerCollection(logger);
+        Log = new LoggerCollection(log);
     }
 
     public async Task<bool> TryGenerateDebugFileAsync(CancellationToken ct, IProgressInfo progress) =>

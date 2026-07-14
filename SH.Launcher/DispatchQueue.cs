@@ -25,11 +25,11 @@ public sealed class DispatchQueue : IAsyncDisposable
         ProcessingTask = Task.Run(LoopAsync);
     }
 
-    public bool TryEnqueue(Func<Task> item) =>
+    public bool Run(Func<Task> item) =>
         Queue.Writer.TryWrite(item);
 
-    public bool TryEnqueue(Action action) =>
-        TryEnqueue(() => { action(); return Task.CompletedTask; });
+    public bool Run(Action action) =>
+        Run(() => { action(); return Task.CompletedTask; });
 
     public ValueTask EnqueueAsync(Func<Task> item, CancellationToken cancellationToken = default) =>
         Queue.Writer.WriteAsync(item, cancellationToken);

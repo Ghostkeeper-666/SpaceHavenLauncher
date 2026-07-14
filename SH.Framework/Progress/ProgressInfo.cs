@@ -25,8 +25,10 @@ public sealed class ProgressInfo : IProgressInfo
         }
     }
 
-    public ProgressInfo(string name = null) =>
+    public ProgressInfo(string name = null)
+    {
         Name = name ?? string.Empty;
+    }
 
     public ProgressInfo(string name, IEnumerable<IProgressInfo> weightlessChildren) : this(name)
     {

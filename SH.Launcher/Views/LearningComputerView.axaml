@@ -161,7 +161,7 @@ x:Class="SH.Launcher.Views.LearningComputerView" >
 
       <ListBox.ItemTemplate>
 
-        <DataTemplate DataType="{x:Type vm:LearningItem}" >
+        <DataTemplate DataType="{x:Type vm:LearningItemViewModel}" >
 
           <Button
 					Grid.Column="0"

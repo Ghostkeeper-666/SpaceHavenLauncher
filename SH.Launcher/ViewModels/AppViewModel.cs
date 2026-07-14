@@ -1,10 +1,10 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Content.Enums;
 using SH.Framework.Extensions;
@@ -13,7 +13,9 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
+using SH.Launcher.ViewModels.Enums;
 using SH.Modding;
+using SH.Modding.ConfigJson;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,41 +27,10 @@ using System.Threading.Tasks;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class SharedState : ObservableObject
+public partial class AppViewModel : ObservableObject
 {
-    public static SharedState State { get; } = new(); // Singleton
-
-
-    public SharedState()
-    {
-        AppSettings.PropertyChanged -= UI_PropertyChanged;
-        AppSettings.PropertyChanged += UI_PropertyChanged;
-        UpdateLeftPanelIsCollapsed();
-        InitializeProgress = new ProgressInfo("Initialization",
-        [
-            (BackupProgress, 10),
-            (TemplateProgress, 50),
-            (CacheProgress, 10),
-            (LoadModsProgress, 30),
-        ]);
-        BackupProgress.Max = 10;
-        TemplateProgress.Max = 10;
-        CacheProgress.Max = 10;
-        LoadModsProgress.Max = 10;
-    }
-
-    private void UI_PropertyChanged(object sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(AppSettingsViewModel.IsLeftPaneCollapsed))
-            UpdateLeftPanelIsCollapsed();
-    }
-
-    private void UpdateLeftPanelIsCollapsed()
-    {
-        CollapseIconRotation = AppSettings.IsLeftPaneCollapsed ? 180 : 0;
-        LeftPaneWidth = AppSettings.IsLeftPaneCollapsed ? new GridLength(48) : new GridLength(432);
-    }
-
+    public static AppViewModel State { get; } = new(); // Singleton
+    public static DispatchQueue Dispatcher { get; } = new(); // Singleton
 
     // LOG:
     public FileLogger Log { get; } = new FileLogger(null);
@@ -67,16 +38,13 @@ public partial class SharedState : ObservableObject
     [ObservableProperty]
     private ObservableCollection<LogMessage> _LogHistory = [];
 
-
     // PATH Settings:
     [ObservableProperty]
     private PathViewModel _Paths;
 
-
     // App Settings (variables to be persisted):
     [ObservableProperty]
     private AppSettingsViewModel _AppSettings = new();
-
 
     // BACKGROUND:
     [ObservableProperty]
@@ -84,7 +52,6 @@ public partial class SharedState : ObservableObject
 
     public bool MoveToNextBackgroundImage { get; set; }
     public bool MoveToPrevBackgroundImage { get; set; }
-
 
     // EXECUTION STATE:
     public bool IsProcessing => IsInitializing || IsLaunching || IsExporting || IsSpaceHavenRunning;
@@ -97,7 +64,6 @@ public partial class SharedState : ObservableObject
     public CancellationTokenSource InitializeCTS { get; set; }
     public CancellationTokenSource LaunchCTS { get; set; }
     public CancellationTokenSource ExportCTS { get; set; }
-
 
     // PAGES:
     [ObservableProperty]
@@ -128,14 +94,12 @@ public partial class SharedState : ObservableObject
     [ObservableProperty]
     private IBrush _StatusBarForecolor = Brushes.LightCyan;
 
-
     // SPLASH LOGO:
     [ObservableProperty]
     private bool _LogoIsVisible = true;
 
     [ObservableProperty]
     private double _LogoOpacity = 1.0;
-
 
     // LEFT PANE:
     [ObservableProperty]
@@ -148,13 +112,13 @@ public partial class SharedState : ObservableObject
     private int _CollapseIconRotation;
 
     [ObservableProperty]
-    private LeftPaneItem _SelectedLeftPaneItem;
+    private LeftPaneItemViewModel _SelectedLeftPaneItem;
 
     [ObservableProperty]
-    private ObservableCollection<LeftPaneItem> _LeftPaneItems = [];
+    private ObservableCollection<LeftPaneItemViewModel> _LeftPaneItems = [];
 
     [ObservableProperty]
-    private ObservableCollection<LeftPaneItem> _FilteredLeftPaneItems = [];
+    private ObservableCollection<LeftPaneItemViewModel> _FilteredLeftPaneItems = [];
 
     // TEMPLATE INFO:
     [ObservableProperty]
@@ -170,7 +134,41 @@ public partial class SharedState : ObservableObject
     public IProgressInfo LoadModsProgress { get; } = new ProgressInfo(nameof(LoadModsProgress));
     public IProgressInfo InitializeProgress { get; }
 
-    partial void OnSelectedLeftPaneItemChanged(LeftPaneItem value)
+
+
+    public AppViewModel()
+    {
+        AppSettings.PropertyChanged -= PersistentSettings_PropertyChanged;
+        AppSettings.PropertyChanged += PersistentSettings_PropertyChanged;
+        UpdateLeftPanelIsCollapsed();
+        InitializeProgress = new ProgressInfo("Initialization",
+        [
+            (BackupProgress, 10),
+            (TemplateProgress, 50),
+            (CacheProgress, 10),
+            (LoadModsProgress, 30),
+        ]);
+        BackupProgress.Max = 10;
+        TemplateProgress.Max = 10;
+        CacheProgress.Max = 10;
+        LoadModsProgress.Max = 10;
+    }
+
+
+
+    private void PersistentSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppSettingsViewModel.IsLeftPaneCollapsed))
+            UpdateLeftPanelIsCollapsed();
+    }
+
+    private void UpdateLeftPanelIsCollapsed()
+    {
+        CollapseIconRotation = AppSettings.IsLeftPaneCollapsed ? 180 : 0;
+        LeftPaneWidth = AppSettings.IsLeftPaneCollapsed ? new GridLength(48) : new GridLength(432);
+    }
+
+    partial void OnSelectedLeftPaneItemChanged(LeftPaneItemViewModel value)
     {
         switch (value?.Type)
         {
@@ -203,15 +201,13 @@ public partial class SharedState : ObservableObject
         }
     }
 
-    #region Helper methods
-
     public void CopyToClipboardAsync(string text)
     {
         if (text.IsNullOrWhiteSpace())
             return;
 
         // Fire and forget:
-        DispatchQueue.TryEnqueue(async () =>
+        Dispatcher.Run(async () =>
         {
             try
             {
@@ -231,72 +227,6 @@ public partial class SharedState : ObservableObject
                 Log.Debug(ex);
             }
         });
-    }
-
-
-
-
-
-    public DispatchQueue DispatchQueue { get; } = new();
-
-    public void Run(Action a)
-    {
-        if (a == null) return;
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            try { a.Invoke(); }
-            catch (Exception ex) { Log.Debug(ex); }
-        }
-        else
-        {
-            try { Dispatcher.UIThread.Invoke(a); }
-            catch (Exception ex) { Log.Debug(ex); }
-        }
-    }
-
-    public async Task RunAsync(Action a)
-    {
-        if (a == null) return;
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            try { a.Invoke(); }
-            catch (Exception ex) { Log.Debug(ex); }
-        }
-        else
-        {
-            try { await Dispatcher.UIThread.InvokeAsync(a); }
-            catch (Exception ex) { Log.Debug(ex); }
-        }
-    }
-
-    public T Run<T>(Func<T> f)
-    {
-        if (f == null) return default;
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            try { return f.Invoke(); }
-            catch (Exception ex) { Log.Debug(ex); return default; }
-        }
-        else
-        {
-            try { return Dispatcher.UIThread.Invoke(f); }
-            catch (Exception ex) { Log.Debug(ex); return Dispatcher.UIThread.Invoke(() => default(T)); }
-        }
-    }
-
-    public async Task<T> RunAsync<T>(Func<T> f)
-    {
-        if (f == null) return default;
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            try { return f.Invoke(); }
-            catch (Exception ex) { Log.Debug(ex); return default; }
-        }
-        else
-        {
-            try { return await Dispatcher.UIThread.InvokeAsync(f); }
-            catch (Exception ex) { Log.Debug(ex); return Dispatcher.UIThread.Invoke(() => default(T)); }
-        }
     }
 
     public void UpdateModIds()
@@ -485,30 +415,6 @@ public partial class SharedState : ObservableObject
             AddIndirectReferences(mod, child); // add children
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private readonly SemaphoreSlim InitializationSemaphore = new(1, 1);
 
     public async Task<bool> InitializeAsync(bool forceReset)
@@ -526,7 +432,6 @@ public partial class SharedState : ObservableObject
 
         try
         {
-
             using CancellationTokenSource cts = new();
             InitializeCTS = cts;
             CancellationToken ct = cts.Token;
@@ -641,25 +546,6 @@ public partial class SharedState : ObservableObject
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
@@ -671,8 +557,8 @@ public partial class SharedState : ObservableObject
             ModPages.Clear();
 
             // Prepare the list of items to remove, then remove, otherwise we get an exception:
-            List<LeftPaneItem> leftPaneItemsToRemove = LeftPaneItems.Where(item => item.Type == EPageType.Mod).ToList();
-            foreach (LeftPaneItem item in leftPaneItemsToRemove)
+            List<LeftPaneItemViewModel> leftPaneItemsToRemove = LeftPaneItems.Where(item => item.Type == EPageType.Mod).ToList();
+            foreach (LeftPaneItemViewModel item in leftPaneItemsToRemove)
             {
                 LeftPaneItems.Remove(item);
                 FilteredLeftPaneItems.Remove(item);
@@ -713,7 +599,7 @@ public partial class SharedState : ObservableObject
                 ModViewModel mod = new(modData, mods.Values);
                 Mods.Add(mod);
                 ModPages.Add(mod.Name, new ModPageViewModel(mod));
-                LeftPaneItems.Add(new LeftPaneItem(EPageType.Mod, mod));
+                LeftPaneItems.Add(new LeftPaneItemViewModel(EPageType.Mod, mod));
                 await Task.Yield();
             }
             FilteredLeftPaneItems = new(LeftPaneItems);
@@ -735,8 +621,48 @@ public partial class SharedState : ObservableObject
         }
     }
 
+    public void OpenLink(string link, ILogger log)
+    {
+        Dispatcher.Run(async () =>
+        {
+            // Cleanup:
+            link = link?.Trim('"').Trim('\'').Trim();
+            if (link.IsNullOrWhiteSpace())
+                return;
 
+            // Normal links (dirs, files, internet links):
+            if (!link.StartsWith("app://"))
+            {
+                await OS.OpenLinkAsync(link, log);
+                return;
+            }
 
+            // Links to something within this application:
+            string[] parts = link.Substring(6).Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (!Enum.TryParse(parts.FirstOrDefault() ?? string.Empty, true, out EPageType page))
+                return;
 
-    #endregion
+            switch (page)
+            {
+                case EPageType.LearningComputer:
+                case EPageType.NavigationConsole:
+                case EPageType.SystemCore:
+                case EPageType.Airlock:
+                    LeftPaneItemViewModel item = State.LeftPaneItems.FirstOrDefault(item => item.Type == page);
+                    if (item != null) State.SelectedLeftPaneItem = item;
+                    return;
+
+                case EPageType.Mod:
+                    if (parts.Length < 2)
+                        return;
+                    LeftPaneItemViewModel mod = State.LeftPaneItems.FirstOrDefault(item => item.Type == EPageType.Mod && (item?.Mod?.Name?.Replace(" ", string.Empty).Equals(parts[1].Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase) ?? false));
+                    if (mod != null) State.SelectedLeftPaneItem = mod;
+                    return;
+
+                default:
+                    return;
+            }
+        });
+    }
+
 }

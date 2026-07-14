@@ -1,4 +1,4 @@
-﻿namespace SH.Launcher.ViewModels;
+﻿namespace SH.Launcher.ViewModels.Enums;
 
 public enum EPageType
 {

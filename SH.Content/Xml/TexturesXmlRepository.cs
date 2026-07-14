@@ -13,9 +13,9 @@ namespace SH.Content.Xml;
 
 public sealed class TexturesXmlRepository
 {
-    public TexturesXmlRepository(ILogger logger)
+    public TexturesXmlRepository(ILogger log)
     {
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     private readonly ILogger Log;

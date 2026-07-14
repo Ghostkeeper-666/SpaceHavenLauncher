@@ -21,28 +21,28 @@ public sealed class LoggerCollection : ILogger
 
     public LoggerCollection() { }
 
-    public LoggerCollection(params ILogger[] loggers)
+    public LoggerCollection(params ILogger[] children)
     {
-        if (loggers == null)
+        if (children == null)
             return;
-        foreach (ILogger logger in loggers)
-            AddLogger(logger);
+        foreach (ILogger log in children)
+            AddLogger(log);
     }
 
-    public void AddLogger(ILogger logger)
+    public void AddLogger(ILogger log)
     {
-        if (logger == null || logger is VoidLogger)
+        if (log == null || log is VoidLogger)
             return;
-        Children.Add(logger);
+        Children.Add(log);
     }
 
-    public void RemoveLogger(ILogger logger)
+    public void RemoveLogger(ILogger log)
     {
-        if (logger == null)
+        if (log == null)
             return;
-        if (Children.FirstOrDefault(l => l == logger) == null)
+        if (Children.FirstOrDefault(l => l == log) == null)
             return;
-        Children.Remove(logger);
+        Children.Remove(log);
     }
 
     public void Add(LogMessage m)
@@ -160,8 +160,8 @@ public sealed class LoggerCollection : ILogger
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (ILogger logger in Children)
-            try { await logger.DisposeAsync(); } catch { }
+        foreach (ILogger log in Children)
+            try { await log.DisposeAsync(); } catch { }
     }
     #endregion
 }

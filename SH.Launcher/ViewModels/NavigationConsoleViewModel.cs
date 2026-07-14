@@ -29,28 +29,24 @@ namespace SH.Launcher.ViewModels;
 
 public partial class NavigationConsoleViewModel : ViewModelBase
 {
-    public NavigationConsoleViewModel() { }
-
-    private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/NavigationConsole.jpg");
-
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     private readonly SemaphoreSlim LaunchSemaphore = new(1, 1);
 
-
-
-    [ObservableProperty]
-    private LeftScreen _LeftScreen = new();
+    private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/NavigationConsole.jpg");
 
     [ObservableProperty]
-    private CentralScreen _CentralScreen = new();
+    private LeftScreenViewModel _LeftScreen = new();
 
     [ObservableProperty]
-    private RightScreen _RightScreen = new();
+    private CentralScreenViewModel _CentralScreen = new();
 
+    [ObservableProperty]
+    private RightScreenViewModel _RightScreen = new();
 
     [ObservableProperty]
     private StreamGeometry _ToggleLogViewButtonIcon = null;
@@ -60,19 +56,23 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
 
 
+    public NavigationConsoleViewModel()
+    {
+    }
+
+
+
     public async Task OnLeftButtons() =>
-        State.DispatchQueue.TryEnqueue(() => State.InitializeAsync(true));
+        Dispatcher.Run(() => State.InitializeAsync(true));
 
     public async Task OnLeftLever() =>
-        State.DispatchQueue.TryEnqueue(() => LaunchOriginalGame());
+        Dispatcher.Run(() => LaunchOriginalGame());
 
     public async Task OnRightLever() =>
-        State.DispatchQueue.TryEnqueue(() => LaunchModifiedGame());
+        Dispatcher.Run(() => LaunchModifiedGame());
 
     public async Task OnRightButtons() =>
         await ExtractLibraryFiles();
-
-
 
     public async Task InitializeBuildSystemAsync(bool forceReset)
     {
@@ -127,8 +127,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             State.LoadModsProgress.ProgressChanged -= LeftScreen.OnLoadModsProgressAsync;
         }
     }
-
-
 
     private async Task LaunchOriginalGame()
     {
@@ -212,7 +210,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
             else
             {
-                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "tab://SystemCore");
+                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "app://SystemCore");
                 await Task.Delay(500);
             }
 
@@ -261,8 +259,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
         }
     }
-
-
 
     private async Task LaunchModifiedGame()
     {
@@ -340,7 +336,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             if (mods.Count <= 0)
             {
-                Log.Error(State.StatusBarText = "Please INSTALL and ENABLE at least one mod for launching a modified game!", "tab://LearningComputer");
+                Log.Error(State.StatusBarText = "Please INSTALL and ENABLE at least one mod for launching a modified game!", "app://LearningComputer");
                 CentralScreen.RightLeverState = EControlState.Error;
                 return;
             }
@@ -401,7 +397,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
             else
             {
-                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "tab://SystemCore");
+                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "app://SystemCore");
                 await Task.Delay(250);
             }
 
@@ -450,8 +446,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
         }
     }
-
-
 
     public async Task ExtractLibraryFiles()
     {
@@ -531,7 +525,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
                 if ((AppSettings.ExportOption & EExportOption.Original) != EExportOption.Original)
                 {
-                    Log.Warn($@"Skipping export of ORIGINAL files, accordingly to System Core settings", "tab://SystemCore");
+                    Log.Warn($@"Skipping export of ORIGINAL files, accordingly to System Core settings", "app://SystemCore");
                 }
                 else if (!IOUtils.FileExists(originalJarPath) || !IOUtils.DirExists(originalFilesDir))
                 {
@@ -565,7 +559,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     Log.Info($@"Exporting ORIGINAL textures...", exportOriginalTexturesDir);
                     if (!AppSettings.ExportTextures)
                     {
-                        Log.Warn($@"Skipping export of ORIGINAL textures, accordingly to System Core settings", "tab://SystemCore");
+                        Log.Warn($@"Skipping export of ORIGINAL textures, accordingly to System Core settings", "app://SystemCore");
                     }
                     else if (!await TryExportTextures(originalFilesDir, exportOriginalTexturesDir, parallelOptions, exportOriginalSpriteSheets, exportOriginalSprites))
                     {
@@ -585,7 +579,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
                 if ((AppSettings.ExportOption & EExportOption.Modified) != EExportOption.Modified)
                 {
-                    Log.Warn($@"Skipping export of MODIFIED files, accordingly to System Core settings", "tab://SystemCore");
+                    Log.Warn($@"Skipping export of MODIFIED files, accordingly to System Core settings", "app://SystemCore");
                 }
                 else if (!IOUtils.FileExists(modifiedJarPath) || !IOUtils.DirExists(modifiedFilesDir))
                 {
@@ -619,7 +613,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     Log.Info($@"Exporting MODIFIED textures...", exportModifiedTexturesDir);
                     if (!AppSettings.ExportTextures)
                     {
-                        Log.Warn($@"Skipping export of MODIFIED textures, accordingly to System Core settings", "tab://SystemCore");
+                        Log.Warn($@"Skipping export of MODIFIED textures, accordingly to System Core settings", "app://SystemCore");
                     }
                     else if (!await TryExportTextures(modifiedFilesDir, exportModifiedTexturesDir, parallelOptions, exportModifiedSpriteSheets, exportModifiedSprites))
                     {
@@ -662,8 +656,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             exportModifiedTextures?.Dispose();
         }
     }
-
-
 
     /// <summary>
     /// TODO: Create class 'SpaceHavenContentRepository' and pack this method there...
@@ -747,8 +739,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             return false;
         }
     }
-
-
 
     public void SetBackgroundImage() =>
         State.ForcedBackground = NavigationConsoleBackgroundImage;

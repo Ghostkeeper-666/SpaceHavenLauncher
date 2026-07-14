@@ -15,7 +15,7 @@ namespace SH.Modding.Build;
 
 internal sealed class ModBuildData : IAsyncDisposable
 {
-    public ModBuildData(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildData build, ILogger logger)
+    public ModBuildData(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildData build, ILogger log)
     {
         BuildSettings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
         Data = mod ?? throw new ArgumentNullException(nameof(mod));
@@ -24,7 +24,7 @@ internal sealed class ModBuildData : IAsyncDisposable
         FullFileLogger = new FileLogger(FullLogPath);
         ErrorFileLogger = new FileLogger(ErrorLogPath);
         ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
-        Log = new LoggerCollection(logger, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
+        Log = new LoggerCollection(log, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
     }
 
     private readonly BuildSettings BuildSettings;
@@ -338,18 +338,18 @@ internal sealed class ModBuildData : IAsyncDisposable
 
 
 
-    public async Task<bool> TryLoadWithEvaluatedVariablesAsync(XmlFile xmlFile, int modID, int autoID, int customID, IReadOnlyDictionary<string, VarBuildData> variables, ILogger logger, CancellationToken ct)
+    public async Task<bool> TryLoadWithEvaluatedVariablesAsync(XmlFile xmlFile, int modID, int autoID, int customID, IReadOnlyDictionary<string, VarBuildData> variables, ILogger log, CancellationToken ct)
     {
         try
         {
-            logger?.Debug($@"Loading evaluated XML document: ""{xmlFile.Path}""", xmlFile.Path);
+            log?.Debug($@"Loading evaluated XML document: ""{xmlFile.Path}""", xmlFile.Path);
 
             if (xmlFile.Path.IsNullOrWhiteSpace() || !IOUtils.FileExists(xmlFile.Path))
             {
-                logger?.Error($@"XML document could not be found at ""{xmlFile.Path}""", xmlFile.Path);
+                log?.Error($@"XML document could not be found at ""{xmlFile.Path}""", xmlFile.Path);
                 return false;
             }
-            string content = await IOUtils.TryReadAllTextAsync(xmlFile.Path, logger, ct);
+            string content = await IOUtils.TryReadAllTextAsync(xmlFile.Path, log, ct);
             OrderedDictionary<string, string> replacements = new(StringComparer.OrdinalIgnoreCase);
 
             // Replacements using the reserved variable '{id}'
@@ -358,13 +358,13 @@ internal sealed class ModBuildData : IAsyncDisposable
                 if (customID == autoID || customID == 0)
                 {
                     // Replace {id} with generated autoID
-                    logger?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with AUTO-ID='{autoID}' in XML file ""{xmlFile.FileName}"", Path");
+                    log?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with AUTO-ID='{autoID}' in XML file ""{xmlFile.FileName}"", Path");
                     replacements[ModdingConstants.BracedIdVariable] = autoID.ToString(); // i.e. replace {id} with autoID
                 }
                 else
                 {
                     // Replace {id} with adjusted customID
-                    logger?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
+                    log?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
                     replacements[ModdingConstants.BracedIdVariable] = customID.ToString(); // i.e. replace {id} with customID
                 }
             }
@@ -373,13 +373,13 @@ internal sealed class ModBuildData : IAsyncDisposable
                 if (customID == modID || customID == 0)
                 {
                     // Replace {id} with declared modID
-                    logger?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with MOD-ID='{modID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
+                    log?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with MOD-ID='{modID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
                     replacements[ModdingConstants.BracedIdVariable] = $@"{modID}"; // i.e. replace {id} with modID
                 }
                 else
                 {
                     // Replace {id} with adjusted customID
-                    logger?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
+                    log?.Info($@"Replacing '{ModdingConstants.BracedIdVariable}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
                     replacements[ModdingConstants.BracedIdVariable] = customID.ToString(); // i.e. replace {id} with customID
                 }
             }
@@ -387,7 +387,7 @@ internal sealed class ModBuildData : IAsyncDisposable
             // Replace numeric "modID with numeric "customID
             if (modID != 0 && customID != modID && customID != 0)
             {
-                logger?.Info($@"Replacing MOD-ID='{modID}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
+                log?.Info($@"Replacing MOD-ID='{modID}' with CUSTOM-ID='{customID}' in XML file ""{xmlFile.FileName}""", xmlFile.Path);
                 content = content.Replace('"' + modID.ToString(), '"' + customID.ToString(), StringComparison.OrdinalIgnoreCase);
             }
 
@@ -411,7 +411,7 @@ internal sealed class ModBuildData : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            logger?.Error(ex, xmlFile.Path);
+            log?.Error(ex, xmlFile.Path);
             return false;
         }
     }

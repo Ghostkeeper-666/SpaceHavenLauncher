@@ -17,11 +17,11 @@ public sealed class AnimationRenderer
 
     private readonly ILogger Log;
 
-    public AnimationRenderer(IReadOnlyDictionary<string, Animation> animationsByName, IReadOnlyDictionary<int, Sprite> sprites, ILogger logger)
+    public AnimationRenderer(IReadOnlyDictionary<string, Animation> animationsByName, IReadOnlyDictionary<int, Sprite> sprites, ILogger log)
     {
         Animations = animationsByName;
         Sprites = sprites;
-        Log = logger ?? new VoidLogger();
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<Clip> RenderClipAsync(string animationName, int canvasWidth, int canvasHeight, TimeSpan maxClipDuration, bool renderIntermediateSteps, CancellationToken ct)

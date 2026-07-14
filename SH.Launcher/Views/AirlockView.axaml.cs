@@ -8,12 +8,16 @@ namespace SH.Launcher.Views;
 
 public partial class AirlockView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public ILogger Logger => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
-    public AirlockView() => InitializeComponent();
+    public AirlockView()
+    {
+        InitializeComponent();
+    }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {

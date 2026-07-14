@@ -9,12 +9,13 @@ using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using SH.Launcher.Core.Services;
+using SH.Launcher.ViewModels.Enums;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class LeftPaneItem : ObservableObject
+public partial class LeftPaneItemViewModel : ObservableObject
 {
-    public LeftPaneItem(EPageType type, ModViewModel mod)
+    public LeftPaneItemViewModel(EPageType type, ModViewModel mod)
     {
         Type = type;
         Mod = Type == EPageType.Mod ? mod ?? throw new ArgumentNullException(nameof(mod)) : null;
@@ -60,13 +61,14 @@ public partial class LeftPaneItem : ObservableObject
         }
     }
 
-    public EPageType Type { get; }
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
+    public AppViewModel State => AppViewModel.State;
+    public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
     public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
     public ModViewModel Mod { get; }
+    public EPageType Type { get; }
 
     [ObservableProperty]
     private string _Label;
@@ -93,9 +95,15 @@ public partial class LeftPaneItem : ObservableObject
     private readonly Bitmap EnabledImage;
     private readonly Bitmap ErrorImage;
 
+
+
+    public LeftPaneItemViewModel() { }
+
+
+
     private void State_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SharedState.SelectedLeftPaneItem))
+        if (e.PropertyName == nameof(State.SelectedLeftPaneItem))
             UpdateSelected();
     }
 
@@ -202,7 +210,6 @@ public partial class LeftPaneItem : ObservableObject
             return;
         State.SelectedLeftPaneItem = this;
     }
-
 
     [RelayCommand]
     public async Task IconClickedAsync()

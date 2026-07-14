@@ -14,11 +14,11 @@ namespace SH.Launcher.Views;
 
 public partial class SystemCoreView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public DispatchQueue DispatchQueue => State.DispatchQueue;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
 
     public SystemCoreView()
@@ -90,7 +90,7 @@ public partial class SystemCoreView : UserControl
             if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
                 spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
                 classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -148,7 +148,7 @@ public partial class SystemCoreView : UserControl
             if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
                 spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
                 classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -206,7 +206,7 @@ public partial class SystemCoreView : UserControl
             if (spaceHavenJarDir != Paths.SpaceHavenJarDir && IOUtils.DirExists(Paths.SpaceHavenJarDir) ||
                 spaceHavenDir != Paths.SpaceHavenDir && IOUtils.DirExists(Paths.SpaceHavenDir) ||
                 classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -245,7 +245,7 @@ public partial class SystemCoreView : UserControl
         {
             if (steamDir != Paths.SteamDir && IOUtils.DirExists(Paths.SteamDir) ||
                 steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -283,7 +283,7 @@ public partial class SystemCoreView : UserControl
         {
             if (steamDir != Paths.SteamDir && IOUtils.DirExists(Paths.SteamDir) ||
                 steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -311,7 +311,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -336,7 +336,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (steamModsDir != Paths.SteamModsDir && IOUtils.DirExists(Paths.SteamModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -363,7 +363,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -388,7 +388,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (classicModsDir != Paths.ClassicModsDir && IOUtils.DirExists(Paths.ClassicModsDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -415,7 +415,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (modValuesDir != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -440,7 +440,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (modValuesDir != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -465,7 +465,7 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (jrePath != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
@@ -490,50 +490,56 @@ public partial class SystemCoreView : UserControl
         finally
         {
             if (jrePath != Paths.ModValuesDir && IOUtils.DirExists(Paths.ModValuesDir))
-                DispatchQueue.TryEnqueue(async () => await State.InitializeAsync(true));
+                Dispatcher.Run(async () => await State.InitializeAsync(true));
         }
     }
 
 
     private async void DonateAsync(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenHttpAsync("https://buymeacoffee.com/ghostkeepeb", Log));
+        State.OpenLink("https://buymeacoffee.com/ghostkeepeb", Log);
 
     private async void Open_WorkDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.WorkDir, Log));
+        State.OpenLink(Paths.WorkDir, Log);
+
     private void Open_ExportDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ExportDir, Log));
+        State.OpenLink(Paths.ExportDir, Log);
 
     private void Open_SpaceHavenDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenDir, Log));
+        State.OpenLink(Paths.SpaceHavenDir, Log);
+
     private void Open_SpaceHavenJarDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SpaceHavenJarDir, Log));
+        State.OpenLink(Paths.SpaceHavenJarDir, Log);
 
     private void Open_SteamDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SteamDir, Log));
+        State.OpenLink(Paths.SteamDir, Log);
+
     private void Open_SteamModsDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.SteamModsDir, Log));
+        State.OpenLink(Paths.SteamModsDir, Log);
+
     private void Open_ClassicModsDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ClassicModsDir, Log));
+        State.OpenLink(Paths.ClassicModsDir, Log);
 
     private void Open_ModValuesDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Paths.ModValuesDir, Log));
+        State.OpenLink(Paths.ModValuesDir, Log);
 
     private void Open_JREDir(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(async () => await OS.OpenDirectoryAsync(Path.GetDirectoryName(Paths.JREPath), Log));
+        State.OpenLink(Path.GetDirectoryName(Paths.JREPath), Log);
 
     private void CreateWindowsShortcut(object sender, RoutedEventArgs e) =>
-        State.DispatchQueue.TryEnqueue(() => new IconService(Log).CreateSpaceHavenLauncherWindowsDesktopIcon());
+        Dispatcher.Run(() => new IconService(Log).CreateSpaceHavenLauncherWindowsDesktopIcon());
 
     private async void CollectDebuggingInformation(object sender, RoutedEventArgs e) =>
         await (DataContext as SystemCoreViewModel)?.CollectDebuggingInformation();
 
     private void Reset_JavaVMArgs(object sender, RoutedEventArgs e) =>
         AppSettings.JavaVMArgs = State.TemplateJavaVMArgs;
+
     private void Reset_JavaMainClass(object sender, RoutedEventArgs e) =>
         AppSettings.JavaMainClass = State.TemplateJavaMainClass;
 
     private void Copy_JavaVMArgs(object sender, RoutedEventArgs e) =>
         State.CopyToClipboardAsync(AppSettings.JavaVMArgs);
+
     private void Copy_JavaMainClass(object sender, RoutedEventArgs e) =>
         State.CopyToClipboardAsync(AppSettings.JavaVMArgs);
 

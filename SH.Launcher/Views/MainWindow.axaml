@@ -429,7 +429,7 @@ HorizontalAlignment="Stretch"
             </ListBox.Styles>
 
             <ListBox.ItemTemplate>
-              <DataTemplate DataType="{x:Type vm:LeftPaneItem}" >
+              <DataTemplate DataType="{x:Type vm:LeftPaneItemViewModel}" >
 
                 <Grid
                 Margin="0"

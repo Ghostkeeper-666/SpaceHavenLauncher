@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -12,6 +13,7 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using SH.Launcher.ViewModels;
+using SH.Launcher.ViewModels.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,10 +27,11 @@ namespace SH.Launcher.Views;
 /// </summary>
 public partial class MarkdownView : UserControl
 {
-    public SharedState State => SharedState.State;
-    public ILogger Log => State.Log;
-    public PathViewModel Paths => State.Paths;
+    public AppViewModel State => AppViewModel.State;
+    public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
     public AppSettingsViewModel AppSettings => State.AppSettings;
+    public PathViewModel Paths => State.Paths;
+    public ILogger Log => State.Log;
 
 
     private static readonly FontFamily NormalFont =
@@ -261,7 +264,7 @@ public partial class MarkdownView : UserControl
                 VerticalAlignment = VerticalAlignment.Bottom,
                 [ToolTip.TipProperty] = "Click to copy",
             };
-            codeBlock.PointerPressed += (_, _) => SharedState.State.CopyToClipboardAsync(codeText);
+            codeBlock.PointerPressed += (_, _) => State.CopyToClipboardAsync(codeText);
             return codeBlock;
         }
         return null;
@@ -317,7 +320,7 @@ public partial class MarkdownView : UserControl
                     [ToolTip.TipProperty] = $"Click to open \n\n{linkInline.Url}",
                 };
 
-                linkTextBlock.PointerPressed += OpenLink(SpaceHavenLauncher.Directory, linkInline?.Url, State.Log);
+                linkTextBlock.PointerPressed += (s, e) => State.OpenLink(linkInline?.Url, State.Log);
 
                 Avalonia.Controls.Documents.InlineUIContainer container = new(linkTextBlock)
                 {
@@ -346,7 +349,7 @@ public partial class MarkdownView : UserControl
                     [ToolTip.TipProperty] = "Click to copy",
                 };
 
-                codeTextBlock.PointerPressed += (_, _) => SharedState.State.CopyToClipboardAsync(codeInline.Content);
+                codeTextBlock.PointerPressed += (_, _) => State.CopyToClipboardAsync(codeInline.Content);
 
                 Avalonia.Controls.Documents.InlineUIContainer container = new(codeTextBlock)
                 {
@@ -385,46 +388,6 @@ public partial class MarkdownView : UserControl
         return result;
     }
 
-    private static EventHandler<PointerPressedEventArgs> OpenLink(string baseDir, string url, ILogger logger) =>
-        (s, e) => SharedState.State.DispatchQueue.TryEnqueue(async () =>
-        {
-            url = url?.Trim('"')?.Trim();
-
-            if (url.IsNullOrWhiteSpace())
-                return;
-
-            if (!url.StartsWith("tab://"))
-            {
-                await OS.OpenLinkAsync(baseDir, url, logger);
-                return;
-            }
-
-            string[] parts = url.Substring(6).Split('/', StringSplitOptions.RemoveEmptyEntries);
-            if (!Enum.TryParse(parts.FirstOrDefault() ?? string.Empty, true, out EPageType page))
-                return;
-
-            switch (page)
-            {
-                case EPageType.LearningComputer:
-                case EPageType.NavigationConsole:
-                case EPageType.SystemCore:
-                case EPageType.Airlock:
-                    LeftPaneItem item = SharedState.State.LeftPaneItems.FirstOrDefault(item => item.Type == page);
-                    if (item != null) SharedState.State.SelectedLeftPaneItem = item;
-                    return;
-
-                case EPageType.Mod:
-                    if (parts.Length < 2)
-                        return;
-                    LeftPaneItem mod = SharedState.State.LeftPaneItems.FirstOrDefault(item => item.Type == EPageType.Mod && (item?.Mod?.Name?.Replace(" ", string.Empty).Equals(parts[1].Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase) ?? false));
-                    if (mod != null) SharedState.State.SelectedLeftPaneItem = mod;
-                    return;
-
-                default:
-                    return;
-            }
-        });
-
     private string ExtractPlainText(ContainerInline inline)
     {
         if (inline == null)
@@ -443,7 +406,6 @@ public partial class MarkdownView : UserControl
         }
         return builder.ToString();
     }
-
 
     private void OnWheel(object sender, PointerWheelEventArgs e)
     {
