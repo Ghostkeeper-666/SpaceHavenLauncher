@@ -4,6 +4,7 @@ using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.ViewModels.Enums;
+using System;
 using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;
@@ -83,9 +84,12 @@ public partial class NavigationConsoleRightScreenViewModel : ObservableObject
     private readonly int Steps = EnumX.MaxValue<ERightScreenStep>() + 1;
 
 
+    private NavigationConsoleViewModel Parent;
 
-    public NavigationConsoleRightScreenViewModel()
+    public NavigationConsoleRightScreenViewModel(NavigationConsoleViewModel parent)
     {
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+
         for (int line = 0; line < LineCount; ++line)
         {
             Error.Add(false);
@@ -135,7 +139,7 @@ public partial class NavigationConsoleRightScreenViewModel : ObservableObject
         {
             TextColor[line] = TextBrush_Error;
             for (int bar = 0; bar < ProgressBarStepCount; ++bar)
-            {            
+            {
                 ProgressBarBorder[line][bar] = BorderBrush_Error;
                 ProgressBarBackground[line][bar] = BackgroundBrush_Error;
             }

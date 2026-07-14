@@ -4,7 +4,9 @@ using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.ViewModels.Enums;
+using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace SH.Launcher.ViewModels;
 
@@ -81,10 +83,12 @@ public partial class NavigationConsoleLeftScreenViewModel : ObservableObject
 
     private readonly int Steps = EnumX.MaxValue<ELeftScreenStep>() + 1;
 
+    private NavigationConsoleViewModel Parent;
 
-
-    public NavigationConsoleLeftScreenViewModel()
+    public NavigationConsoleLeftScreenViewModel(NavigationConsoleViewModel parent)
     {
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+
         for (int line = 0; line < LineCount; ++line)
         {
             Error.Add(false);
@@ -97,36 +101,68 @@ public partial class NavigationConsoleLeftScreenViewModel : ObservableObject
                 ProgressBarBackground[line].Add(BackgroundBrush_Standby);
             }
         }
-        Reset();
-    }
 
-
-
-    public void Reset()
-    {
         for (int step = 0; step < Steps; ++step)
             Set((ELeftScreenStep)step, false, 0.0, false);
+
+        State.PropertyChanged -= State_PropertyChanged;
+        State.PropertyChanged += State_PropertyChanged;
     }
 
-    public async void OnBackupOriginalProgressAsync(object _, ProgressEventArgs e) =>
-        Dispatcher.Run(() => Set(ELeftScreenStep.Backup, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
-
-    public async void OnCreateTemplateProgressAsync(object _, ProgressEventArgs e) =>
-        Dispatcher.Run(() => Set(ELeftScreenStep.Template, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
-
-    public async void OnValidateCacheProgressAsync(object _, ProgressEventArgs e) =>
-        Dispatcher.Run(() => Set(ELeftScreenStep.Cache, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
-
-    public async void OnLoadModsProgressAsync(object _, ProgressEventArgs e) =>
-        Dispatcher.Run(() => Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted));
-
-    public void SetError(ELeftScreenStep step)
+    private void State_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        Set(step, true, 0.0, false);
-        LeftButtonsState = EControlState.Error;
+        if (e.PropertyName == nameof(AppViewModel.InitializationState))
+        {
+            switch (State.InitializationState)
+            {
+                case EControlState.Standby:
+                    for (int step = 0; step < Steps; ++step)
+                        Set((ELeftScreenStep)step, false, 0.0, false);
+                    break;
+
+                case EControlState.Error:
+                    if (State.LoadModsProgress.HasStarted)
+                        Set(ELeftScreenStep.LoadMods, true, 1.0, true);
+                    else if (State.CacheProgress.HasStarted)
+                        Set(ELeftScreenStep.Cache, true, 1.0, true);
+                    else if (State.TemplateProgress.HasStarted)
+                        Set(ELeftScreenStep.Template, true, 1.0, true);
+                    else if (State.BackupProgress.HasStarted)
+                        Set(ELeftScreenStep.Backup, true, 1.0, true);
+                    break;
+
+                case EControlState.Hovered:
+                    break;
+
+                case EControlState.Running:
+                    break;
+
+                case EControlState.Ready:
+                    for (int step = 0; step < Steps; ++step)
+                        Set((ELeftScreenStep)step, false, 1.0, true);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"{nameof(EControlState)} = {LeftButtonsState}");
+            }
+
+            LeftButtonsState = State.InitializationState;
+        }
     }
 
-    private void Set(ELeftScreenStep step, bool error, double progress, bool hasStarted) => AppViewModel.Dispatcher.Run(() =>
+    public async void OnBackupProgressAsync(object _, ProgressEventArgs e) =>
+        Set(ELeftScreenStep.Backup, false, e.Progress.NormalizedValue, e.Progress.HasStarted);
+
+    public async void OnTemplateProgressAsync(object _, ProgressEventArgs e) =>
+        Set(ELeftScreenStep.Template, false, e.Progress.NormalizedValue, e.Progress.HasStarted);
+
+    public async void OnCacheProgressAsync(object _, ProgressEventArgs e) =>
+        Set(ELeftScreenStep.Cache, false, e.Progress.NormalizedValue, e.Progress.HasStarted);
+
+    public async void OnModsProgressAsync(object _, ProgressEventArgs e) =>
+        Set(ELeftScreenStep.LoadMods, false, e.Progress.NormalizedValue, e.Progress.HasStarted);
+
+    private void Set(ELeftScreenStep step, bool error, double progress, bool hasStarted) => Dispatcher.Run(() =>
     {
         int line = (int)step;
 
@@ -134,7 +170,7 @@ public partial class NavigationConsoleLeftScreenViewModel : ObservableObject
         {
             TextColor[line] = TextBrush_Error;
             for (int bar = 0; bar < ProgressBarStepCount; ++bar)
-            {            
+            {
                 ProgressBarBorder[line][bar] = BorderBrush_Error;
                 ProgressBarBackground[line][bar] = BackgroundBrush_Error;
             }

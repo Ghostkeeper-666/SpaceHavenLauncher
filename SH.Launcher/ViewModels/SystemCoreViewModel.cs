@@ -68,9 +68,14 @@ public partial class SystemCoreViewModel : ViewModelBase
     [ObservableProperty]
     private string _Help_CollectDebuggingInformation = $"This collects debugging information from {SpaceHavenLauncher.Name} and stores it {PathData.DebugFilename} for later analysis";
 
+    private readonly MainWindowViewModel Parent;
 
 
-    public SystemCoreViewModel() { }
+
+    public SystemCoreViewModel(MainWindowViewModel parent)
+    {
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+    }
 
 
 
@@ -155,7 +160,7 @@ public partial class SystemCoreViewModel : ViewModelBase
             using ProgressInfo debugProgress = new() { Max = 100 };
             DebugProgress = debugProgress;
             DebugProgress.ProgressChanged += (object sender, ProgressEventArgs e) =>
-                AppViewModel.Dispatcher.Run(() => DebugProgressText = $"Generating {PathData.DebugFilename}... ({e?.Progress?.NormalizedValue.ToString("0%")})");
+                Dispatcher.Run(() => DebugProgressText = $"Generating {PathData.DebugFilename}... ({e?.Progress?.NormalizedValue.ToString("0%")})");
 
             using CancellationTokenSource debugCTS = new();
             DebugCTS = debugCTS;

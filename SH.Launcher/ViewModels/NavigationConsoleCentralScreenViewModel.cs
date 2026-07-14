@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.ViewModels.Enums;
+using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -97,9 +98,12 @@ public partial class NavigationConsoleCentralScreenViewModel : ObservableObject
     [ObservableProperty]
     private EControlState _RightLeverState;
 
+    private NavigationConsoleViewModel Parent;
 
-    public NavigationConsoleCentralScreenViewModel()
+    public NavigationConsoleCentralScreenViewModel(NavigationConsoleViewModel parent)
     {
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+
         Title = Title_Empty;
         for (int line = 0; line < LineCount; ++line)
         {
@@ -135,18 +139,25 @@ public partial class NavigationConsoleCentralScreenViewModel : ObservableObject
 
     public void Reset()
     {
-        if (State.IsProcessing)
-            return;
-        Title = Title_Empty;
-        for (int line = 0; line < LineCount; ++line)
+        try
         {
-            Text[line] = string.Empty;
-            TextColor[line] = TextBrush_Offline;
+            if (State.IsProcessing)
+                return;
+            Title = Title_Empty;
+            for (int line = 0; line < LineCount; ++line)
+            {
+                Text[line] = string.Empty;
+                TextColor[line] = TextBrush_Offline;
+            }
+            for (int bar = 0; bar < ProgressBarCount; ++bar)
+            {
+                ProgressBarBorder[bar] = BorderBrush_Inactive;
+                ProgressBarBackground[bar] = BackgroundBrush_Inactive;
+            }
         }
-        for (int bar = 0; bar < ProgressBarCount; ++bar)
+        catch (Exception ex)
         {
-            ProgressBarBorder[bar] = BorderBrush_Inactive;
-            ProgressBarBackground[bar] = BackgroundBrush_Inactive;
+            Log.Debug(ex);
         }
     }
 

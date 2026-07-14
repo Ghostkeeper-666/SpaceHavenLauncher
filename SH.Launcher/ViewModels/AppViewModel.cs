@@ -54,16 +54,20 @@ public partial class AppViewModel : ObservableObject
     public bool MoveToPrevBackgroundImage { get; set; }
 
     // EXECUTION STATE:
-    public bool IsProcessing => IsInitializing || IsLaunching || IsExporting || IsSpaceHavenRunning;
+    public readonly SemaphoreSlim Semaphore = new(1, 1);
+    public bool IsProcessing => Semaphore.CurrentCount <= 0;
 
-    public bool IsInitializing => InitializeCTS != null;
-    public bool IsLaunching => LaunchCTS != null;
+    public bool IsInitializing => InitializationCTS != null;
+    public CancellationTokenSource InitializationCTS { get; set; }
+
     public bool IsExporting => ExportCTS != null;
+    public CancellationTokenSource ExportCTS { get; set; }
+
+    public bool IsLaunching => LaunchCTS != null;
+    public CancellationTokenSource LaunchCTS { get; set; }
+
     public bool IsSpaceHavenRunning { get; set; }
 
-    public CancellationTokenSource InitializeCTS { get; set; }
-    public CancellationTokenSource LaunchCTS { get; set; }
-    public CancellationTokenSource ExportCTS { get; set; }
 
     // PAGES:
     [ObservableProperty]
@@ -133,6 +137,10 @@ public partial class AppViewModel : ObservableObject
     public IProgressInfo CacheProgress { get; } = new ProgressInfo(nameof(CacheProgress));
     public IProgressInfo LoadModsProgress { get; } = new ProgressInfo(nameof(LoadModsProgress));
     public IProgressInfo InitializeProgress { get; }
+
+    [ObservableProperty]
+
+    private EControlState _InitializationState = EControlState.Standby;
 
 
 
@@ -415,28 +423,44 @@ public partial class AppViewModel : ObservableObject
             AddIndirectReferences(mod, child); // add children
     }
 
-    private readonly SemaphoreSlim InitializationSemaphore = new(1, 1);
-
-    public async Task<bool> InitializeAsync(bool forceReset)
+    public async Task InitializeAsync(bool forceReset)
     {
         if (IsProcessing && !IsInitializing)
-            return false;
+            return;
 
-        if (IsInitializing)
-        {
-            Log.Warn("Restarting initialization...");
-            try { InitializeCTS?.Cancel(); } catch { }
-        }
-
-        await InitializationSemaphore.WaitAsync();
-
+        // Semaphore:
+        await Semaphore.WaitAsync();
         try
         {
             using CancellationTokenSource cts = new();
-            InitializeCTS = cts;
+            InitializationCTS = cts;
             CancellationToken ct = cts.Token;
 
+            InitializationState = EControlState.Standby; // required to trigger events on the next line:
+            InitializationState = EControlState.Running;
+            if (await InitializeInternalAsync(forceReset, ct))
+                InitializationState = EControlState.Ready;
+            else
+                InitializationState = EControlState.Error;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, Paths.WorkDir);
+            InitializationState = EControlState.Error;
+        }
+        finally
+        {
+            InitializationCTS = null;
+            Semaphore.Release();
+        }
+    }
+
+    private async Task<bool> InitializeInternalAsync(bool forceReset, CancellationToken ct)
+    {
+        try
+        {
             InitializeProgress.Reset();
+            InitializeProgress.Start();
 
             if (forceReset)
             {
@@ -450,7 +474,7 @@ public partial class AppViewModel : ObservableObject
 
             // BACKUP:
             Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
-            if (!await svc.TryBackupOriginalAsync(InitializeCTS.Token, BackupProgress))
+            if (!await svc.TryBackupOriginalAsync(InitializationCTS.Token, BackupProgress))
             {
                 Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
                 return false;
@@ -460,7 +484,7 @@ public partial class AppViewModel : ObservableObject
 
             // TEMPLATE:
             Log.Debug($@"Preparing template files...", Paths.Data.TemplateDir);
-            if (!await Task.Run(() => svc.TryPrepareTemplateAsync(InitializeCTS.Token, TemplateProgress)))
+            if (!await Task.Run(() => svc.TryPrepareTemplateAsync(InitializationCTS.Token, TemplateProgress)))
             {
                 Log.Error("Unable to prepare template JAR file", Paths.Data.TemplateDir);
                 return false;
@@ -499,7 +523,7 @@ public partial class AppViewModel : ObservableObject
             // CACHE:
             Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
             VersionParserService versionParser = new();
-            if (!await Paths.TryReadSpaceHavenVersion(Log, InitializeCTS.Token))
+            if (!await Paths.TryReadSpaceHavenVersion(Log, InitializationCTS.Token))
             {
                 Log.Error($"Unable to read {Paths.SpaceHavenName} version from template JAR file", Paths.Data.TemplateDir);
                 return false;
@@ -508,7 +532,7 @@ public partial class AppViewModel : ObservableObject
             Log.Success($"Detected {Paths.SpaceHavenName} version {Paths.SpaceHavenVersion}");
 
             Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
-            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(InitializeCTS.Token, CacheProgress)))
+            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(InitializationCTS.Token, CacheProgress)))
             {
                 Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
                 return false;
@@ -538,11 +562,6 @@ public partial class AppViewModel : ObservableObject
         {
             Log.Error(ex, Paths.WorkDir);
             return false;
-        }
-        finally
-        {
-            InitializationSemaphore.Release();
-            InitializeCTS = null;
         }
     }
 

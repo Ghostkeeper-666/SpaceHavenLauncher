@@ -42,10 +42,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Title = string.Empty;
 
-        State.LearningComputerPage = new();
-        State.NavigationConsolePage = new();
-        State.SystemCorePage = new();
-        State.AirlockPage = new();
+        State.LearningComputerPage = new(this);
+        State.NavigationConsolePage = new(this);
+        State.SystemCorePage = new(this);
+        State.AirlockPage = new(this);
 
         State.LeftPaneItems.Clear();
         State.FilteredLeftPaneItems.Clear();
@@ -89,8 +89,8 @@ public partial class MainWindowViewModel : ViewModelBase
             try { MainWindow.Window.WindowState = Avalonia.Controls.WindowState.Maximized; }
             catch (Exception ex) { Log?.Debug(ex); }
 #endif
-            // Also automatically initialize build system:
-            Dispatcher.Run(() => State.NavigationConsolePage.InitializeBuildSystemAsync(false));
+            // Also automatically initialize:
+            await State.InitializeAsync(false);
         }
         await FadeOutLogo();
     }

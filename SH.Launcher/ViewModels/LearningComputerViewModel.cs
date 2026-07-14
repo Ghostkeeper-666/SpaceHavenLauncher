@@ -4,6 +4,7 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -20,7 +21,6 @@ public partial class LearningComputerViewModel : ViewModelBase
     public ILogger Log => State.Log;
 
     private readonly Bitmap BackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/LearningComputer.jpg");
-
     [ObservableProperty]
     private LearningItemViewModel _SelectedItem;
 
@@ -30,10 +30,13 @@ public partial class LearningComputerViewModel : ViewModelBase
     [ObservableProperty]
     private string _MarkdownText;
 
+    private readonly MainWindowViewModel Parent;
 
 
-    public LearningComputerViewModel()
+
+    public LearningComputerViewModel(MainWindowViewModel parent)
     {
+        Parent = parent?? throw new ArgumentNullException(nameof(parent));
     }
 
 

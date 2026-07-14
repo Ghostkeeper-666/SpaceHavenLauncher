@@ -6,10 +6,9 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using SH.Framework.Extensions;
-using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Extensions;
 using SH.Launcher.Core.Models;
+using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels;
 using SH.Launcher.ViewModels.Enums;
 using System;
@@ -95,7 +94,19 @@ public partial class NavigationConsoleView : UserControl
     {
         if (DataContext is not NavigationConsoleViewModel vm)
             return;
+
+        State.BackupProgress.ProgressChanged -= vm.LeftScreen.OnBackupProgressAsync;
+        State.TemplateProgress.ProgressChanged -= vm.LeftScreen.OnTemplateProgressAsync;
+        State.CacheProgress.ProgressChanged -= vm.LeftScreen.OnCacheProgressAsync;
+        State.LoadModsProgress.ProgressChanged -= vm.LeftScreen.OnModsProgressAsync;
+
+        State.BackupProgress.ProgressChanged += vm.LeftScreen.OnBackupProgressAsync;
+        State.TemplateProgress.ProgressChanged += vm.LeftScreen.OnTemplateProgressAsync;
+        State.CacheProgress.ProgressChanged += vm.LeftScreen.OnCacheProgressAsync;
+        State.LoadModsProgress.ProgressChanged += vm.LeftScreen.OnModsProgressAsync;
+
         vm.SetBackgroundImage();
+
         base.OnAttachedToVisualTree(e);
     }
 
@@ -104,6 +115,7 @@ public partial class NavigationConsoleView : UserControl
         if (DataContext is not NavigationConsoleViewModel vm)
             return;
         UpdateControlImages(vm);
+
         ScrollLogToEnd();
     }
 
@@ -125,6 +137,7 @@ public partial class NavigationConsoleView : UserControl
         State.LogHistory.CollectionChanged += LogChanged;
 
         UpdateControlImages(vm);
+
         ScrollLogToEnd();
     }
 

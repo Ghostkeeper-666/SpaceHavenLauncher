@@ -35,18 +35,16 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     public PathViewModel Paths => State.Paths;
     public ILogger Log => State.Log;
 
-    private readonly SemaphoreSlim LaunchSemaphore = new(1, 1);
-
     private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/NavigationConsole.jpg");
 
     [ObservableProperty]
-    private NavigationConsoleLeftScreenViewModel _LeftScreen = new();
+    private NavigationConsoleLeftScreenViewModel _LeftScreen;
 
     [ObservableProperty]
-    private NavigationConsoleCentralScreenViewModel _CentralScreen = new();
+    private NavigationConsoleCentralScreenViewModel _CentralScreen;
 
     [ObservableProperty]
-    private NavigationConsoleRightScreenViewModel _RightScreen = new();
+    private NavigationConsoleRightScreenViewModel _RightScreen;
 
     [ObservableProperty]
     private StreamGeometry _ToggleLogViewButtonIcon = null;
@@ -54,85 +52,43 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     [ObservableProperty]
     private ObservableCollection<string> _LogHistory = [];
 
+    private readonly MainWindowViewModel Parent;
 
-
-    public NavigationConsoleViewModel()
+    public NavigationConsoleViewModel(MainWindowViewModel parent)
     {
+        Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        LeftScreen = new(this);
+        CentralScreen = new(this);
+        RightScreen = new(this);
     }
 
 
 
-    public async Task OnLeftButtons() =>
-        Dispatcher.Run(() => State.InitializeAsync(true));
+    public async Task OnLeftButtons()
+    {
+        if (State.IsInitializing)
+            State.InitializationCTS?.Cancel();
+        else await State.InitializeAsync(true);
+    }
 
     public async Task OnLeftLever() =>
-        Dispatcher.Run(() => LaunchOriginalGame());
+        await LaunchOriginalGame();
 
     public async Task OnRightLever() =>
-        Dispatcher.Run(() => LaunchModifiedGame());
+        await LaunchModifiedGame();
 
     public async Task OnRightButtons() =>
         await ExtractLibraryFiles();
 
-    public async Task InitializeBuildSystemAsync(bool forceReset)
-    {
-        if (State.IsProcessing && !State.IsInitializing)
-            return;
 
-        if (State.IsInitializing)
-        {
-            Log.Warn("Cancelling initialization...");
-            try { State.InitializeCTS?.Cancel(); } catch { }
-            return;
-        }
-
-        State.BackupProgress.ProgressChanged += LeftScreen.OnBackupOriginalProgressAsync;
-        State.TemplateProgress.ProgressChanged += LeftScreen.OnCreateTemplateProgressAsync;
-        State.CacheProgress.ProgressChanged += LeftScreen.OnValidateCacheProgressAsync;
-        State.LoadModsProgress.ProgressChanged += LeftScreen.OnLoadModsProgressAsync;
-
-        try
-        {
-            LeftScreen.Reset();
-            LeftScreen.LeftButtonsState = EControlState.Running;
-
-            if (await State.InitializeAsync(forceReset))
-            {
-                LeftScreen.LeftButtonsState = EControlState.Ready;
-            }
-            else
-            {
-                LeftScreen.LeftButtonsState = EControlState.Error;
-
-                if (!State.BackupProgress.HasCompleted)
-                    LeftScreen.SetError(ELeftScreenStep.Backup);
-                else if (!State.TemplateProgress.HasCompleted)
-                    LeftScreen.SetError(ELeftScreenStep.Template);
-                else if (!State.CacheProgress.HasCompleted)
-                    LeftScreen.SetError(ELeftScreenStep.Cache);
-                else if (!State.LoadModsProgress.HasCompleted)
-                    LeftScreen.SetError(ELeftScreenStep.LoadMods);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, Paths.WorkDir);
-            LeftScreen.LeftButtonsState = EControlState.Error;
-        }
-        finally
-        {
-            State.BackupProgress.ProgressChanged -= LeftScreen.OnBackupOriginalProgressAsync;
-            State.TemplateProgress.ProgressChanged -= LeftScreen.OnCreateTemplateProgressAsync;
-            State.CacheProgress.ProgressChanged -= LeftScreen.OnValidateCacheProgressAsync;
-            State.LoadModsProgress.ProgressChanged -= LeftScreen.OnLoadModsProgressAsync;
-        }
-    }
 
     private async Task LaunchOriginalGame()
     {
         if (State.IsProcessing && !State.IsLaunching)
             return;
 
+
+        // Cancel?
         if (State.IsLaunching)
         {
             if (State.IsSpaceHavenRunning)
@@ -168,16 +124,16 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
-
-        CentralScreen.ShowOriginal();
-
         progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
-        progress.Start();
-        runGame.Start();
 
-        await LaunchSemaphore.WaitAsync();
+        // Semaphore:
+        await State.Semaphore.WaitAsync();
         try
         {
+            progress.Start();
+            runGame.Start();
+            CentralScreen.ShowOriginal();
+
             using CancellationTokenSource cts = new();
             State.LaunchCTS = cts;
 
@@ -229,7 +185,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
         finally
         {
-            State.IsSpaceHavenRunning = false;
+            State?.IsSpaceHavenRunning = false;
 
             try
             {
@@ -242,12 +198,11 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     await Task.Delay(50);
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
 
-            State.LaunchCTS = null;
-            LaunchSemaphore.Release();
-
-            CentralScreen.Reset();
             try
             {
                 progress?.Dispose();
@@ -255,8 +210,13 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                Log.Debug(ex);
+                Debug.WriteLine(ex);
             }
+
+            CentralScreen?.Reset();
+
+            State?.LaunchCTS = null;
+            State?.Semaphore?.Release();
         }
     }
 
@@ -265,6 +225,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         if (State.IsProcessing && !State.IsLaunching)
             return;
 
+
+        // Cancel?
         if (State.IsLaunching)
         {
             if (State.IsSpaceHavenRunning)
@@ -288,6 +250,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             return;
         }
 
+
         // Progress:
         ProgressInfo initializationProgress = new("Warm-up");
         ProgressInfo javaBuildProgress = new("JAVA Mods");
@@ -305,16 +268,16 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
-
-        CentralScreen.ShowModified();
-
         progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
-        progress.Start();
-        runGame.Start();
 
-        await LaunchSemaphore.WaitAsync();
+        // Semaphore:
+        await State.Semaphore.WaitAsync();
         try
         {
+            progress.Start();
+            runGame.Start();
+            CentralScreen.ShowModified();
+
             using CancellationTokenSource cts = new();
             State.LaunchCTS = cts;
             CancellationToken ct = cts.Token;
@@ -416,7 +379,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
         finally
         {
-            State.IsSpaceHavenRunning = false;
+            State?.IsSpaceHavenRunning = false;
 
             try
             {
@@ -429,12 +392,11 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     await Task.Delay(50);
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
 
-            State.LaunchCTS = null;
-            LaunchSemaphore.Release();
-
-            CentralScreen.Reset();
             try
             {
                 progress?.Dispose();
@@ -442,8 +404,13 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                Log.Debug(ex);
+                Debug.WriteLine(ex);
             }
+
+            CentralScreen?.Reset();
+
+            State?.LaunchCTS = null;
+            State?.Semaphore?.Release();
         }
     }
 
@@ -452,12 +419,15 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         if (State.IsProcessing && !State.IsExporting)
             return;
 
+
+        // Cancel?
         if (State.IsExporting)
         {
             Log.Warn("Cancelling export...");
             try { State.ExportCTS?.Cancel(); } catch { }
             return;
         }
+
 
         // Progress:
         IProgressInfo extractOriginalLibrary = new ProgressInfo(nameof(extractOriginalLibrary));
@@ -502,7 +472,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         string exportModifiedFilesDir = Paths.Data.ExportModifiedFilesDir;
         string exportModifiedTexturesDir = Paths.Data.ExportModifiedTexturesDir;
 
-        await LaunchSemaphore.WaitAsync();
+        await State.Semaphore.WaitAsync();
         try
         {
             using CancellationTokenSource cts = new();
@@ -642,18 +612,24 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         }
         finally
         {
-            State.ExportCTS = null;
-            LaunchSemaphore.Release();
+            try
+            {
+                extractOriginalLibrary?.ProgressChanged -= RightScreen.OnExportOriginalLibraryProgressAsync;
+                exportOriginalTextures?.ProgressChanged -= RightScreen.OnExportOriginalTexturesProgressAsync;
+                extractModifiedLibrary?.ProgressChanged -= RightScreen.OnExportModifiedLibraryProgressAsync;
+                exportModifiedTextures?.ProgressChanged -= RightScreen.OnExportModifiedTexturesProgressAsync;
 
-            extractOriginalLibrary?.ProgressChanged -= RightScreen.OnExportOriginalLibraryProgressAsync;
-            exportOriginalTextures?.ProgressChanged -= RightScreen.OnExportOriginalTexturesProgressAsync;
-            extractModifiedLibrary?.ProgressChanged -= RightScreen.OnExportModifiedLibraryProgressAsync;
-            exportModifiedTextures?.ProgressChanged -= RightScreen.OnExportModifiedTexturesProgressAsync;
-
-            extractOriginalLibrary?.Dispose();
-            exportOriginalTextures?.Dispose();
-            extractModifiedLibrary?.Dispose();
-            exportModifiedTextures?.Dispose();
+                extractOriginalLibrary?.Dispose();
+                exportOriginalTextures?.Dispose();
+                extractModifiedLibrary?.Dispose();
+                exportModifiedTextures?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+            State?.ExportCTS = null;
+            State?.Semaphore?.Release();
         }
     }
 

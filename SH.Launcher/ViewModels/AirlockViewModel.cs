@@ -1,5 +1,6 @@
 ﻿using Avalonia.Media;
 using SH.Framework.Logging;
+using System;
 
 namespace SH.Launcher.ViewModels;
 
@@ -15,10 +16,13 @@ public partial class AirlockViewModel : ViewModelBase
     private double PreviousBackgroundDarkness;
     private bool PreviousIsBackgroundEnabled;
 
+    private readonly MainWindowViewModel Parent;
 
 
-    public AirlockViewModel()
+
+    public AirlockViewModel(MainWindowViewModel parent)
     {
+        Parent = parent?? throw new ArgumentNullException(nameof(parent));
     }
 
 

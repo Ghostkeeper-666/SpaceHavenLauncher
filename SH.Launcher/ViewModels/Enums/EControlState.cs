@@ -2,9 +2,9 @@
 
 public enum EControlState
 {
-    Standby, // Gray
-    Hovered, // Gold
-    Ready, // Green
-    Error, // OrangeRed
-    Running, // Cyan
+    Standby,
+    Hovered,
+    Ready,
+    Error,
+    Running,
 }
