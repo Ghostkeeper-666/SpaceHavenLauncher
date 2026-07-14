@@ -5,6 +5,7 @@ using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,17 +18,17 @@ internal sealed class BuildData : IAsyncDisposable
 {
     public BuildData(BuildSettings settings, ILogger log)
     {
-        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         FileLogger = new FileLogger(Paths.BuildLogPath);
         Log = new LoggerCollection(log, FileLogger);
     }
 
     public ILogger Log { get; }
-    public BuildPathData Paths => Settings.Paths;
+    public BuildPathData Paths => BuildSettings.Paths;
 
-    private readonly BuildSettings Settings;
-    private ParallelOptions ParallelOptions => Settings.ParallelOptions;
-    private CancellationToken CT => Settings.CT;
+    private readonly BuildSettings BuildSettings;
+    private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
+    private CancellationToken CT => BuildSettings.CT;
     private FileLogger FileLogger { get; }
     
     public List<ModBuildData> Mods { get; } = [];
@@ -51,7 +52,7 @@ internal sealed class BuildData : IAsyncDisposable
     public void AddMods(IEnumerable<ModData> mods)
     {
         foreach (ModData mod in mods)
-            Mods.Add(new ModBuildData(Settings, Mods.Count, mod, this, Log));
+            Mods.Add(new ModBuildData(BuildSettings, Mods.Count, mod, this, Log));
     }
 
     public async Task<bool> ComputeHash()
@@ -66,11 +67,11 @@ internal sealed class BuildData : IAsyncDisposable
             // From Space Haven Launcher:
             SortedDictionary<string, string> appData = new()
             {
-                ["AppVersion"] = $@"""{Settings.AppVersion}""",
+                ["AppVersion"] = $@"""{BuildSettings.AppVersion}""",
                 ["AppDir"] = $@"""{Paths.AppDir}""",
                 ["WorkDir"] = $@"""{Paths.WorkDir}""",
 
-                ["SpaceHavenVersion"] = $@"""{Settings.SpaceHavenVersion}""",
+                ["SpaceHavenVersion"] = $@"""{BuildSettings.SpaceHavenVersion}""",
                 ["SpaceHavenDir"] = $@"""{Paths.SpaceHavenDir}""",
                 ["SpaceHavenJarDir"] = $@"""{Paths.SpaceHavenJarDir}""",
             };
@@ -167,52 +168,50 @@ internal sealed class BuildData : IAsyncDisposable
         return isNum1 ? -1 : 1;
     }
 
-    public async Task<bool> TryWriteVersion(ILogger log, CancellationToken ct)
-    {
-        try
-        {
-            string[] lines = [Settings.SpaceHavenVersion.ToString(), "(modified)"];
 
-            // Haven.xml:
-            XmlFile[EXmlFileType.Haven].Xml.Root.SetAttributeValue("libVersion", lines.JoinToString(" "));
 
-            // Version.txt:
-            return await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), log, ct);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
-    public async Task<bool> TryLoadXmlFiles(CancellationToken ct)
+    public async Task<bool> TryLoadSpaceHavenXmlFilesAsync(CancellationToken ct, IProgressInfo progress)
     {
         try
         {
             Log.Info($@"Loading XML files...", Paths.BuildStageDirectory);
+            progress?.Start();
 
             // Instantiate:
             XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDirectory, Paths.BuildStageHavenXmlPath);
-            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDirectory, Paths.BuildStageTextsXmlPath);
-            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAudioXmlPath);
-            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
-            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
-            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
-
-            // Read:
-            foreach (XmlFile xmlFile in XmlFile.Values)
-            {
-                if (await xmlFile.TryLoadAsync(Log, ct))
-                    continue;
-                Log.Error($@"This XML file contains syntax errors: ""{xmlFile.Path}""", xmlFile.Path);
+            if (!await XmlFile[EXmlFileType.Haven].TryLoadAsync(Log, ct))
                 return false;
-            }
+            progress.SetNormalized(0.30);
+
+            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDirectory, Paths.BuildStageTextsXmlPath);
+            if (!await XmlFile[EXmlFileType.Texts].TryLoadAsync(Log, ct))
+                return false;
+            progress.SetNormalized(0.60);
+
+            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAudioXmlPath);
+            if (!await XmlFile[EXmlFileType.Audio].TryLoadAsync(Log, ct))
+                return false;
+            progress.SetNormalized(0.61);
+
+            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
+            if (!await XmlFile[EXmlFileType.Textures].TryLoadAsync(Log, ct))
+                return false;
+            progress.SetNormalized(0.64);
+
+            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
+            if (!await XmlFile[EXmlFileType.Animations].TryLoadAsync(Log, ct))
+                return false;
+            progress.SetNormalized(0.94);
+
+            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
+            if (!await XmlFile[EXmlFileType.SpaceHavenSettings].TryLoadAsync(Log, ct))
+                return false;
+            progress.SetNormalized(0.95);
 
             // Compute registered XML node IDs:
             if (!await TryComputeRegisteredNodeIDs(ct))
                 return false;
+            progress.Complete();
 
             // Done.
             return true;

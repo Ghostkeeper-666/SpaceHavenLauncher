@@ -3,50 +3,52 @@ atlases[] = [nearest, linear];
 foreach(t in textures.t)
 {
   if(exist t.image)
-     atlases[t.filter].add(new(t.image)) with LocalID=t.ID GlobalID=nextID
+    ss = new(t.image) { LID=t.ID GID=next }
+    atlases[t.filter].add(ss)
   else
-     atlases[t.filter].add(new(t.metadata, maxRects=textures.t.count)) with LocalID=t.ID GlobalID=nextID
+    ss = new(t.metadata, maxRect=textures.t.count) { LID=t.ID GID=next }
+    atlases[t.filter].add(ss)
 }
 
-spriteRefs = []
+refs = []
 foreach(assetPos in allAssetPos) 
 {
   a = assetPos.a
-  if(a ?? 0 <= lastOrigSpriteName)
+  if(a ?? 0 <= lastOrigsName)
     continue
 
   re = textures.re[a]
   if(re == null)
-    throw invalid sprite reference a=...
+    throw invalid s reference a=...
   
   atlas = atlases.FirstOrDefault(atlas => atlas.Contains(re.t))
   if(atlas == null)
-    throw sprite maps to unknown spritesheet
-  spritesheet = atlas[re.t] // this is never null
+    throw s maps to unknown ss
+  ss = atlas[re.t] // this is never null
 
-  if(spritesheet.HasImage)
+  if(ss.HasImage)
   {
-    sprite = new sprite(spritesheet, w, h, x, y) { LocalName=next, LocalID=next, GlobalName=next, GlobalID=next }
-    spritesheet.add(sprite)
-    spriteRefs = new(assetPos, sprite)
-    // debug: render sprite image as PNG?
+    s = new(ss, w, h, x, y) { LN=next, LID=next, GN=next, GID=next }
+    ss.add(s)
+    refs.add(new(assetPos, s))
+    // debug: render s image as PNG?
   }
   else
   {
     if(!re.HasImage)
-      throw no spritesheet image nor sprite image could be found for sprite region = ...
+      throw no ss image nor s image could be found for s region = ...
   
-    sprite = new sprite(tex.Image) { x, y }
-    spritesheet.add(sprite) { LocalName=next, LocalID=next, GlobalName=next, GlobalID=next }
-    spriteRefs = new(assetPos, sprite)
+    s = new(tex.Image) { x, y }
+    ss.add(s) { LN=next, LID=next, GN=next, GID=next }
+    refs.add(assetPos, s)
   }
 }
 
-parallel.foreach(spritesheet in atlases.SelectMany(atlas => atlas.SpriteSheets))
+parallel.foreach(ss in atlases.SelectMany(atlas => atlas.ss))
 {
-  if(!spritesheet.hasImage)
-    spritesheet.renderFromSprites()
-  spritesheet.ExportToCim()
-  // debug: spritesheet.ExportToPng()
+  if(!ss.hasImage)
+    ss.render()
+  ss.ExportToCim()
+  // debug: ss.ExportToPng()
 }
 

@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace SH.Framework.Progress;
 
 public interface IProgressInfo : IDisposable
 {
     public event EventHandler<ProgressEventArgs> ProgressChanged;
+    public Stopwatch Clock { get; }
 
     public int Max { get; set; }
     public int Min { get; set; }

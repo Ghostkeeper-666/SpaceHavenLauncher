@@ -1,6 +1,7 @@
 ﻿using SH.Framework.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -9,6 +10,8 @@ namespace SH.Framework.Progress;
 public sealed class ProgressInfo : IProgressInfo
 {
     public event EventHandler<ProgressEventArgs> ProgressChanged;
+
+    public Stopwatch Clock { get; } = new();
 
     private ulong SeqNum = 0;
 
@@ -126,6 +129,8 @@ public sealed class ProgressInfo : IProgressInfo
         {
             if (IsDisposed || HasStarted)
                 return;
+            Clock.Restart();
+
             HasStarted = true;
         }
         ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
@@ -138,13 +143,14 @@ public sealed class ProgressInfo : IProgressInfo
             if (IsDisposed)
                 return;
 
-            HasStarted = false;
             LocalNormalizedValue = 0.0;
             CachedValue = Value;
 
             if (ChildrenDict.Count > 0)
                 foreach (IProgressInfo c in ChildrenDict.Keys)
                     c.Reset();
+
+            HasStarted = false;
         }
         ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
     }
@@ -155,6 +161,8 @@ public sealed class ProgressInfo : IProgressInfo
         {
             if (IsDisposed)
                 return;
+
+            Clock.Stop();
 
             HasStarted = true;
             LocalNormalizedValue = 1.0;
@@ -197,6 +205,8 @@ public sealed class ProgressInfo : IProgressInfo
                 LocalNormalizedValue = normalizedValue;
 
             CachedValue = Value;
+            if(CachedValue >= 1.0)
+                Clock.Stop();
         }
         if (value != CachedValue || hasStarted != HasStarted)
             ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));
@@ -240,6 +250,8 @@ public sealed class ProgressInfo : IProgressInfo
                 LocalNormalizedValue = normalizedValue;
 
             CachedValue = Value;
+            if(CachedValue >= 1.0)
+                Clock.Stop();
         }
         if (value != CachedValue || hasStarted != HasStarted)
             ProgressChanged?.Invoke(this, new(Interlocked.Increment(ref SeqNum), this));

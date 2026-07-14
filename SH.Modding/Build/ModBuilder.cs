@@ -8,7 +8,6 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -30,52 +29,43 @@ public sealed class ModBuilder : IAsyncDisposable
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
-    private IProgressInfo Initialization => BuildSettings.InitializationProgress;
-
-    private IProgressInfo XmlBuild => BuildSettings.XmlBuildProgress;
-    private IProgressInfo ResetXmlBuild;
-    private IProgressInfo CopyTemplateFiles;
-    private IProgressInfo LoadXml;
-    private IProgressInfo FixTexts;
-    private IProgressInfo MergeAudio;
-    private IProgressInfo CollectSpriteRefs;
-    private IProgressInfo LoadSprites;
-    private IProgressInfo PackSprites;
-    private IProgressInfo WriteSpriteSheets;
-    private IProgressInfo WriteTextureXmlFiles;
-    private IProgressInfo MergeXmlFiles;
-    private IProgressInfo PatchXmlFiles;
-    private IProgressInfo BuildJarFile;
-
-    private IProgressInfo JavaBuild => BuildSettings.JavaBuildProgress;
-    private IProgressInfo ResetJavaBuild;
-    private IProgressInfo PrepareJavaFiles;
-
     public bool IsNewJar { get; private set; }
     public bool NeedsXmlBuild { get; private set; }
     public bool NeedsJavaBuild { get; private set; }
 
-    private readonly EXmlFileType[] SupportedXmlMergeFileTypes =
-    [
-        EXmlFileType.SpaceHavenSettings,
-        EXmlFileType.Audio,
-        EXmlFileType.Textures,
-        EXmlFileType.Animations,
-        EXmlFileType.Texts,
-        EXmlFileType.Haven,
-    ];
 
-    private readonly EXmlFileType[] SupportedXmlPatchFileTypes =
-    [
-        EXmlFileType.SpaceHavenSettings,
-        EXmlFileType.Audio,
-        EXmlFileType.Textures,
-        EXmlFileType.Animations,
-        EXmlFileType.Texts,
-        EXmlFileType.Haven,
-    ];
+    private IProgressInfo Initialization => BuildSettings.InitializationProgress;
+    private IProgressInfo XmlBuild => BuildSettings.XmlBuildProgress;
+    private IProgressInfo JavaBuild => BuildSettings.JavaBuildProgress;
 
-    private readonly Stopwatch Clock = new();
+    private IProgressInfo ResetBuildStage;
+    private IProgressInfo LoadSpaceHavenXml;
+    private IProgressInfo ResetXmlBuild;
+    private IProgressInfo LoadModsXml;
+    private IProgressInfo MergeXml;
+    private IProgressInfo PatchXml;
+    private IProgressInfo ComposeAudio;
+    private IProgressInfo ComposeTextures;
+    private IProgressInfo FixTexts;
+    private IProgressInfo DeployXmlHash;
+    private IProgressInfo DeployJavaHash;
+    private IProgressInfo WriteVersionInfo;
+    private IProgressInfo ComposeCredits;
+    private IProgressInfo WriteSpaceHavenXml;
+    private IProgressInfo ComposeSpaceHavenJar;
+    private IProgressInfo DeployConfigJson;
+    private IProgressInfo ComposeModsJson;
+
+    private IProgressInfo ComposeTextures_LoadPredefinedSpriteSheets;
+    private IProgressInfo ComposeTextures_LoadPredefinedSprites;
+    private IProgressInfo ComposeTextures_WritePredefinedSpriteSheets;
+    private IProgressInfo ComposeTextures_ReadReferencedSprites;
+    private IProgressInfo ComposeTextures_LoadReferencedSprites;
+    private IProgressInfo ComposeTextures_PackReferencedSprites;
+    private IProgressInfo ComposeTextures_WriteReferencedSpriteSheets;
+    private IProgressInfo ComposeTextures_ComposeTexturesXml;
+
+
 
 
 
@@ -92,8 +82,123 @@ public sealed class ModBuilder : IAsyncDisposable
         Log = new LoggerCollection(log);
     }
 
-    private void Fail() => BuildSettings.Fail();
 
+
+
+
+
+    private void Fail() =>
+        BuildSettings.Fail();
+
+
+
+
+
+
+
+    private async Task<bool> TryInitializeProgressAsync()
+    {
+        // TODO: auto-estimation of progess weights!
+        try
+        {
+            // STARTUP:
+            ResetBuildStage = new ProgressInfo("Reset Build Stage");
+            XmlBuild.AddChild(ResetBuildStage, 2000);
+            JavaBuild.AddChild(ResetBuildStage, 2000);
+
+            LoadSpaceHavenXml = new ProgressInfo("Load Space Haven XML");
+            XmlBuild.AddChild(LoadSpaceHavenXml, 666);
+            JavaBuild.AddChild(LoadSpaceHavenXml, 666);
+
+
+
+            // JAVA BUILD:
+            DeployJavaHash = new ProgressInfo("Deploy JAVA Hash");
+            JavaBuild.AddChild(DeployJavaHash, 666);
+
+
+
+            // XML BUILD:
+            ResetXmlBuild = new ProgressInfo("Reset XML Build");
+            XmlBuild.AddChild(ResetXmlBuild, 666);
+
+            LoadModsXml = new ProgressInfo("Load Mods XML");
+            XmlBuild.AddChild(LoadModsXml, 666);
+
+            MergeXml = new ProgressInfo("Merge XML");
+            XmlBuild.AddChild(MergeXml, 666);
+
+            PatchXml = new ProgressInfo("Patch XML");
+            XmlBuild.AddChild(PatchXml, 666);
+
+            ComposeAudio = new ProgressInfo("Compose Audio");
+            XmlBuild.AddChild(ComposeAudio, 666);
+
+            ComposeTextures_LoadPredefinedSpriteSheets = new ProgressInfo("Compose Textures: Load Predefined Sprite Sheets");
+            ComposeTextures_LoadPredefinedSprites = new ProgressInfo("Compose Textures: Load Predefined Sprites");
+            ComposeTextures_WritePredefinedSpriteSheets = new ProgressInfo("Compose Textures: Write Predefined Sprite Sheets");
+            ComposeTextures_ReadReferencedSprites = new ProgressInfo("Compose Textures: Read Referenced Sprites");
+            ComposeTextures_LoadReferencedSprites = new ProgressInfo("Compose Textures: Load Referenced Sprites");
+            ComposeTextures_PackReferencedSprites = new ProgressInfo("Compose Textures: Pack Referenced Sprites");
+            ComposeTextures_WriteReferencedSpriteSheets = new ProgressInfo("Compose Textures: Write Referenced Sprite Sheets");
+            ComposeTextures_ComposeTexturesXml = new ProgressInfo("Compose Textures: Compose textures.xml");
+            ComposeTextures = new ProgressInfo("Compose Textures",
+            [
+                (ComposeTextures_LoadPredefinedSpriteSheets, 666),
+                (ComposeTextures_LoadPredefinedSprites, 666),
+                (ComposeTextures_WritePredefinedSpriteSheets, 666),
+                (ComposeTextures_ReadReferencedSprites, 666),
+                (ComposeTextures_LoadReferencedSprites, 666),
+                (ComposeTextures_PackReferencedSprites, 666),
+                (ComposeTextures_WriteReferencedSpriteSheets, 666),
+                (ComposeTextures_ComposeTexturesXml, 666),
+            ]);
+            XmlBuild.AddChild(ComposeTextures, 666);
+
+            FixTexts = new ProgressInfo("Fix Texts");
+            XmlBuild.AddChild(FixTexts, 666);
+
+            DeployXmlHash = new ProgressInfo("Deploy Xml Hash");
+            XmlBuild.AddChild(DeployXmlHash, 666);
+
+
+
+            // DEPLOYMENT:
+            WriteVersionInfo = new ProgressInfo("Write Version Info");
+            XmlBuild.AddChild(WriteVersionInfo, 666);
+            JavaBuild.AddChild(WriteVersionInfo, 666);
+
+            ComposeCredits = new ProgressInfo("Compose Credits");
+            XmlBuild.AddChild(ComposeCredits, 666);
+            JavaBuild.AddChild(ComposeCredits, 666);
+
+            WriteSpaceHavenXml = new ProgressInfo("Write Space Haven XML");
+            XmlBuild.AddChild(WriteSpaceHavenXml, 666);
+            JavaBuild.AddChild(WriteSpaceHavenXml, 666);
+
+            ComposeSpaceHavenJar = new ProgressInfo("Compose spacehaven.jar");
+            XmlBuild.AddChild(ComposeSpaceHavenJar, 666);
+            JavaBuild.AddChild(ComposeSpaceHavenJar, 666);
+
+            DeployConfigJson = new ProgressInfo("Deploy config.json");
+            XmlBuild.AddChild(DeployConfigJson, 666);
+            JavaBuild.AddChild(DeployConfigJson, 666);
+
+            ComposeModsJson = new ProgressInfo("Compose mods.json");
+            XmlBuild.AddChild(ComposeModsJson, 666);
+            JavaBuild.AddChild(ComposeModsJson, 666);
+
+
+
+            // Done.
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, Paths.BuildDirectory);
+            return false;
+        }
+    }
 
 
 
@@ -125,138 +230,162 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Progress setup:
-            if (!await TrySetupProgress())
+            if (!await TryInitializeProgressAsync())
                 return false;
-
-            // Start build performance measurement:
-            Clock.Restart();
 
             // Build Initialization:
-            if (!await TryInitialize())
+            if (!await TryInitializeAsync())
                 return false;
 
-            // Skip message:
+
+
+
+            // Skip JAVA build?
             if (NeedsJavaBuild)
                 JavaBuild.Start();
             else
             {
                 Log.Success("JAVA build skipped");
                 JavaBuild.Complete();
-                JavaBuild.RemoveAll();
+                JavaBuild.RemoveAll(); // avoid further updates from children
             }
 
+            // Skip XML build?
             if (NeedsXmlBuild)
                 XmlBuild.Start();
             else
             {
                 Log.Success("XML build skipped");
                 XmlBuild.Complete();
-                XmlBuild.RemoveAll();
+                XmlBuild.RemoveAll(); // avoid further updates from children
             }
 
+            // All builds skipped?
+            if(!NeedsJavaBuild && !NeedsXmlBuild)
+                return true;
 
-            if (NeedsJavaBuild || NeedsXmlBuild)
+
+
+
+            // Build Stage initialization:
+            if (NeedsXmlBuild || (NeedsJavaBuild && !Build.HasXmlMods))
             {
-                // Clear build directories:
-                if (!await TryResetXmlBuild())
+                // Reset build stage files:
+                ResetBuildStage.Start();
+                Log.Info("Resetting build stage files...");
+                if (!await TryResetBuildStageDirectoryAsync())
                     return false;
-
-                // Copy template stage:
-                Clock.Restart();
                 if (!await IOUtils.TryCopyDirectoryAsync(Paths.TemplateStageDirectory, Paths.BuildStageDirectory, true, Log, ParallelOptions))
                     return false;
-                CopyTemplateFiles.Complete();
-                Log.Debug($"{CopyTemplateFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildDirectory);
-
-                // Read Space Haven XML files:
-                if (!await Build.TryLoadXmlFiles(CT))
-                    return false;
-
-                // Write modified version:
-                if (!await Build.TryWriteVersion(Log, CT))
-                    return false;
+                ResetBuildStage.Complete();
             }
-
-
-            if (NeedsXmlBuild)
+            else
             {
-                // Read mod XML files, evaluating with previously loaded variable values:
-                await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
-                {
-                    if (!await mod.TryLoadXmlFiles())
-                    {
-                        Fail();
-                        return;
-                    }
-                });
+                // If a JAVA build is required, but XML mods exist and don't need a new XML build,
+                // then it's because build stage dir already contains files from previous XML build.
 
-                // Merge XML:
-                if (!await TryMergeXML())
-                    return false;
-
-                // Patch XML:
-                if (!await TryPatchXML())
-                    return false;
-
-                // Merge Audio:
-                if (!await TryMergeAudio())
-                    return false;
-
-                // Generate Textures:
-                if (!await TryGenerateTextures())
-                    return false;
-
-                // Fix Text entries:
-                if (!await TryFixTexts())
-                    return false;
-
-                // Copy XML hash file:
-                if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
-                    return false;
+                // Reuse build stage:
+                Log.Info("Reusing build stage files");
+                ResetBuildStage.Start();
+                ResetBuildStage.Complete();
             }
-            else Log.Success("XML build skipped");
 
-
+            // Space Haven XML:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
-                // Save all XML files:
-                foreach (XmlFile xmlFile in Build.XmlFile.Values)
-                    if (!await xmlFile.TrySaveAsync(Log, CT))
-                        return false;
-
-                // Add mod authors and modding tools developers to credits section
-                // Only for XML builds, since we don't want to unnecessarily touch spacehaven.jar
-                // Also, ignore errors
-                await TryComposeGameCredits();
-
-                // Always build the modifiedspacehaven.jar file:
-                if (!await TryCreateModifiedSpaceHavenJarFile())
-                    return false;
-
-                // Copy template config.json
-                if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
+                // Read Space Haven XML files:
+                if (!await Build.TryLoadSpaceHavenXmlFilesAsync(CT, LoadSpaceHavenXml))
                     return false;
             }
 
 
+
+            
+            // JAVA specific:
             if (NeedsJavaBuild)
             {
-                // Create mods.json file for JAVA modders:
-                if (!await TryWriteModsJson())
-                    return false;
-
-                // Copy JAVA hash file:
+                // Deploy JAVA hash:
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
                     return false;
             }
 
 
-            // Complete:
-            if(NeedsJavaBuild)
-                JavaBuild.Complete();
-            if(NeedsXmlBuild)
-                XmlBuild.Complete();
 
+
+            // XML specific:
+            if (NeedsXmlBuild)
+            {
+                // Clear XML build directories:
+                if (!await TryResetXmlBuildDirectories())
+                    return false;
+
+                // Read mod XML files, evaluating with previously loaded variable values:
+                await TryLoadModsXmlAsync();
+
+                // Merge XML:
+                if (!await TryMergeXmlAsync())
+                    return false;
+
+                // Patch XML:
+                if (!await TryPatchXmlAsync())
+                    return false;
+
+                // Merge Audio:
+                if (!await TryComposeAudioAsync())
+                    return false;
+
+                // Generate Textures:
+                if (!await TryComposeTexturesAsync())
+                    return false;
+
+                // Fix Text entries:
+                if (!await TryFixTextsAsync())
+                    return false;
+
+                // Deploy XML hash:
+                if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
+                    return false;
+            }
+
+
+
+
+            // Deployment:
+            if (NeedsJavaBuild || NeedsXmlBuild)
+            {
+                // Write version to haven.xml AND to version.txt:
+                if (!await TryWriteVersionInfoAsync(CT))
+                    return false;
+
+                // Credits.txt:
+                await TryWriteCreditsAsync();
+
+                // Save all XML files to build stage:
+                foreach (XmlFile xmlFile in Build.XmlFile.Values)
+                    if (!await xmlFile.TrySaveAsync(Log, CT))
+                        return false;
+
+                // Create/Deploy the modified spacehaven.jar:
+                if (!await TryWriteSpaceHavenJarAsync())
+                    return false;
+
+                // Deploy config.json:
+                if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
+                    return false;
+
+                // Create mods.json:
+                if (!await TryWriteModsJsonAsync())
+                    return false;
+            }
+
+
+
+
+            // Build completed:
+            if (NeedsJavaBuild)
+                JavaBuild.Complete();
+            if (NeedsXmlBuild)
+                XmlBuild.Complete();
 
             // Done.
             Log.Success($"{this} has completed", Paths.BuildDirectory);
@@ -271,12 +400,12 @@ public sealed class ModBuilder : IAsyncDisposable
         }
         finally
         {
-            // Dispose stuff here:
             if (Build != null)
             {
                 try { await Build.DisposeAsync(); } catch { }
                 Build = null;
             }
+
             if (FileLogger != null)
             {
                 try
@@ -288,31 +417,37 @@ public sealed class ModBuilder : IAsyncDisposable
                 FileLogger = null;
             }
 
-            // Progress:
-            Initialization?.RemoveAll();
-            XmlBuild?.RemoveAll();
-            JavaBuild?.RemoveAll();
+            Initialization?.RemoveAll(); // owned by caller, do not dispose!
+            JavaBuild?.RemoveAll(); // owned by caller, do not dispose!
+            XmlBuild?.RemoveAll(); // owned by caller, do not dispose!
 
-            // XML Build:
+            ResetBuildStage?.Dispose();
+            LoadSpaceHavenXml?.Dispose();
             ResetXmlBuild?.Dispose();
-            CopyTemplateFiles?.Dispose();
-            LoadXml?.Dispose();
+            LoadModsXml?.Dispose();
+            MergeXml?.Dispose();
+            PatchXml?.Dispose();
+            ComposeAudio?.Dispose();
             FixTexts?.Dispose();
-            MergeAudio?.Dispose();
-
-            CollectSpriteRefs?.Dispose();
-            LoadSprites?.Dispose();
-            PackSprites?.Dispose();
-            WriteSpriteSheets?.Dispose();
-            WriteTextureXmlFiles?.Dispose();
-
-            MergeXmlFiles?.Dispose();
-            PatchXmlFiles?.Dispose();
-            BuildJarFile?.Dispose();
-
-            // JAVA Build:
-            ResetJavaBuild?.Dispose();
-            PrepareJavaFiles?.Dispose();
+            DeployXmlHash?.Dispose();
+            DeployJavaHash?.Dispose();
+            WriteVersionInfo?.Dispose();
+            ComposeCredits?.Dispose();
+            WriteSpaceHavenXml?.Dispose();
+            ComposeSpaceHavenJar?.Dispose();
+            DeployConfigJson?.Dispose();
+            ComposeModsJson?.Dispose();
+            
+            ComposeTextures?.RemoveAll();
+            ComposeTextures?.Dispose();
+            ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
+            ComposeTextures_LoadPredefinedSprites?.Dispose();
+            ComposeTextures_WritePredefinedSpriteSheets?.Dispose();
+            ComposeTextures_ReadReferencedSprites?.Dispose();
+            ComposeTextures_LoadReferencedSprites?.Dispose();
+            ComposeTextures_PackReferencedSprites?.Dispose();
+            ComposeTextures_WriteReferencedSpriteSheets?.Dispose();
+            ComposeTextures_ComposeTexturesXml?.Dispose();
         }
     }
 
@@ -329,70 +464,26 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-
-    private async Task<bool> TrySetupProgress()
+    private async Task TryLoadModsXmlAsync()
     {
-        try
+        LoadModsXml.Start();
+        await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
         {
-            Clock.Restart();
-
-            ResetXmlBuild = new ProgressInfo("Reset XML Build");
-            XmlBuild.AddChild(ResetXmlBuild, 2000);
-
-            CopyTemplateFiles = new ProgressInfo("Copy Template Files");
-            XmlBuild.AddChild(CopyTemplateFiles, 2000);
-
-            LoadXml = new ProgressInfo("Load Template Xml");
-            XmlBuild.AddChild(LoadXml, 5000);
-
-            FixTexts = new ProgressInfo("Fix Text Entries");
-            XmlBuild.AddChild(FixTexts, 100);
-
-            MergeAudio = new ProgressInfo("Merge Audio");
-            XmlBuild.AddChild(MergeAudio, 100);
-
-            CollectSpriteRefs = new ProgressInfo("Pack Textures");
-            XmlBuild.AddChild(CollectSpriteRefs, 2270);
-
-            LoadSprites = new ProgressInfo("Load Sprites");
-            XmlBuild.AddChild(LoadSprites, 100);
-
-            PackSprites = new ProgressInfo("Pack Sprites");
-            XmlBuild.AddChild(PackSprites, 270);
-
-            WriteSpriteSheets = new ProgressInfo("Write Sprite Sheets");
-            XmlBuild.AddChild(WriteSpriteSheets, 430);
-
-            WriteTextureXmlFiles = new ProgressInfo("Write Texture XML Files");
-            XmlBuild.AddChild(WriteTextureXmlFiles, 100);
-
-            MergeXmlFiles = new ProgressInfo("Merge XML files");
-            XmlBuild.AddChild(MergeXmlFiles, 8000);
-
-            PatchXmlFiles = new ProgressInfo("Patch XML files");
-            XmlBuild.AddChild(PatchXmlFiles, 16000);
-
-            BuildJarFile = new ProgressInfo("Create JAR file");
-            XmlBuild.AddChild(BuildJarFile, 260);
-
-            ResetJavaBuild = new ProgressInfo("Reset JAVA Build");
-            JavaBuild.AddChild(ResetJavaBuild, 2000);
-
-            PrepareJavaFiles = new ProgressInfo("Prepare JAVA Files");
-            JavaBuild.AddChild(PrepareJavaFiles, 2000);
-
-            // Done.
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, Paths.BuildDirectory);
-            return false;
-        }
+            try
+            {
+                if (!await mod.TryLoadXmlFiles())
+                {
+                    Fail();
+                    return;
+                }
+            }
+            finally
+            {
+                lock (LoadModsXml)
+                    LoadModsXml?.IncrementNormalized(1.0 / Build.Mods.Count);
+            }
+        });
+        LoadModsXml.Complete();
     }
 
 
@@ -409,15 +500,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-    private async Task<bool> TryInitialize()
+    private async Task<bool> TryInitializeAsync()
     {
         try
         {
             Log.Debug("Initializing build...", Paths.BuildDirectory);
-            Clock.Restart();
+            Initialization?.Start();
 
             // Initialize build data, and start logging build to file, right after the build directory reset:
             Build = new(BuildSettings, Log);
@@ -439,7 +527,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 NeedsJavaBuild = true;
                 NeedsXmlBuild = true;
             }
-            Initialization?.Complete();
+            Initialization?.SetNormalized(0.95);
 
             // 'mods.json' file:
             Build.ModsJsonFile.GamePlatform = BuildSettings.GamePlatform;
@@ -473,10 +561,7 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Done.
-            Log.Debug($"{Initialization} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildDirectory);
-            Clock.Restart();
-
-            // Done.
+            Initialization?.Complete();
             Log.Success("Build initialization is complete", Paths.BuildDirectory);
             return true;
         }
@@ -561,34 +646,63 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryResetXmlBuild()
+    private async Task<bool> TryResetBuildStageDirectoryAsync()
     {
         try
         {
-            Log.Info($@"Resetting XML build...");
-
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildAudioDirectory, Log, CT))
-                return false;
-            ResetXmlBuild.SetNormalized(0.10);
-
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildTexturesDirectory, Log, CT))
-                return false;
-            ResetXmlBuild.SetNormalized(0.20);
-
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildMergeDirectory, Log, CT))
-                return false;
-            ResetXmlBuild.SetNormalized(0.50);
-
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildPatchDirectory, Log, CT))
-                return false;
-            ResetXmlBuild.SetNormalized(0.80);
+            Log.Info($@"Resetting build stage directory...");
 
             if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildStageDirectory, Log, CT))
                 return false;
 
             // Done.
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error($@"Unable reset XML build: {ex}");
+            return false;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryResetXmlBuildDirectories()
+    {
+        try
+        {
+            Log.Info($@"Resetting XML build...");
+            ResetXmlBuild.Start();
+
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildAudioDirectory, Log, CT))
+                return false;
+
+            ResetXmlBuild.SetNormalized(0.10);
+
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildTexturesDirectory, Log, CT))
+                return false;
+
+            ResetXmlBuild.SetNormalized(0.20);
+
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildMergeDirectory, Log, CT))
+                return false;
+
+            ResetXmlBuild.SetNormalized(0.50);
+
+            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildPatchDirectory, Log, CT))
+                return false;
+
+            // Done.
             ResetXmlBuild.Complete();
-            Log.Debug($"{ResetXmlBuild} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildDirectory);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -611,16 +725,22 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-    private async Task<bool> TryMergeXML()
+    private async Task<bool> TryMergeXmlAsync()
     {
         try
         {
-            // Only merge supported files!
-            Log.Info($@"Merging XML files: {SupportedXmlMergeFileTypes.Select(t => $"{t.ToString().ToLowerInvariant()}").JoinToString(", ")}...", Paths.BuildMergeDirectory);
-            Clock.Restart();
+            Log.Info($@"Merging XML files...", Paths.BuildMergeDirectory);
+            MergeXml.Start();
+
+            EXmlFileType[] supportedXmlMergeFileTypes =
+            [
+                EXmlFileType.SpaceHavenSettings,
+                EXmlFileType.Audio,
+                EXmlFileType.Textures,
+                EXmlFileType.Animations,
+                EXmlFileType.Texts,
+                EXmlFileType.Haven,
+            ];
 
             HashSet<XmlFile> mergedSpaceHavenXmlFiles = [];
 
@@ -643,7 +763,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     HashSet<XmlFile> mergedModXmlFiles = [];
 
                     // Only merge supported files!
-                    foreach (EXmlFileType xmlFileType in SupportedXmlMergeFileTypes)
+                    foreach (EXmlFileType xmlFileType in supportedXmlMergeFileTypes)
                     {
                         CT.ThrowIfCancellationRequested();
 
@@ -799,7 +919,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 finally
                 {
                     // Done with this mod.
-                    MergeXmlFiles?.IncrementNormalized(1.0 / Build.Mods.Count);
+                    MergeXml?.IncrementNormalized(1.0 / Build.Mods.Count);
                 }
             }
 
@@ -814,8 +934,7 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Done.
-            MergeXmlFiles?.Complete();
-            Log.Debug($"{MergeXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildMergeDirectory);
+            MergeXml?.Complete();
             Log.Success("XML merge completed", Paths.BuildMergeDirectory);
             return true;
         }
@@ -840,16 +959,22 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-    public async Task<bool> TryPatchXML()
+    public async Task<bool> TryPatchXmlAsync()
     {
         try
         {
             Log.Info("Patching XML files...", Paths.BuildPatchDirectory);
-            Clock.Restart();
+            PatchXml.Start();
+
+            EXmlFileType[] SupportedXmlPatchFileTypes =
+            [
+                EXmlFileType.SpaceHavenSettings,
+                EXmlFileType.Audio,
+                EXmlFileType.Textures,
+                EXmlFileType.Animations,
+                EXmlFileType.Texts,
+                EXmlFileType.Haven,
+            ];
 
             // Select mods with library XML files:
             foreach (ModBuildData mod in Build.Mods)
@@ -1081,7 +1206,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 }
                 finally
                 {
-                    PatchXmlFiles?.IncrementNormalized(1.0 / Build.Mods.Count);
+                    PatchXml?.IncrementNormalized(1.0 / Build.Mods.Count);
                 }
             }
 
@@ -1095,8 +1220,7 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Done.
-            PatchXmlFiles?.Complete();
-            Log.Debug($"{PatchXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildPatchDirectory);
+            PatchXml?.Complete();
             Log.Success("XML patch completed", Paths.BuildPatchDirectory);
             return true;
         }
@@ -1114,7 +1238,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryFixTexts()
+
+
+
+
+
+    private async Task<bool> TryFixTextsAsync()
     {
         try
         {
@@ -1194,12 +1323,21 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryMergeAudio()
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryComposeAudioAsync()
     {
         try
         {
-            Log.Info($@"Merging AUDIO...", Paths.BuildAudioDirectory);
-            Clock.Restart();
+            Log.Info($@"Composing AUDIO...", Paths.BuildAudioDirectory);
+            ComposeAudio.Start();
 
             // Get and save animations document, for debugging:
             XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
@@ -1276,15 +1414,14 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Done.
-            MergeAudio?.Complete();
-            Log.Debug($"{MergeAudio} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildAudioDirectory);
+            ComposeAudio?.Complete();
             Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to merge AUDIO : {ex}", Paths.BuildAudioDirectory);
+            Log.Error($"Unable to compose AUDIO: {ex}", Paths.BuildAudioDirectory);
             return false;
         }
     }
@@ -1299,12 +1436,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryGenerateTextures()
+    private async Task<bool> TryComposeTexturesAsync()
     {
         try
         {
-            Log.Info($@"Generating TEXTURES...", Paths.BuildTexturesDirectory);
-            Clock.Restart();
+            Log.Info($@"Composing TEXTURES...", Paths.BuildTexturesDirectory);
+            ComposeTextures.Start();
 
             // Get and save textures document, for debugging:
             XmlFile spaceHavenTexturesXmlFile = Build.XmlFile[EXmlFileType.Textures];
@@ -1499,7 +1636,26 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // Collect all assetPos filename references and save it to spriteReference objects:
+            Log.Info("Read Referenced Sprites...");
+            ComposeTextures_ReadReferencedSprites.Start();
             bool errors = false;
             int localSpriteId = 0;
             SortedDictionary<string, SpriteReference> spriteReferences = [];
@@ -1589,31 +1745,37 @@ public sealed class ModBuilder : IAsyncDisposable
                 }
                 finally
                 {
-                    CollectSpriteRefs.IncrementNormalized(1.0 / allAssetPosNodes.Count);
+                    ComposeTextures_ReadReferencedSprites.IncrementNormalized(1.0 / allAssetPosNodes.Count);
                 }
             }
             if (errors)
                 return false;
 
-            Log.Debug($"{CollectSpriteRefs} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
             CT.ThrowIfCancellationRequested();
 
 
+
+
+
+
             // Create sprite atlases by texture filter type, and pack sprites into sprite sheets:
+            Log.Info("Writing Referenced Sprite Sheets...");
             foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>().OrderByDescending(e => (int)e))
             {
-                Clock.Restart();
                 CT.ThrowIfCancellationRequested();
 
+                // Load sprite images:
+                Log.Info("Load Referenced Sprites...");
                 List<SpriteReference> spriteRefs = spriteReferences.Values.Where(s => s.Filter == filter).ToList();
                 if (spriteRefs.Count <= 0)
                 {
                     Log.Info($"No mod sprite references were found requiring the texture filter '{filter}'", Paths.BuildTexturesDirectory);
                     continue;
                 }
+
                 CT.ThrowIfCancellationRequested();
 
-                // Load sprite images:
+                ComposeTextures_LoadReferencedSprites.Start();
                 SortedDictionary<string, SpriteBuildData> sprites = [];
                 await Parallel.ForEachAsync(spriteRefs, ParallelOptions, async (spriteRef, ct) =>
                 {
@@ -1630,12 +1792,10 @@ public sealed class ModBuilder : IAsyncDisposable
                     }
                     finally
                     {
-                        lock (LoadSprites)
-                            LoadSprites.IncrementNormalized(1.0 / spriteReferences.Count);
+                        lock (ComposeTextures_LoadReferencedSprites)
+                            ComposeTextures_LoadReferencedSprites.IncrementNormalized(1.0 / spriteReferences.Count);
                     }
                 });
-                Log.Debug($"{LoadSprites} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-                Clock.Restart();
                 CT.ThrowIfCancellationRequested();
 
                 // Assign global ID and global Name to each sprite:
@@ -1646,7 +1806,13 @@ public sealed class ModBuilder : IAsyncDisposable
                 }
                 CT.ThrowIfCancellationRequested();
 
+
+
+
+
                 // Pack sprites into sprite sheets:
+                Log.Info("Packing Referenced Sprites...");
+                ComposeTextures_PackReferencedSprites.Start();
                 using SpriteAtlasBuildData spriteAtlas = new(filter.ToString().ToUpperInvariant())
                 {
                     SpriteSheetSize = filter == ETextureFilter.Linear ? 4096 : 2048,
@@ -1658,10 +1824,19 @@ public sealed class ModBuilder : IAsyncDisposable
                     Log.Error($@"Unable to pack sprites into sprite atlas '{spriteAtlas.Name}'", Paths.BuildStageAnimationsXmlPath);
                     return false;
                 }
-                PackSprites.IncrementNormalized(spriteRefs.Count / (double)spriteReferences.Count);
-                Log.Debug($"{PackSprites} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-                Clock.Restart();
+                ComposeTextures_PackReferencedSprites.IncrementNormalized(spriteRefs.Count / (double)spriteReferences.Count);
+                
+
+
+                
+                
                 CT.ThrowIfCancellationRequested();
+
+
+
+
+                Log.Info("Writing Referenced Sprite Sheets...");
+                ComposeTextures_WriteReferencedSpriteSheets.Start();
 
                 // Assign global ID to each sprite sheet:
                 foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
@@ -1691,16 +1866,22 @@ public sealed class ModBuilder : IAsyncDisposable
                     }
                     finally
                     {
-                        lock (WriteSpriteSheets)
-                            WriteSpriteSheets.IncrementNormalized((1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
+                        lock (ComposeTextures_WriteReferencedSpriteSheets)
+                            ComposeTextures_WriteReferencedSpriteSheets.IncrementNormalized((1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
                     }
                 });
-                Log.Debug($"{WriteSpriteSheets} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
-                Clock.Restart();
                 CT.ThrowIfCancellationRequested();
 
+
+
+
+
+
+
+
                 // For each sprite sheet, add a CIM texture entry to the textures XML file:
-                Log.Debug($@"Assigning IDs to new sprite sheets...", Paths.BuildTexturesDirectory);
+                Log.Info($@"Composing textures.xml...", Paths.BuildTexturesDirectory);
+                ComposeTextures_ComposeTexturesXml.Start();
                 XElement parentTexturesCimNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesCim);
                 foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.LocalId))
                 {
@@ -1713,9 +1894,8 @@ public sealed class ModBuilder : IAsyncDisposable
                     t.SetAttributeValue("max", (int)filter);
                     parentTexturesCimNode.Add(t);
 
-                    WriteTextureXmlFiles.IncrementNormalized(0.1 * (1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
+                    ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.1 * (1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
                 }
-
                 // For each sprite, add a texture region to the textures XML file:
                 XElement parentTexturesRegionNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesRegion);
                 foreach (SpriteBuildData sprite in sprites.Values)
@@ -1733,7 +1913,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     re.SetAttributeValue("_src", sprite.LocalName);
                     parentTexturesRegionNode.Add(re);
 
-                    WriteTextureXmlFiles.IncrementNormalized(0.1 * (1.0 / sprites.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
+                    ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.1 * (1.0 / sprites.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
                 }
 
                 // For each assetPos of a sprite reference, set the a="..." attribute with the sprite name:
@@ -1742,30 +1922,32 @@ public sealed class ModBuilder : IAsyncDisposable
                     foreach (XElement assetPos in spriteRef.AssetPosNodes)
                         assetPos.SetAttributeValue("a", spriteRef.Sprite.GlobalName);
 
-                    WriteTextureXmlFiles.IncrementNormalized(0.1 * (1.0 / spriteReferences.Count));
+                    ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.1 * (1.0 / spriteReferences.Count));
                 }
 
                 // Save current state of textures XML file:
                 if (!await spaceHavenTexturesXmlFile.TrySaveToAsync(Paths.BuildStageTexturesXmlPath, Log, CT))
                     return false;
-                WriteTextureXmlFiles.IncrementNormalized(0.3 * (1.0 / spriteReferences.Count));
+                ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.3 * (1.0 / spriteReferences.Count));
 
                 // Save current state of animations XML file:
                 if (!await spaceHavenAnimationsXmlFile.TrySaveToAsync(Paths.BuildStageAnimationsXmlPath, Log, CT))
                     return false;
-                WriteTextureXmlFiles.IncrementNormalized(0.4 * (1.0 / spriteReferences.Count));
-
-                Log.Debug($"{WriteTextureXmlFiles} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.BuildTexturesDirectory);
+                ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.4 * (1.0 / spriteReferences.Count));
             }
 
+
+
+
             // Done.
+            ComposeTextures.Complete();
             Log.Success($"TEXTURES ready", Paths.BuildTexturesDirectory);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to generate TEXTURES: {ex}", Paths.BuildTexturesDirectory);
+            Log.Error($"Unable to compose TEXTURES: {ex}", Paths.BuildTexturesDirectory);
             return false;
         }
     }
@@ -1776,11 +1958,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryComposeGameCredits()
+
+    private async Task<bool> TryWriteCreditsAsync()
     {
         try
         {
             Log.Debug($"Adding mod authors to '{SpaceHavenConstants.EXTRA_CREDITS_TXT}' file...", Paths.CacheDirectory);
+            ComposeCredits.Start();
 
             StringBuilder sb = new();
 
@@ -1812,6 +1996,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Done.
+            ComposeCredits.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -1826,12 +2011,15 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryCreateModifiedSpaceHavenJarFile()
+
+
+
+
+    private async Task<bool> TryWriteSpaceHavenJarAsync()
     {
         try
         {
             Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDirectory);
-            Clock.Restart();
 
             // Select files to add to template JAR:
             DirectoryInfo di = new(Paths.BuildStageDirectory);
@@ -1840,7 +2028,7 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await jar.AppendTo(Paths.TemplateJarPath, Paths.CacheJarPath, Paths.BuildStageDirectory, files, Log, ParallelOptions))
                 return false;
 
-            BuildJarFile.SetNormalized(0.85);
+            ComposeSpaceHavenJar.SetNormalized(0.85);
 
             // Calculate hash of modified JAR:
             string hash = await XxHash64Calculator.ComputeFromFileAsync(Paths.CacheJarPath, Log, CT);
@@ -1853,7 +2041,7 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await IOUtils.TryCopyFileAsync(Paths.BuildJarHashPath, Paths.CacheJarHashPath, true, Log, CT))
                 return false;
 
-            BuildJarFile.SetNormalized(0.90);
+            ComposeSpaceHavenJar.SetNormalized(0.90);
 
             // Write the required class paths to jars.txt so the Bootstrap class can load them:
             List<string> classPaths = [];
@@ -1869,7 +2057,7 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await IOUtils.TryWriteAllTextAsync(jarsTxtPath, classPaths.JoinToString("\r\n"), Log, CT))
                 return false;
 
-            BuildJarFile.SetNormalized(0.95);
+            ComposeSpaceHavenJar.SetNormalized(0.95);
 
             // Deploy aop / java agent libs to cache dir:
             if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJ), IOUtils.CombineAsOSPath(Paths.CacheDirectory, ModdingConstants.ASPECTJ), true, Log, CT))
@@ -1880,8 +2068,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Done.
-            BuildJarFile?.Complete();
-            Log.Debug($"{BuildJarFile} ({(int)Clock.Elapsed.TotalMilliseconds} ms)", Paths.CacheDirectory);
+            ComposeSpaceHavenJar?.Complete();
             Log.Success($"'{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' is ready", Paths.CacheDirectory);
             return true;
         }
@@ -1903,7 +2090,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryWriteModsJson()
+    private async Task<bool> TryWriteModsJsonAsync()
     {
         try
         {
@@ -1930,6 +2117,37 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+
+
+
+
+
+
+    public async Task<bool> TryWriteVersionInfoAsync(CancellationToken ct)
+    {
+        try
+        {
+            string[] lines = [BuildSettings.SpaceHavenVersion.ToString(), "(modified)"];
+
+            // Haven.xml:
+            Build.XmlFile[EXmlFileType.Haven].Xml.Root.SetAttributeValue("libVersion", lines.JoinToString(" "));
+            WriteVersionInfo?.SetNormalized(0.50);
+
+            // Version.txt:
+            if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), Log, ct))
+                return false;
+            WriteVersionInfo?.Complete();
+
+            // Done.
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return false;
+        }
+    }
 
 
 
