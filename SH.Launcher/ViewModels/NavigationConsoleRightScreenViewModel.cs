@@ -8,7 +8,7 @@ using System.Collections.ObjectModel;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class RightScreenViewModel : ObservableObject
+public partial class NavigationConsoleRightScreenViewModel : ObservableObject
 {
     public AppViewModel State => AppViewModel.State;
     public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
@@ -84,7 +84,7 @@ public partial class RightScreenViewModel : ObservableObject
 
 
 
-    public RightScreenViewModel()
+    public NavigationConsoleRightScreenViewModel()
     {
         for (int line = 0; line < LineCount; ++line)
         {

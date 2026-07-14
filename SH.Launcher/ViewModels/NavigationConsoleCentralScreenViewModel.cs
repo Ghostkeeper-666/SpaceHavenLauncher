@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SH.Launcher.ViewModels;
 
-public partial class CentralScreenViewModel : ObservableObject
+public partial class NavigationConsoleCentralScreenViewModel : ObservableObject
 {
     public AppViewModel State => AppViewModel.State;
     public DispatchQueue Dispatcher => AppViewModel.Dispatcher;
@@ -98,7 +98,7 @@ public partial class CentralScreenViewModel : ObservableObject
     private EControlState _RightLeverState;
 
 
-    public CentralScreenViewModel()
+    public NavigationConsoleCentralScreenViewModel()
     {
         Title = Title_Empty;
         for (int line = 0; line < LineCount; ++line)
@@ -133,7 +133,7 @@ public partial class CentralScreenViewModel : ObservableObject
     public async void OnProgress_Title(object sender, ProgressEventArgs e) =>
         Dispatcher.Run(async () => await SetTitleAsync(e.Progress.NormalizedValue, e.Progress.HasStarted));
 
-    public void ShowEmptyOnMonitor()
+    public void Reset()
     {
         if (State.IsProcessing)
             return;
@@ -150,14 +150,7 @@ public partial class CentralScreenViewModel : ObservableObject
         }
     }
 
-    public void ShowLaunchOriginalTitleOnMonitor()
-    {
-        if (State.IsProcessing)
-            return;
-        Title = Title_Original;
-    }
-
-    public void ShowLaunchOriginalOnMonitor()
+    public void ShowOriginal()
     {
         if (State.IsProcessing)
             return;
@@ -174,14 +167,7 @@ public partial class CentralScreenViewModel : ObservableObject
         }
     }
 
-    public void ShowLaunchModifiedTitleOnMonitor()
-    {
-        if (State.IsProcessing)
-            return;
-        Title = Title_Modified;
-    }
-
-    public void ShowLaunchModifiedOnMonitor()
+    public void ShowModified()
     {
         if (State.IsProcessing)
             return;

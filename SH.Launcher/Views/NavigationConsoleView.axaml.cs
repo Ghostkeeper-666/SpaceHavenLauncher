@@ -142,9 +142,9 @@ public partial class NavigationConsoleView : UserControl
             return;
         switch (e.PropertyName)
         {
-            case nameof(LeftScreenViewModel.LeftButtonsState):
-            case nameof(LeftScreenViewModel.LeftButtonsPressed):
-            case nameof(LeftScreenViewModel.LeftButtonsHovered):
+            case nameof(NavigationConsoleLeftScreenViewModel.LeftButtonsState):
+            case nameof(NavigationConsoleLeftScreenViewModel.LeftButtonsPressed):
+            case nameof(NavigationConsoleLeftScreenViewModel.LeftButtonsHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.LeftButtons, vm.LeftScreen.LeftButtonsState, vm.LeftScreen.LeftButtonsPressed, vm.LeftScreen.LeftButtonsHovered);
                 return;
             default:
@@ -159,14 +159,14 @@ public partial class NavigationConsoleView : UserControl
 
         switch (e.PropertyName)
         {
-            case nameof(CentralScreenViewModel.LeftLeverState):
-            case nameof(CentralScreenViewModel.LeftLeverPressed):
-            case nameof(CentralScreenViewModel.LeftLeverHovered):
+            case nameof(NavigationConsoleCentralScreenViewModel.LeftLeverState):
+            case nameof(NavigationConsoleCentralScreenViewModel.LeftLeverPressed):
+            case nameof(NavigationConsoleCentralScreenViewModel.LeftLeverHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.LeftLever, vm.CentralScreen.LeftLeverState, vm.CentralScreen.LeftLeverPressed, vm.CentralScreen.LeftLeverHovered);
                 return;
-            case nameof(CentralScreenViewModel.RightLeverState):
-            case nameof(CentralScreenViewModel.RightLeverPressed):
-            case nameof(CentralScreenViewModel.RightLeverHovered):
+            case nameof(NavigationConsoleCentralScreenViewModel.RightLeverState):
+            case nameof(NavigationConsoleCentralScreenViewModel.RightLeverPressed):
+            case nameof(NavigationConsoleCentralScreenViewModel.RightLeverHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.RightLever, vm.CentralScreen.RightLeverState, vm.CentralScreen.RightLeverPressed, vm.CentralScreen.RightLeverHovered);
                 return;
             default:
@@ -180,9 +180,9 @@ public partial class NavigationConsoleView : UserControl
             return;
         switch (e.PropertyName)
         {
-            case nameof(RightScreenViewModel.RightButtonsState):
-            case nameof(RightScreenViewModel.RightButtonsPressed):
-            case nameof(RightScreenViewModel.RightButtonsHovered):
+            case nameof(NavigationConsoleRightScreenViewModel.RightButtonsState):
+            case nameof(NavigationConsoleRightScreenViewModel.RightButtonsPressed):
+            case nameof(NavigationConsoleRightScreenViewModel.RightButtonsHovered):
                 UpdateNavigationConsoleControlImage(ENavigationConsoleControl.RightButtons, vm.RightScreen.RightButtonsState, vm.RightScreen.RightButtonsPressed, vm.RightScreen.RightButtonsHovered);
                 return;
             default:
@@ -273,7 +273,7 @@ public partial class NavigationConsoleView : UserControl
                 if (!State.IsProcessing)
                 {
                     State.StatusBarText = @"Launch the original 'vanilla' game";
-                    vm.CentralScreen.ShowLaunchOriginalTitleOnMonitor();
+                    vm.CentralScreen.ShowOriginal();
                 }
             }
         }
@@ -288,7 +288,7 @@ public partial class NavigationConsoleView : UserControl
                 if (!State.IsProcessing)
                 {
                     State.StatusBarText = @"Launch the modified game";
-                    vm.CentralScreen.ShowLaunchModifiedTitleOnMonitor();
+                    vm.CentralScreen.ShowModified();
                 }
             }
         }
@@ -310,7 +310,7 @@ public partial class NavigationConsoleView : UserControl
             {
                 State.StatusBarText = string.Empty;
                 if (!State.IsProcessing)
-                    vm.CentralScreen.ShowEmptyOnMonitor();
+                    vm.CentralScreen.Reset();
             }
         }
     }

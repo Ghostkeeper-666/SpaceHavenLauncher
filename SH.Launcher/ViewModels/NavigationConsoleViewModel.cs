@@ -40,13 +40,13 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     private readonly Bitmap NavigationConsoleBackgroundImage = ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/NavigationConsole.jpg");
 
     [ObservableProperty]
-    private LeftScreenViewModel _LeftScreen = new();
+    private NavigationConsoleLeftScreenViewModel _LeftScreen = new();
 
     [ObservableProperty]
-    private CentralScreenViewModel _CentralScreen = new();
+    private NavigationConsoleCentralScreenViewModel _CentralScreen = new();
 
     [ObservableProperty]
-    private RightScreenViewModel _RightScreen = new();
+    private NavigationConsoleRightScreenViewModel _RightScreen = new();
 
     [ObservableProperty]
     private StreamGeometry _ToggleLogViewButtonIcon = null;
@@ -169,7 +169,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
-        CentralScreen.ShowLaunchOriginalOnMonitor();
+        CentralScreen.ShowOriginal();
 
         progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
         progress.Start();
@@ -247,7 +247,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             State.LaunchCTS = null;
             LaunchSemaphore.Release();
 
-            CentralScreen.ShowEmptyOnMonitor();
+            CentralScreen.Reset();
             try
             {
                 progress?.Dispose();
@@ -306,7 +306,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
         runGame.ProgressChanged += CentralScreen.OnProgress_Title;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
 
-        CentralScreen.ShowLaunchModifiedOnMonitor();
+        CentralScreen.ShowModified();
 
         progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
         progress.Start();
@@ -434,7 +434,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             State.LaunchCTS = null;
             LaunchSemaphore.Release();
 
-            CentralScreen.ShowEmptyOnMonitor();
+            CentralScreen.Reset();
             try
             {
                 progress?.Dispose();
