@@ -47,11 +47,11 @@ Go to [Navigation Console](app://NavigationConsole) and click on the **(M) Lever
 
 Go to [Navigation Console](app://NavigationConsole) and click on the **(V) Lever** to run the original game
 
-# Can the Launcher be close while playing Space Haven ?
+# Can the Launcher be closed while playing Space Haven ?
 
 Yes, you can safely close it
 
-# What when a mod is disabled and a modified savegame is loaded ?
+# What if a MOD is DISABLED and a modified SAVEGAME is loaded ?
 
 This is usually not recommended:
 
@@ -66,30 +66,32 @@ This is usually not recommended:
 
 # When updating mods, are mod variables automatically updated ?
 
-- The Launcher does its best to map old variable values to the updated mod
+- The Launcher does its best to **KEEP** old variable values to the newly updated mod
 - Check the mod's page and look at the **OLD MOD VALUES** column in the mod variables section
 
 # How to solve MOD ID errors ?
 
-- These are solved by replacing the **mod ID** with a **custom ID**
-- Its usually best to change the IDs of mods tagged **only** with **JAVA** or **JAVA AOP** tags
-- Mods using **AUTO ID** should not care about which **custom ID** you set
+- They are resolved by replacing the **mod ID** with a **custom ID**
+- It's usually best to change the **mod ID** of mods tagged **only** with **JAVA** or **JAVA AOP** tags
+- Mods using **AUTO ID** should not care about which **custom ID** is set
 
 # How to solve MOD DEPENDENCY errors ?
 
-- Download the right mod dependencies required by each mod (with the correct version)
-- Place the dependencies at a higher position in the mod list, so they get loaded first
+- The mod dependencies with the correct version must be installed
+- The dependencies must be placed at a higher position in the mod list, so they get loaded first
 
 # How to solve MOD CONFLICTS ?
 
-It's not possible, since these two mods perform incompatible actions
+It's not possible, since the conflicting mods are performing incompatible actions
 - It's best to choose between one mod or another
 - If you proceed with conflicting mods anyway, there is a high chance of something going wrong
 
-# How to solve mods which requiring specific Space Haven versions ?
+# How to solve mods requiring a specific SPACE HAVEN VERSION ?
 
 Some mods are incompatible with specific newer versions of **Space Haven**
-- Old mods will potentially not work anymore
 - Check whether there is a new version of the mod
+- Old mods will potentially not work anymore
+- Check the mod's last Space Haven version requirement to get a clue how old it is
+- Also check the Nexus Web page to see how long ago the mod was last updated
 
 # Now you are ready to go!
