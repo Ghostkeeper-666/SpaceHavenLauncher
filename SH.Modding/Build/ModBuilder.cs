@@ -96,15 +96,15 @@ public sealed class ModBuilder : IAsyncDisposable
 
     private void ResetBuildStage_ProgressChanged(object sender, ProgressEventArgs e)
     {
-        try
-        {
-            if (e.Progress.HasCompleted)
-                Log.Success($"{e?.Progress?.Name} completed within {e?.Progress?.Clock?.ElapsedMilliseconds ?? -1} ms");
-        }
-        catch (Exception ex)
-        { 
-            Debug.WriteLine(ex.ToString());
-        }
+        //try
+        //{
+        //    if (e.Progress.HasCompleted)
+        //        Log.Success($"{e?.Progress?.Name} completed within {e?.Progress?.Clock?.ElapsedMilliseconds ?? -1} ms");
+        //}
+        //catch (Exception ex)
+        //{ 
+        //    Debug.WriteLine(ex.ToString());
+        //}
     }
 
 
