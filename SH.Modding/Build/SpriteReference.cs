@@ -9,18 +9,16 @@ namespace SH.Modding.Build;
 
 internal sealed class SpriteReference
 {
-    public static string GetLocalName(string modName, string relativePathOrRelativeReference, ETextureFilter filter) =>
+    public static string GetKey(string modName, string relativePathOrRelativeReference, ETextureFilter filter) =>
         $"{filter.ToString().ToUpperInvariant()}::{modName}::{relativePathOrRelativeReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase)?.ToLowerInvariant().AsStdPath()}";
 
-    public SpriteReference(string localName, int localId, ModBuildData mod, string assetPosFilenameReference, ETextureFilter filter)
+    public SpriteReference(string key, int localId, ModBuildData mod, string assetPosFilenameReference, ETextureFilter filter)
     {
-        LocalName = !localName.IsNullOrWhiteSpace() ? localName : throw new ArgumentNullException(nameof(localName));
+        Key = !key.IsNullOrWhiteSpace() ? key : throw new ArgumentNullException(nameof(key));
         LocalID = localId;
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
         BasePath = mod.SpritesDir.AsOSPath();
-        RelativePath = assetPosFilenameReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase).AsOSPath();
-        AbsolutePathWithoutFileExtension = IOUtils.CombineAsOSPath(BasePath, RelativePath).AsOSPath();
-        AbsolutePath = $"{AbsolutePathWithoutFileExtension}.png".AsOSPath();
+        RelativePathWithoutExtension = assetPosFilenameReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase).AsOSPath();
         Filter = filter;
     }
 
@@ -28,16 +26,15 @@ internal sealed class SpriteReference
     public List<XElement> AssetPosNodes { get; } = [];
 
     public int LocalID { get; }
-    public string LocalName { get; }
+    public string Key { get; }
 
     public ModBuildData Mod { get; }
     public ETextureFilter Filter { get; }
 
     public string BasePath { get; }
-    public string RelativePath { get; }
+    public string RelativePathWithoutExtension { get; }
+    public string FilenameWithoutExtension => RelativePathWithoutExtension.GetFileName();
     public string AbsolutePath { get; internal set; }
-    public string AbsolutePathWithoutFileExtension { get; internal set; }
-    public string Filename => RelativePath.GetFileName();
 
-    public override string ToString() => LocalName;
+    public override string ToString() => Key;
 }

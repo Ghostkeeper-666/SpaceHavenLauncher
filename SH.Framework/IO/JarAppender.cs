@@ -1,6 +1,7 @@
 ﻿using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
+using SH.Framework.Progress;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -19,11 +20,13 @@ public sealed class JarAppender
     /// A simple class for adding uncompressed files to a JAR file as fast as possible.
     /// File sizes bigger than 2GB are not supported.
     /// </summary>
-    public async Task<bool> AppendTo(string sourcePath, string targetPath, string baseDir, FileInfo[] newFiles, ILogger log, ParallelOptions parallelOptions)
+    public async Task<bool> AppendTo(string sourcePath, string targetPath, string baseDir, FileInfo[] newFiles, ILogger log, ParallelOptions parallelOptions, IProgressInfo progress = null)
     {
         const string tooBig = "JAR file is too big";
         try
         {
+            progress?.Start();
+
             IOUtils.ThrowIfFileNotExists(sourcePath);
             ArgumentException.ThrowIfNullOrWhiteSpace(targetPath);
             IOUtils.ThrowIfDirectoryNotExists(baseDir);
@@ -105,6 +108,10 @@ public sealed class JarAppender
 
             // Read files, calculate CRC32, write data:
             baseDir = $"{baseDir.AsStdPath()}/";
+
+
+            progress?.SetNormalized(0.25);
+
 
             // Add own cancellation token source to parallel options:
             using CancellationTokenSource ownCTS = new();
@@ -196,6 +203,10 @@ public sealed class JarAppender
                 throw;
             }
 
+
+            progress?.SetNormalized(0.75);
+
+
             // Copy existing CDEs:
             ArgumentOutOfRangeException.ThrowIfNotEqual(sourceCDSize, sourceEOCDOffset - sourceCDOffset, nameof(sourceCDSize));
             long targetCDSize = sourceCDSize;
@@ -267,6 +278,7 @@ public sealed class JarAppender
                 return false;
 
             // Done.
+            progress?.Complete();
             return true;
         }
         catch(OperationCanceledException) { throw; }

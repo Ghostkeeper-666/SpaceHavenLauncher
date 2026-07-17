@@ -159,7 +159,7 @@ public partial class SystemCoreViewModel : ViewModelBase
 
             using ProgressInfo debugProgress = new() { Max = 100 };
             DebugProgress = debugProgress;
-            DebugProgress.ProgressChanged += (object sender, ProgressEventArgs e) =>
+            DebugProgress.ProgressChanged += (sender, e) =>
                 Dispatcher.Run(() => DebugProgressText = $"Generating {PathData.DebugFilename}... ({e?.Progress?.NormalizedValue.ToString("0%")})");
 
             using CancellationTokenSource debugCTS = new();

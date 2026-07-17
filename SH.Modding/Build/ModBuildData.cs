@@ -3,6 +3,7 @@ using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SH.Framework.Memory;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;

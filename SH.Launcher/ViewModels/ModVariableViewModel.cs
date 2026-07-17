@@ -157,8 +157,8 @@ public partial class ModVariableViewModel : ObservableObject
 
     public IBrush GetPreviousValueForeground()
     {
-        bool equalsOriginal = string.Equals(CurrentValue, OriginalValue, StringComparison.Ordinal);
-        bool equalsSuggested = string.Equals(CurrentValue, SuggestedValue, StringComparison.Ordinal);
+        //bool equalsOriginal = string.Equals(CurrentValue, OriginalValue, StringComparison.Ordinal);
+        //bool equalsSuggested = string.Equals(CurrentValue, SuggestedValue, StringComparison.Ordinal);
         bool equalsPrevious = string.Equals(CurrentValue, PreviousValue, StringComparison.Ordinal);
         return
             equalsPrevious ? NormalBrush :

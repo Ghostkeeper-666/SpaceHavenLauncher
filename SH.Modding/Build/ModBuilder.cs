@@ -7,7 +7,9 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -47,8 +49,8 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo ComposeAudio;
     private IProgressInfo ComposeTextures;
     private IProgressInfo FixTexts;
-    private IProgressInfo DeployXmlHash;
     private IProgressInfo DeployJavaHash;
+    private IProgressInfo DeployXmlHash;
     private IProgressInfo WriteVersionInfo;
     private IProgressInfo ComposeCredits;
     private IProgressInfo WriteSpaceHavenXml;
@@ -92,6 +94,18 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+    private void ResetBuildStage_ProgressChanged(object sender, ProgressEventArgs e)
+    {
+        try
+        {
+            if (e.Progress.HasCompleted)
+                Log.Success($"{e?.Progress?.Name} completed within {e?.Progress?.Clock?.ElapsedMilliseconds ?? -1} ms");
+        }
+        catch (Exception ex)
+        { 
+            Debug.WriteLine(ex.ToString());
+        }
+    }
 
 
 
@@ -102,91 +116,125 @@ public sealed class ModBuilder : IAsyncDisposable
         try
         {
             // STARTUP:
-            ResetBuildStage = new ProgressInfo("Reset Build Stage");
-            XmlBuild.AddChild(ResetBuildStage, 2000);
-            JavaBuild.AddChild(ResetBuildStage, 2000);
+            ResetBuildStage = new ProgressInfo("Reset Build Stage") { Max = 10 };
+            ResetBuildStage.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ResetBuildStage, 175);
+            JavaBuild.AddChild(ResetBuildStage, 175);
 
-            LoadSpaceHavenXml = new ProgressInfo("Load Space Haven XML");
-            XmlBuild.AddChild(LoadSpaceHavenXml, 666);
-            JavaBuild.AddChild(LoadSpaceHavenXml, 666);
+            LoadSpaceHavenXml = new ProgressInfo("Load Space Haven XML") { Max = 10 };
+            LoadSpaceHavenXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(LoadSpaceHavenXml, 1000);
+            JavaBuild.AddChild(LoadSpaceHavenXml, 1000);
 
 
 
             // JAVA BUILD:
-            DeployJavaHash = new ProgressInfo("Deploy JAVA Hash");
-            JavaBuild.AddChild(DeployJavaHash, 666);
+            DeployJavaHash = new ProgressInfo("Deploy JAVA Hash") { Max = 10 };
+            DeployJavaHash.ProgressChanged += ResetBuildStage_ProgressChanged;
+            JavaBuild.AddChild(DeployJavaHash, 1);
 
 
 
             // XML BUILD:
-            ResetXmlBuild = new ProgressInfo("Reset XML Build");
-            XmlBuild.AddChild(ResetXmlBuild, 666);
+            ResetXmlBuild = new ProgressInfo("Reset XML Build") { Max = 10 };
+            ResetXmlBuild.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ResetXmlBuild, 1);
 
-            LoadModsXml = new ProgressInfo("Load Mods XML");
-            XmlBuild.AddChild(LoadModsXml, 666);
+            LoadModsXml = new ProgressInfo("Load Mods XML") { Max = 10 };
+            LoadModsXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(LoadModsXml, 1);
 
-            MergeXml = new ProgressInfo("Merge XML");
-            XmlBuild.AddChild(MergeXml, 666);
+            MergeXml = new ProgressInfo("Merge XML") { Max = 10 };
+            MergeXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(MergeXml, 20);
 
-            PatchXml = new ProgressInfo("Patch XML");
-            XmlBuild.AddChild(PatchXml, 666);
+            PatchXml = new ProgressInfo("Patch XML") { Max = 10 };
+            PatchXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(PatchXml, 25);
 
-            ComposeAudio = new ProgressInfo("Compose Audio");
-            XmlBuild.AddChild(ComposeAudio, 666);
+            ComposeAudio = new ProgressInfo("Compose Audio") { Max = 10 };
+            ComposeAudio.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ComposeAudio, 1);
 
             ComposeTextures_LoadPredefinedSpriteSheets = new ProgressInfo("Compose Textures: Load Predefined Sprite Sheets");
+            ComposeTextures_LoadPredefinedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_LoadPredefinedSprites = new ProgressInfo("Compose Textures: Load Predefined Sprites");
+            ComposeTextures_LoadPredefinedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_WritePredefinedSpriteSheets = new ProgressInfo("Compose Textures: Write Predefined Sprite Sheets");
+            ComposeTextures_WritePredefinedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_ReadReferencedSprites = new ProgressInfo("Compose Textures: Read Referenced Sprites");
+            ComposeTextures_ReadReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_LoadReferencedSprites = new ProgressInfo("Compose Textures: Load Referenced Sprites");
+            ComposeTextures_LoadReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_PackReferencedSprites = new ProgressInfo("Compose Textures: Pack Referenced Sprites");
+            ComposeTextures_PackReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_WriteReferencedSpriteSheets = new ProgressInfo("Compose Textures: Write Referenced Sprite Sheets");
+            ComposeTextures_WriteReferencedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures_ComposeTexturesXml = new ProgressInfo("Compose Textures: Compose textures.xml");
+            ComposeTextures_ComposeTexturesXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+
             ComposeTextures = new ProgressInfo("Compose Textures",
             [
-                (ComposeTextures_LoadPredefinedSpriteSheets, 666),
-                (ComposeTextures_LoadPredefinedSprites, 666),
-                (ComposeTextures_WritePredefinedSpriteSheets, 666),
-                (ComposeTextures_ReadReferencedSprites, 666),
-                (ComposeTextures_LoadReferencedSprites, 666),
-                (ComposeTextures_PackReferencedSprites, 666),
-                (ComposeTextures_WriteReferencedSpriteSheets, 666),
-                (ComposeTextures_ComposeTexturesXml, 666),
-            ]);
-            XmlBuild.AddChild(ComposeTextures, 666);
+                (ComposeTextures_LoadPredefinedSpriteSheets, 200),
+                (ComposeTextures_LoadPredefinedSprites, 1200),
+                (ComposeTextures_WritePredefinedSpriteSheets, 9000),
+                (ComposeTextures_ReadReferencedSprites, 10),
+                (ComposeTextures_LoadReferencedSprites, 10),
+                (ComposeTextures_PackReferencedSprites, 50),
+                (ComposeTextures_WriteReferencedSpriteSheets, 400),
+                (ComposeTextures_ComposeTexturesXml, 400),
+            ])
+            { Max = 10 };
+            ComposeTextures.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ComposeTextures, 27000);
 
-            FixTexts = new ProgressInfo("Fix Texts");
-            XmlBuild.AddChild(FixTexts, 666);
+            FixTexts = new ProgressInfo("Fix Texts") { Max = 10 };
+            FixTexts.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(FixTexts, 110);
 
-            DeployXmlHash = new ProgressInfo("Deploy Xml Hash");
-            XmlBuild.AddChild(DeployXmlHash, 666);
+            DeployXmlHash = new ProgressInfo("Deploy Xml Hash") { Max = 10 };
+            DeployXmlHash.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(DeployXmlHash, 1);
 
 
 
             // DEPLOYMENT:
-            WriteVersionInfo = new ProgressInfo("Write Version Info");
-            XmlBuild.AddChild(WriteVersionInfo, 666);
-            JavaBuild.AddChild(WriteVersionInfo, 666);
+            WriteVersionInfo = new ProgressInfo("Write Version Info") { Max = 10 };
+            WriteVersionInfo.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(WriteVersionInfo, 1);
+            JavaBuild.AddChild(WriteVersionInfo, 1);
 
-            ComposeCredits = new ProgressInfo("Compose Credits");
-            XmlBuild.AddChild(ComposeCredits, 666);
-            JavaBuild.AddChild(ComposeCredits, 666);
+            ComposeCredits = new ProgressInfo("Compose Credits") { Max = 10 };
+            ComposeCredits.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ComposeCredits, 2);
+            JavaBuild.AddChild(ComposeCredits, 2);
 
-            WriteSpaceHavenXml = new ProgressInfo("Write Space Haven XML");
-            XmlBuild.AddChild(WriteSpaceHavenXml, 666);
-            JavaBuild.AddChild(WriteSpaceHavenXml, 666);
+            WriteSpaceHavenXml = new ProgressInfo("Write Space Haven XML") { Max = 10 };
+            WriteSpaceHavenXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(WriteSpaceHavenXml, 1000);
+            JavaBuild.AddChild(WriteSpaceHavenXml, 1000);
 
-            ComposeSpaceHavenJar = new ProgressInfo("Compose spacehaven.jar");
-            XmlBuild.AddChild(ComposeSpaceHavenJar, 666);
-            JavaBuild.AddChild(ComposeSpaceHavenJar, 666);
+            ComposeSpaceHavenJar = new ProgressInfo("Compose spacehaven.jar") { Max = 10 };
+            ComposeSpaceHavenJar.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ComposeSpaceHavenJar, 1500);
+            JavaBuild.AddChild(ComposeSpaceHavenJar, 1500);
 
-            DeployConfigJson = new ProgressInfo("Deploy config.json");
-            XmlBuild.AddChild(DeployConfigJson, 666);
-            JavaBuild.AddChild(DeployConfigJson, 666);
+            DeployConfigJson = new ProgressInfo("Deploy config.json") { Max = 10 };
+            DeployConfigJson.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(DeployConfigJson, 1);
+            JavaBuild.AddChild(DeployConfigJson, 1);
 
-            ComposeModsJson = new ProgressInfo("Compose mods.json");
-            XmlBuild.AddChild(ComposeModsJson, 666);
-            JavaBuild.AddChild(ComposeModsJson, 666);
+            ComposeModsJson = new ProgressInfo("Compose mods.json") { Max = 10 };
+            ComposeModsJson.ProgressChanged += ResetBuildStage_ProgressChanged;
+            XmlBuild.AddChild(ComposeModsJson, 25);
+            JavaBuild.AddChild(ComposeModsJson, 25);
 
 
 
@@ -199,19 +247,6 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     public async Task<bool> TryBuildAsync()
@@ -261,7 +296,7 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // All builds skipped?
-            if(!NeedsJavaBuild && !NeedsXmlBuild)
+            if (!NeedsJavaBuild && !NeedsXmlBuild)
                 return true;
 
 
@@ -300,13 +335,15 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-            
+
             // JAVA specific:
             if (NeedsJavaBuild)
             {
                 // Deploy JAVA hash:
+                DeployJavaHash.Start();
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
                     return false;
+                DeployJavaHash.Complete();
             }
 
 
@@ -343,8 +380,10 @@ public sealed class ModBuilder : IAsyncDisposable
                     return false;
 
                 // Deploy XML hash:
+                DeployXmlHash.Start();
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
                     return false;
+                DeployXmlHash.Complete();
             }
 
 
@@ -361,21 +400,30 @@ public sealed class ModBuilder : IAsyncDisposable
                 await TryWriteCreditsAsync();
 
                 // Save all XML files to build stage:
+                WriteSpaceHavenXml.Start();
                 foreach (XmlFile xmlFile in Build.XmlFile.Values)
+                {
                     if (!await xmlFile.TrySaveAsync(Log, CT))
                         return false;
+                    WriteSpaceHavenXml.IncrementNormalized(1.0 / Build.XmlFile.Count);
+                }
+                WriteSpaceHavenXml.Complete();
 
                 // Create/Deploy the modified spacehaven.jar:
                 if (!await TryWriteSpaceHavenJarAsync())
                     return false;
 
                 // Deploy config.json:
+                DeployConfigJson.Start();
                 if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
                     return false;
+                DeployConfigJson.Complete();
 
                 // Create mods.json:
+                ComposeModsJson.Start();
                 if (!await TryWriteModsJsonAsync())
                     return false;
+                ComposeModsJson.Complete();
             }
 
 
@@ -383,9 +431,15 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Build completed:
             if (NeedsJavaBuild)
+            {
+                JavaBuild.RemoveAll();
                 JavaBuild.Complete();
+            }
             if (NeedsXmlBuild)
+            {
+                XmlBuild.RemoveAll();
                 XmlBuild.Complete();
+            }
 
             // Done.
             Log.Success($"{this} has completed", Paths.BuildDirectory);
@@ -437,7 +491,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ComposeSpaceHavenJar?.Dispose();
             DeployConfigJson?.Dispose();
             ComposeModsJson?.Dispose();
-            
+
             ComposeTextures?.RemoveAll();
             ComposeTextures?.Dispose();
             ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
@@ -1248,6 +1302,7 @@ public sealed class ModBuilder : IAsyncDisposable
         try
         {
             Log.Info($@"Fixing TEXT entries...", Paths.BuildAudioDirectory);
+            FixTexts.Start();
 
             // Get texts document:
             XmlFile spaceHavenTextsXmlFile = Build.XmlFile[EXmlFileType.Texts];
@@ -1264,36 +1319,45 @@ public sealed class ModBuilder : IAsyncDisposable
             // (since we will add nodes, the line number information shifts)
             try
             {
-                (XElement t, int)[] nodes = spaceHavenTextsXmlFile.Root.Descendants("t").Select(t => (t, t.Line())).OrderByDescending(tuple => tuple.Item2).ToArray();
+                List<(XElement t, int)> nodes = spaceHavenTextsXmlFile.Root.Descendants("t").Select(t => (t, t.Line())).OrderByDescending(tuple => tuple.Item2).ToList();
+                int count = 0;
                 foreach ((XElement t, int line) in nodes)
                 {
-                    CT.ThrowIfCancellationRequested();
-
-                    if (!int.TryParse(t.Attribute("id")?.Value ?? "-1", out int id) || id <= 0)
+                    ++count;
+                    try
                     {
-                        Log.Error($"Invalid text entry with missing or invalid attribute id='{t.Attribute("id")?.Value}' in texts file at {line}", Paths.BuildTextsFile);
-                        return false;
+                        CT.ThrowIfCancellationRequested();
+
+                        if (!int.TryParse(t.Attribute("id")?.Value ?? "-1", out int id) || id <= 0)
+                        {
+                            Log.Error($"Invalid text entry with missing or invalid attribute id='{t.Attribute("id")?.Value}' in texts file at {line}", Paths.BuildTextsFile);
+                            return false;
+                        }
+
+                        // Get content to be replicated:
+                        XElement master = t.Element("EN") ?? t.Elements().FirstOrDefault();
+                        string textContent = master?.Value ?? emptyContent;
+
+                        // Add missing translations:
+                        foreach (string language in languages)
+                        {
+
+                            XElement languageNode = t.Element(language);
+                            if (languageNode == null)
+                            {
+                                Log.Debug($"Fixing text entry <t> id={id} with missing translation to language '{language}'", Paths.BuildTextsFile);
+                                t.Add(languageNode = new XElement(language, textContent));
+                            }
+                            else if (languageNode.Value.IsNullOrEmpty())
+                            {
+                                Log.Debug($"Fixing text entry <t> id={id} with missing text content for translation to language '{language}'", Paths.BuildTextsFile);
+                                languageNode.Value = textContent;
+                            }
+                        }
                     }
-
-                    // Get content to be replicated:
-                    XElement master = t.Element("EN") ?? t.Elements().FirstOrDefault();
-                    string textContent = master?.Value ?? emptyContent;
-
-                    // Add missing translations:
-                    foreach (string language in languages)
+                    finally
                     {
-
-                        XElement languageNode = t.Element(language);
-                        if (languageNode == null)
-                        {
-                            Log.Debug($"Fixing text entry <t> id={id} with missing translation to language '{language}'", Paths.BuildTextsFile);
-                            t.Add(languageNode = new XElement(language, textContent));
-                        }
-                        else if (languageNode.Value.IsNullOrEmpty())
-                        {
-                            Log.Debug($"Fixing text entry <t> id={id} with missing text content for translation to language '{language}'", Paths.BuildTextsFile);
-                            languageNode.Value = textContent;
-                        }
+                        FixTexts.SetNormalized((count / 1000) / (nodes.Count * 0.001));
                     }
                 }
             }
@@ -1311,6 +1375,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Done.
+            FixTexts.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -1344,8 +1409,6 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildAudioFile, Log, CT))
                 return false;
 
-#warning TODO: Check for audio name collisions!
-
             // Collect all assetPos filename references and save it to spriteReference objects:
             bool errors = false;
             OrderedDictionary<int, AudioBuildData> audioById = []; // keep original order!
@@ -1353,48 +1416,55 @@ public sealed class ModBuilder : IAsyncDisposable
             List<XElement> audioNodes = spaceHavenAudioXmlFile.Root.Descendants("a").ToList();
             foreach (XElement audioNode in audioNodes)
             {
-                CT.ThrowIfCancellationRequested();
-
-                // Only modded audio:
-                string owner = audioNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                if (owner.IsNullOrWhiteSpace())
-                    continue;
-
-                // Get mod:
-                ModBuildData mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
-                if (mod == null)
+                try
                 {
-                    Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFile);
-                    return false;
-                }
+                    CT.ThrowIfCancellationRequested();
 
-                // Parse audio:
-                AudioBuildData audio = new(Paths, mod, audioNode, mod.Log);
-                if (!audio.TryParse(Build.Mods))
+                    // Only modded audio:
+                    string owner = audioNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
+                    if (owner.IsNullOrWhiteSpace())
+                        continue;
+
+                    // Get mod:
+                    ModBuildData mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
+                    if (mod == null)
+                    {
+                        Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFile);
+                        return false;
+                    }
+
+                    // Parse audio:
+                    AudioBuildData audio = new(Paths, mod, audioNode, mod.Log);
+                    if (!audio.TryParse(Build.Mods))
+                    {
+                        errors = true;
+                        continue;
+                    }
+
+                    // Audio entry uses original game audio:
+                    if (audio.IsOriginalAudioFile)
+                        continue;
+
+                    // Check for duplicate audio ID:
+                    if (audioById.TryGetValue(audio.Id, out AudioBuildData existingAudio1))
+                    {
+                        Log.Error($@"Duplicate audio ID: {Environment.NewLine}{existingAudio1} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                        return false;
+                    }
+                    else audioById[audio.Id] = audio;
+
+                    // Check for duplicate audio NAME:
+                    if (audioByName.TryGetValue(audio.Name, out AudioBuildData existingAudio2))
+                    {
+                        Log.Error($@"Duplicate audio NAME: {Environment.NewLine}{existingAudio2} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                        return false;
+                    }
+                    else audioByName[audio.Name] = audio;
+                }
+                finally
                 {
-                    errors = true;
-                    continue;
+                    ComposeAudio.IncrementNormalized(1.0 / audioNodes.Count);
                 }
-
-                // Audio entry uses original game audio:
-                if (audio.IsOriginalAudioFile)
-                    continue;
-
-                // Check for duplicate audio ID:
-                if (audioById.TryGetValue(audio.Id, out AudioBuildData existingAudio1))
-                {
-                    Log.Error($@"Duplicate audio ID: {Environment.NewLine}{existingAudio1} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
-                    return false;
-                }
-                else audioById[audio.Id] = audio;
-
-                // Check for duplicate audio NAME:
-                if (audioByName.TryGetValue(audio.Name, out AudioBuildData existingAudio2))
-                {
-                    Log.Error($@"Duplicate audio NAME: {Environment.NewLine}{existingAudio2} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
-                    return false;
-                }
-                else audioByName[audio.Name] = audio;
             }
             if (errors)
                 return false;
@@ -1403,7 +1473,7 @@ public sealed class ModBuilder : IAsyncDisposable
             foreach (AudioBuildData audio in audioByName.Values)
             {
                 string targetAbsolutePath = Paths.BuildStageDirectory.CombineAsOSPath(audio.TargetRelativePath);
-                if (!targetAbsolutePath.EscapesDirectory(Paths.BuildStageDirectory))
+                if (targetAbsolutePath.EscapesDirectory(Paths.BuildStageDirectory))
                 {
                     Log.Error($@"Invalid target audio file path ""{targetAbsolutePath}"" for {audio}");
                     return false;
@@ -1412,6 +1482,9 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await IOUtils.TryCopyFileAsync(audio.SourceAbsolutePath, targetAbsolutePath, true, Log, CT))
                     return false;
             }
+
+
+
 
             // Done.
             ComposeAudio?.Complete();
@@ -1438,6 +1511,10 @@ public sealed class ModBuilder : IAsyncDisposable
 
     private async Task<bool> TryComposeTexturesAsync()
     {
+
+
+
+
         try
         {
             Log.Info($@"Composing TEXTURES...", Paths.BuildTexturesDirectory);
@@ -1454,185 +1531,322 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Get last original game spritesheet ID:
-            int lastOriginalSpriteSheetKey = Build.GetLastUsedKey(EKeyPool.TexturesCim);
+            int lastOriginalSpriteSheetKey = Build.GetLastUsedKey(EKeyPool.SpriteSheet);
 
-            // Get last original game sprite ID:
-            int lastOriginalSpriteName = Build.GetLastUsedKey(EKeyPool.TexturesRegion);
+            // Get last original game sprite NAME:
+            int lastOriginalSpriteName = Build.GetLastUsedKey(EKeyPool.Sprite);
 
             // Get last original game sprite NAME:
             int lastOriginalSpriteId = Build.LastOriginalSpriteId;
-            int lastUsedSpriteId = Build.LastOriginalSpriteId;
+            int lastGlobalSpriteId = Build.LastOriginalSpriteId;
 
-            // Collect all available sprite sheets:
-            IReadOnlyList<string> spriteSheetPaths = Build.Mods.SelectMany(mod => mod.SpriteSheetPaths).OrderBy(path => path).ToArray();
 
-            // Collect all available sprites:
-            IReadOnlyList<string> textureFilePaths = Build.Mods.SelectMany(mod => mod.SpritePaths).OrderBy(path => path).ToArray();
 
-            // Remap sprite sheet ID:
-            SpriteAtlasBuildData cimAtlas = new("CIM");
-            Dictionary<string, int> RemappedSpriteSheetIDs = [];
-            List<XElement> modifiedSpriteSheetNodes =
-                spaceHavenTexturesXmlFile.Root
-                .Descendants("t")
-                .Where(t => !(t.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
-                .ToList();
-            foreach (XElement t in modifiedSpriteSheetNodes)
+
+
+
+
+            // THIS LOADS PREDEFINED SPRITES AND SPRITESHEETS GIVEN BY MODIFICATIONS IN TEXTURES.XML:
+            SpriteAtlasBuildData predefinedAtlas = new("PREDEFINED");
+            try
             {
-                string modName = t.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                if (modName.IsNullOrWhiteSpace())
-                    continue;
+                List<XElement> modifiedSpriteSheetNodes =
+                    spaceHavenTexturesXmlFile.Root
+                    .Descendants("t")
+                    .Where(t => !(t.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
+                    .ToList();
 
-                // library operation (OPTIONAL):
-                string libraryOperation = t?.Attribute(NodeType.ATTRIBUTE_LIBRARY)?.Value;
-                // patch operation (OPTIONAL):
-                string patchOperation = t?.Attribute(NodeType.ATTRIBUTE_PATCH)?.Value;
-                // last operation:
-                string lastOperation = patchOperation ?? libraryOperation ?? "unknown mod operation";
-                // pretty print:
+                List<XElement> modifiedSpriteNodes =
+                    spaceHavenTexturesXmlFile.Root
+                    .Descendants("re")
+                    .Where(re => !(re.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
+                    .ToList();
 
-                string key = NodeType.TexturesCim.KeyAttribute;
-                string spriteSheetKeyStr = t.Attribute(key)?.Value?.Trim();
-                if (spriteSheetKeyStr.IsNullOrEmpty())
+                List<XElement> modifiedAssetPosWithARef =
+                    spaceHavenAnimationsXmlFile.Root
+                    .Descendants("assetPos")
+                    .Where(assetPos => !(assetPos.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true) && int.TryParse(assetPos.Attribute("a")?.Value, out int localSpriteName) && localSpriteName > lastOriginalSpriteName)
+                    .ToList();
+
+
+
+                // Map local sprite name to assetPos references:
+                SortedDictionary<string, List<XElement>> spriteLocalNameToAssetPos = [];
+                foreach (XElement assetPos in modifiedAssetPosWithARef)
                 {
-                    Log.Error($@"Unable to remap ID of <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                    continue;
+                    string localSpriteNameStr = assetPos.Attribute("a").Value;
+                    if (!spriteLocalNameToAssetPos.TryGetValue(localSpriteNameStr, out List<XElement> assetPosList))
+                        spriteLocalNameToAssetPos[localSpriteNameStr] = assetPosList = [];
+                    assetPosList.Add(assetPos);
                 }
 
-                if (RemappedSpriteSheetIDs.ContainsKey(spriteSheetKeyStr))
+                CT.ThrowIfCancellationRequested();
+
+
+
+                Log.Info("Compose Textures: Loading Predefined Sprite Sheets...");
+                ComposeTextures_LoadPredefinedSpriteSheets.Start();
+
+                // Spritesheet global keys must be sequential:
+                Dictionary<XElement, int> spriteSheetGlobalIds =
+                    modifiedSpriteSheetNodes.ToDictionary(t => t, t => Build.AllocateNextNumericId(EKeyPool.SpriteSheet));
+
+                // Load predefined spritesheets (those declared in mod textures.xml files):
+                await Parallel.ForEachAsync(modifiedSpriteSheetNodes, ParallelOptions, async (t, ct) =>
+                //await Parallel.ForEachAsync(modifiedSpriteSheetNodes, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (t, ct) =>
                 {
-                    Log.Error($@"Unable ro remap <t> sprite sheet node with duplicate {key}=""{spriteSheetKeyStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                    continue;
-                }
-
-                int remappedSpriteSheetKey = Build.AllocateNextNumericId(EKeyPool.TexturesCim);
-                RemappedSpriteSheetIDs[spriteSheetKeyStr] = remappedSpriteSheetKey;
-                Log.Debug($@"Remapped <t> sprite sheet node from i=""{remappedSpriteSheetKey}"" to {key}=""{remappedSpriteSheetKey}"" in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-
-                if (spriteSheetKeyStr.TryParse(out int spriteSheetId) && spriteSheetId <= lastOriginalSpriteSheetKey)
-                    continue;
-
-                ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
-                if (mod == null)
-                {
-                    Log.Error($@"Unable to retrieve mod '{modName}' owning <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"", in in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}", Paths.BuildStageAnimationsXmlPath);
-                    continue;
-                }
-
-                // Check for exiting sprite image:
-                string[] expectedAbsolutePaths =
-                [
-                    IOUtils.CombineAsOSPath(mod.SpritesDir, $"{spriteSheetKeyStr}.png"),
-                    IOUtils.CombineAsOSPath(mod.SpritesDir, spriteSheetKeyStr),
-                ];
-                string absolutePath = mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.Ordinal)));
-                absolutePath ??= mod.SpriteSheetPaths.FirstOrDefault(path => expectedAbsolutePaths.Any(expected => expected.Equals(path, StringComparison.OrdinalIgnoreCase)));
-                if (absolutePath == null)
-                {
-                    Log.Error($@"Unable to locate image file '{spriteSheetKeyStr}' for <t> sprite sheet node with {key}=""{spriteSheetKeyStr}"", in in {spaceHavenTexturesXmlFile.FileName}, line={t.Line()}", Paths.BuildStageAnimationsXmlPath);
-                    return false;
-                }
-
-                SpriteSheetBuildData spriteSheet = new(remappedSpriteSheetKey, absolutePath, cimAtlas) { GlobalId = remappedSpriteSheetKey, };
-                cimAtlas.Add(spriteSheet);
-            }
-
-
-            // Generate directly provided CIM files:
-            await Parallel.ForEachAsync(cimAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
-            {
-                try
-                {
-                    Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDirectory);
-
-                    if (!spriteSheet.TryRenderFromSprites(Log))
+                    // mod:
+                    string modName = t.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
+                    ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    if (mod == null)
                     {
-                        Log.Error($@"Unable to generate sprite sheet '{spriteSheet.LocalId}'");
+                        Log.Error($@"Unknown mod for <t> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {t.Line()}", spaceHavenTexturesXmlFile.Path);
                         Fail();
+                        return;
                     }
 
+                    // key:
+                    string keyStr = t.Attribute("i").Value;
+                    if (!int.TryParse(keyStr, out int key)) key = -1;
+                    if (key < 0)
+                    {
+                        Log.Error($@"<t> node contains invalid or undefined 'i' attribute in file ""{spaceHavenTexturesXmlFile.FileName}"" line {t.Line()}", spaceHavenTexturesXmlFile.Path);
+                        Fail();
+                        return;
+                    }
+
+                    // remap data:
+                    int globalId;
+                    lock (Build)
+                        globalId = spriteSheetGlobalIds[t];
+
+                    // spritesheet image:
+                    string absoluteImagePath = IOUtils.CombineAsOSPath(mod.SpriteSheetsDir, key.ToString()).FindFile();
+
+                    // instantiate:
+                    if (!absoluteImagePath.IsNullOrWhiteSpace())
+                    {
+                        Log.Debug($@"Creating rendered spritesheet '{globalId}' (without a predefined image)", spaceHavenTexturesXmlFile.Path);
+                        SpriteSheetBuildData spriteSheet = new(key, absoluteImagePath, predefinedAtlas) { GlobalId = globalId, };
+                        lock (predefinedAtlas)
+                            predefinedAtlas.Add(spriteSheet);
+                    }
+                    else
+                    {
+                        Log.Debug($@"Creating predefined spritesheet '{globalId}' (with a predefined image)", spaceHavenTexturesXmlFile.Path);
+                        if (!int.TryParse(t.Attribute("w").Value, out int width))
+                            width = -1;
+                        if (!int.TryParse(t.Attribute("h").Value, out int height))
+                            height = -1;
+                        SpriteSheetBuildData spriteSheet = new(key, width, height, 2 * modifiedSpriteNodes.Count + 1, 0, predefinedAtlas) { GlobalId = globalId, };
+                        lock (predefinedAtlas)
+                            predefinedAtlas.Add(spriteSheet);
+                    }
+
+                    // remap:
+                    t.SetAttributeValue("i", globalId);
+
+                    // progress:
+                    lock (ComposeTextures_LoadPredefinedSpriteSheets)
+                        ComposeTextures_LoadPredefinedSpriteSheets.IncrementNormalized(1.0 / modifiedSpriteSheetNodes.Count);
+                });
+                ComposeTextures_LoadPredefinedSpriteSheets.Complete();
+
+                CT.ThrowIfCancellationRequested();
+
+
+
+
+                Log.Info("Compose Textures: Loading Predefined Sprites...");
+                ComposeTextures_LoadPredefinedSprites.Start();
+
+                // Sprite global names must be sequential:
+                Dictionary<XElement, int> spriteSheetGlobalNames =
+                    modifiedSpriteNodes.ToDictionary(re => re, re => Build.AllocateNextNumericId(EKeyPool.Sprite));
+
+                // Load predefined sprites
+                int lastLocalSpriteId = 0;
+                await Parallel.ForEachAsync(modifiedSpriteNodes, ParallelOptions, async (re, ct) =>
+                //await Parallel.ForEachAsync(modifiedSpriteNodes, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (re, ct) =>
+                {
+                    // mod:
+                    string modName = re.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
+                    ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    if (mod == null)
+                    {
+                        Log.Error($@"Unknown mod for <re> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
+                        Fail();
+                        return;
+                    }
+
+                    // spritesheet:
+                    _ = int.TryParse(re.Attribute("t")?.Value, out int spriteSheetLocalID);
+                    SpriteSheetBuildData spriteSheet = predefinedAtlas.SpriteSheets.FirstOrDefault(ss => ss.LocalId == spriteSheetLocalID);
+                    if (spriteSheet == null)
+                    {
+                        Log.Error($@"<re> node maps to unknown <t> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
+                        Fail();
+                        return;
+                    }
+
+                    // sprite name:
+                    string localNameStr = re.Attribute("n")?.Value;
+                    if (localNameStr.IsNullOrWhiteSpace())
+                    {
+                        Log.Error($@"<re> has missing or invalid 'n' attribute in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
+                        Fail();
+                        return;
+                    }
+
+                    // read sprite location within its spritesheet:
+                    _ = int.TryParse(re.Attribute("w")?.Value, out int width);
+                    _ = int.TryParse(re.Attribute("h")?.Value, out int height);
+                    _ = int.TryParse(re.Attribute("x")?.Value, out int x);
+                    _ = int.TryParse(re.Attribute("y")?.Value, out int y);
+
+                    // remap data:
+                    SpriteBuildData sprite;
+                    int globalName;
+                    int spriteLocalId = Interlocked.Increment(ref lastLocalSpriteId);
+                    int globalId = Interlocked.Increment(ref lastGlobalSpriteId);
+                    lock (Build)
+                        globalName = spriteSheetGlobalNames[re];
+
+                    // create sprite:
+                    if (spriteSheet.IsPredefined)
+                    {
+                        Log.Debug($@"Creating sprite with n=""{localNameStr}""=>""{globalName}"" as a predefined region of spritesheet i=""{spriteSheet.GlobalId}""", spaceHavenTexturesXmlFile.Path);
+
+                        // create sprite from spritesheet region:
+                        sprite = new(localNameStr, spriteLocalId, spriteSheet, width, height, x, y)
+                        {
+                            GlobalName = globalName.ToString(),
+                            GlobalId = globalId,
+                        };
+                    }
+                    else
+                    {
+                        // sprite image:
+                        _ = localNameStr.TryParse(out int localName);
+                        string spriteAbsolutePath =
+                            mod.SpritePaths.Count <= 0 ? null :
+                            (
+                                IOUtils.CombineAsOSPath(mod.SpritesDir, $"{localNameStr}.png").FindFile() ??
+                                IOUtils.CombineAsOSPath(mod.SpritesDir, localNameStr).FindFile() ??
+                                IOUtils.CombineAsOSPath(mod.SpritesDir, $"{localName}.png").FindFile() ??
+                                IOUtils.CombineAsOSPath(mod.SpritesDir, localName.ToString()).FindFile()
+                            );
+                        if (spriteAbsolutePath.IsNullOrWhiteSpace())
+                        {
+                            Log.Error($@"<re> node with n=""{localNameStr}""=>""{globalName}"" does not have any corresponding sprite image ""{localNameStr}"", in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
+                            Fail();
+                            return;
+                        }
+
+                        Log.Debug($@"Creating sprite with n=""{localNameStr}""=>""{globalName}"" from image file ""{spriteAbsolutePath}""", spaceHavenTexturesXmlFile.Path);
+
+                        // create sprite from image:
+                        sprite = new(localNameStr, spriteLocalId, spriteAbsolutePath)
+                        {
+                            GlobalName = globalName.ToString(),
+                            GlobalId = globalId,
+                            X = x,
+                            Y = y,
+                        };
+
+                        // fix sprite width and height:
+                        if (width != sprite.Width || height != sprite.Height)
+                        {
+                            Log.Warn($@"Fixing incoherent width/height provided by <re> node n=""{localNameStr}""=>""{globalName}"" in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
+                            re.SetAttributeValue("w", sprite.Width);
+                            re.SetAttributeValue("h", sprite.Height);
+                        }
+                    }
+
+                    // assign to spritesheet:
+                    lock (spriteSheet)
+                        spriteSheet.Add(sprite);
+
+                    // remap:
+                    re.SetAttributeValue("n", globalName);
+                    re.SetAttributeValue("id", globalId);
+                    re.SetAttributeValue("t", spriteSheet.GlobalId);
+
+                    // progress:
+                    lock (ComposeTextures_LoadPredefinedSprites)
+                        ComposeTextures_LoadPredefinedSprites.IncrementNormalized(1.0 / modifiedSpriteNodes.Count);
+                });
+                ComposeTextures_LoadPredefinedSprites.Complete();
+
+
+
+                CT.ThrowIfCancellationRequested();
+
+
+
+
+                // Remap <assetPos a="..."> in animations.xml:
+                List<SpriteBuildData> allSprites = predefinedAtlas.Sprites;
+                foreach ((string spriteLocalName, List<XElement> assetPosList) in spriteLocalNameToAssetPos.ToTuples())
+                {
+                    CT.ThrowIfCancellationRequested();
+
+                    string globalSpriteName = allSprites.FirstOrDefault(s => s.LocalName.Equals(spriteLocalName, StringComparison.OrdinalIgnoreCase))?.GlobalName;
+                    if (globalSpriteName == null)
+                    {
+                        foreach (XElement assetPos in assetPosList)
+                            Log.Error($@"<assetPos> has invalid reference a=""{spriteLocalName}"", in file ""{spaceHavenAnimationsXmlFile.FileName}"" line {assetPos.Line()}", spaceHavenAnimationsXmlFile.Path);
+                        return false;
+                    }
+                    foreach (XElement assetPos in assetPosList)
+                        assetPos.SetAttributeValue("a", globalSpriteName);
+                }
+
+                CT.ThrowIfCancellationRequested();
+
+
+
+
+                Log.Info("Compose Textures: Writing Predefined Sprite Sheets...");
+                ComposeTextures_WritePredefinedSpriteSheets.Start();
+
+                // Render spritesheets
+                await Parallel.ForEachAsync(predefinedAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
+                //await Parallel.ForEachAsync(predefinedAtlas.SpriteSheets, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (spriteSheet, ct) =>
+                {
+                    if (spriteSheet.IsRendered)
+                    {
+                        spriteSheet.TryRenderFromSprites(Log);
+                        string pngFilename = $"{spriteSheet.GlobalId}.png";
+
+                        // Save rendered spritesheets as PNG file, for debugging:
+                        if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, pngFilename), Log, ct))
+                        {
+                            Fail();
+                            return;
+                        }
+                    }
+
+                    // Save as CIM file to build stage directory:
                     string cimFilename = $"{spriteSheet.GlobalId}.cim";
+                    if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct))
+                    {
+                        Fail();
+                        return;
+                    }
 
-                    // Export to CIM to build stage directory:
-                    await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
-
-                    // Export to PNG, for debugging:
-                    spriteSheet.TryExportToPng(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
-                }
-                finally
-                {
-                    //lock (WriteSpriteSheets)
-                    //    WriteSpriteSheets.IncrementNormalized((1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
-                }
-            });
-
-            // Remap sprite NAME:
-            Dictionary<string, int> RemappedSpriteNames = [];
-            List<XElement> modifiedSpriteNodes =
-                spaceHavenTexturesXmlFile.Root
-                .Descendants("re")
-                .Where(re => !(re.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value.IsNullOrWhiteSpace() ?? true))
-                .ToList();
-            foreach (XElement re in modifiedSpriteNodes)
+                    // progress:
+                    lock (ComposeTextures_WritePredefinedSpriteSheets)
+                        ComposeTextures_WritePredefinedSpriteSheets.IncrementNormalized(1.0 / predefinedAtlas.SpriteSheets.Count);
+                });
+                ComposeTextures_WritePredefinedSpriteSheets.Complete();
+            }
+            finally
             {
-                string modName = re.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                if (modName.IsNullOrWhiteSpace())
-                    continue;
-
-                // library operation (OPTIONAL):
-                string libraryOperation = re?.Attribute(NodeType.ATTRIBUTE_LIBRARY)?.Value;
-                // patch operation (OPTIONAL):
-                string patchOperation = re?.Attribute(NodeType.ATTRIBUTE_PATCH)?.Value;
-                // last operation:
-                string lastOperation = patchOperation ?? libraryOperation ?? "unknown mod operation";
-                // pretty print:
-
-                // NAME remapping:
-                {
-                    string spriteNameStr = re.Attribute("n")?.Value?.Trim();
-                    if (spriteNameStr.IsNullOrEmpty())
-                    {
-                        Log.Error($@"Unable to get sprite NAME for <re> sprite region node with n=""{spriteNameStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={re.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                        continue;
-                    }
-
-                    if (RemappedSpriteNames.ContainsKey(spriteNameStr))
-                    {
-                        Log.Error($@"Unable ro remap <re> sprite region node with duplicate n=""{spriteNameStr}"" in {spaceHavenTexturesXmlFile.FileName}, line={re.Line()}, owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                        continue;
-                    }
-
-                    // Ignore original sprite names:
-                    if (spriteNameStr.TryParse(out int spriteName) && spriteName <= lastOriginalSpriteName)
-                    {
-                        Log.Debug($@"Skipping remapping of original <re> sprite region node n=""{spriteNameStr}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                        continue;
-                    }
-
-                    int remappedSpriteName = Build.AllocateNextNumericId(EKeyPool.TexturesRegion);
-                    RemappedSpriteNames[spriteNameStr] = remappedSpriteName;
-                    Log.Debug($@"Remapped <re> sprite region node from n=""{spriteNameStr}"" to n=""{remappedSpriteName}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                }
-
-                // ID remapping:
-                {
-                    string spriteIdStr = re.Attribute("id")?.Value?.Trim();
-                    int remappedSpriteId = ++lastUsedSpriteId;
-                    Log.Debug($@"Remapped <re> sprite region node from id=""{spriteIdStr}"" to id=""{remappedSpriteId}"", owned by mod ""{modName}"" last modified by {lastOperation}", Paths.BuildStageTexturesXmlPath);
-                }
+                predefinedAtlas?.Dispose();
             }
 
-            // Adjust animations assetPos "a" references to sprites with remapped names:
-            List<XElement> allAssetPosNodes = spaceHavenAnimationsXmlFile.Root.Descendants("assetPos").ToList();
-            foreach (XElement assetPos in allAssetPosNodes)
-            {
-                string remappedSpriteNameStr = assetPos?.Attribute("a")?.Value ?? string.Empty;
-                if (!RemappedSpriteNames.TryGetValue(remappedSpriteNameStr, out int remappedSpriteName))
-                    continue;
-
-                Log.Debug($@"Remapped <assetPos> sprite from a=""{remappedSpriteNameStr}"" to id=""{remappedSpriteName}"", in {spaceHavenAnimationsXmlFile.FileName} line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
-                assetPos.SetAttributeValue("a", remappedSpriteName);
-            }
+            CT.ThrowIfCancellationRequested();
 
 
 
@@ -1652,13 +1866,27 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+            // THIS LOADS SPRITES REFERENCED BY THEIR RELATIVE PATH IN ANIMATIONS.XML:
 
             // Collect all assetPos filename references and save it to spriteReference objects:
-            Log.Info("Read Referenced Sprites...");
+            Log.Info("Compose Textures: Reading Referenced Sprites...");
             ComposeTextures_ReadReferencedSprites.Start();
             bool errors = false;
             int localSpriteId = 0;
             SortedDictionary<string, SpriteReference> spriteReferences = [];
+            List<XElement> allAssetPosNodes = spaceHavenAnimationsXmlFile.Root.Descendants("assetPos").ToList();
             foreach (XElement assetPos in allAssetPosNodes)
             {
                 CT.ThrowIfCancellationRequested();
@@ -1678,16 +1906,10 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // owner mod:
                     string modName = assetPos?.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                    if (modName.IsNullOrWhiteSpace())
-                    {
-                        Log.Error($@"No '{NodeType.ATTRIBUTE_OWNER}' attribute exists in <assetPos> node with 'filename' reference ""{assetPosFilenameReference}"", in animations file line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
-                        errors = true;
-                        continue;
-                    }
                     ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
                     if (mod == null)
                     {
-                        Log.Error($@"Unable to retrieve mod '{modName}' owning <assetPos> node with 'filename' reference ""{assetPosFilenameReference}"", in animations file line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
+                        Log.Error($@"Unable to retrieve mod owning <assetPos> node with 'filename' reference ""{assetPosFilenameReference}"", in animations file line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
                         errors = true;
                         continue;
                     }
@@ -1711,31 +1933,32 @@ public sealed class ModBuilder : IAsyncDisposable
                     Log.Debug($@"Registering sprite reference for {pretty}", Paths.BuildStageAnimationsXmlPath);
 
                     // local name:
-                    string localName = SpriteReference.GetLocalName(mod.Name, assetPosFilenameReference, filter);
+                    string spriteRefKey = SpriteReference.GetKey(mod.Name, assetPosFilenameReference, filter);
 
                     // Get or create sprite reference:
-                    if (!spriteReferences.TryGetValue(localName, out SpriteReference spriteRef))
+                    if (!spriteReferences.TryGetValue(spriteRefKey, out SpriteReference spriteRef))
                     {
-                        spriteRef = new(localName, ++localSpriteId, mod, assetPosFilenameReference, filter);
+                        spriteRef = new(spriteRefKey, ++localSpriteId, mod, assetPosFilenameReference, filter);
 
                         // Add current assetPos reference:
                         spriteRef.AssetPosNodes.Add(assetPos);
 
                         // Check for exiting sprite image:
-                        string absolutePath = textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePath, StringComparison.Ordinal));
-                        absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePath, StringComparison.OrdinalIgnoreCase));
-                        absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePathWithoutFileExtension, StringComparison.Ordinal));
-                        absolutePath ??= textureFilePaths.FirstOrDefault(path => path.Equals(spriteRef.AbsolutePathWithoutFileExtension, StringComparison.OrdinalIgnoreCase));
-                        if (absolutePath == null)
+                        spriteRef.AbsolutePath =
+                            IOUtils.CombineAsOSPath(mod.SpritesDir, $"{spriteRef.RelativePathWithoutExtension}.png").FindFile() ??
+                            IOUtils.CombineAsOSPath(mod.SpritesDir, spriteRef.RelativePathWithoutExtension).FindFile() ??
+                            IOUtils.CombineAsOSPath(mod.SpritesDir, $"{spriteRef.FilenameWithoutExtension}.png").FindFile() ??
+                            IOUtils.CombineAsOSPath(mod.SpritesDir, spriteRef.FilenameWithoutExtension).FindFile();
+
+                        if (spriteRef.AbsolutePath == null)
                         {
-                            Log.Error($@"Unable to locate image file '{spriteRef.AbsolutePath}' for {pretty}", Paths.BuildStageAnimationsXmlPath);
+                            Log.Error($@"Unable to locate sprite image file for {pretty}", Paths.BuildStageAnimationsXmlPath);
                             errors = true;
                             continue;
                         }
-                        spriteRef.AbsolutePath = absolutePath.AsOSPath(); // any case sensitiveness is adjusted here
 
                         // Add the created sprite reference:
-                        spriteReferences.Add(localName, spriteRef);
+                        spriteReferences.Add(spriteRefKey, spriteRef);
                     }
                     else
                     {
@@ -1748,6 +1971,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     ComposeTextures_ReadReferencedSprites.IncrementNormalized(1.0 / allAssetPosNodes.Count);
                 }
             }
+            ComposeTextures_ReadReferencedSprites.Complete();
             if (errors)
                 return false;
 
@@ -1759,13 +1983,14 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
             // Create sprite atlases by texture filter type, and pack sprites into sprite sheets:
-            Log.Info("Writing Referenced Sprite Sheets...");
+            ComposeTextures_LoadReferencedSprites.Start();
+            ComposeTextures_PackReferencedSprites.Start();
+            ComposeTextures_WriteReferencedSpriteSheets.Start();
+            ComposeTextures_ComposeTexturesXml.Start();
             foreach (ETextureFilter filter in Enum.GetValues<ETextureFilter>().OrderByDescending(e => (int)e))
             {
-                CT.ThrowIfCancellationRequested();
 
                 // Load sprite images:
-                Log.Info("Load Referenced Sprites...");
                 List<SpriteReference> spriteRefs = spriteReferences.Values.Where(s => s.Filter == filter).ToList();
                 if (spriteRefs.Count <= 0)
                 {
@@ -1773,20 +1998,24 @@ public sealed class ModBuilder : IAsyncDisposable
                     continue;
                 }
 
+                Log.Info($"Compose Textures: Loading Referenced Sprites ({filter.ToString()})...");
+
                 CT.ThrowIfCancellationRequested();
 
-                ComposeTextures_LoadReferencedSprites.Start();
+                // Load referenced sprites:
                 SortedDictionary<string, SpriteBuildData> sprites = [];
                 await Parallel.ForEachAsync(spriteRefs, ParallelOptions, async (spriteRef, ct) =>
+                //await Parallel.ForEachAsync(spriteRefs, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (spriteRef, ct) =>
                 {
                     try
                     {
-                        Log.Debug($"Loading sprite {spriteRef.LocalName}...", Paths.BuildTexturesDirectory);
+                        Log.Debug($"Loading sprite {spriteRef.Key}...", Paths.BuildTexturesDirectory);
 
-                        SpriteBuildData sprite = new(spriteRef.LocalName, spriteRef.LocalID, spriteRef.AbsolutePath);
+                        SpriteBuildData sprite = new(spriteRef.Key, spriteRef.LocalID, spriteRef.AbsolutePath);
+
                         lock (sprites)
                         {
-                            sprites[spriteRef.LocalName] = sprite;
+                            sprites[spriteRef.Key] = sprite;
                             spriteRef.Sprite = sprite;
                         }
                     }
@@ -1796,23 +2025,16 @@ public sealed class ModBuilder : IAsyncDisposable
                             ComposeTextures_LoadReferencedSprites.IncrementNormalized(1.0 / spriteReferences.Count);
                     }
                 });
-                CT.ThrowIfCancellationRequested();
 
-                // Assign global ID and global Name to each sprite:
-                foreach (SpriteBuildData sprite in sprites.Values)
-                {
-                    sprite.GlobalName = Build.AllocateNextNumericId(EKeyPool.TexturesRegion).ToString();
-                    sprite.GlobalId = ++lastUsedSpriteId;
-                }
                 CT.ThrowIfCancellationRequested();
 
 
 
 
 
-                // Pack sprites into sprite sheets:
-                Log.Info("Packing Referenced Sprites...");
-                ComposeTextures_PackReferencedSprites.Start();
+
+                // Pack referenced sprites:
+                Log.Info($"Compose Textures: Packing Referenced Sprites ({filter.ToString()})...");
                 using SpriteAtlasBuildData spriteAtlas = new(filter.ToString().ToUpperInvariant())
                 {
                     SpriteSheetSize = filter == ETextureFilter.Linear ? 4096 : 2048,
@@ -1824,24 +2046,34 @@ public sealed class ModBuilder : IAsyncDisposable
                     Log.Error($@"Unable to pack sprites into sprite atlas '{spriteAtlas.Name}'", Paths.BuildStageAnimationsXmlPath);
                     return false;
                 }
+
                 ComposeTextures_PackReferencedSprites.IncrementNormalized(spriteRefs.Count / (double)spriteReferences.Count);
-                
-
-
-                
-                
-                CT.ThrowIfCancellationRequested();
 
 
 
 
-                Log.Info("Writing Referenced Sprite Sheets...");
-                ComposeTextures_WriteReferencedSpriteSheets.Start();
 
-                // Assign global ID to each sprite sheet:
+
+
+                // Sequentially assign spritesheet KEY and sprite NAME/ID: 
                 foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
-                    spriteSheet.GlobalId = Build.AllocateNextNumericId(EKeyPool.TexturesCim);
+                {
+                    spriteSheet.GlobalId = Build.AllocateNextNumericId(EKeyPool.SpriteSheet);
+                    foreach (SpriteBuildData sprite in spriteSheet.Sprites)
+                    {
+                        sprite.GlobalId = ++lastGlobalSpriteId;
+                        sprite.GlobalName = Build.AllocateNextNumericId(EKeyPool.Sprite).ToString();
+                    }
+                }
+
                 CT.ThrowIfCancellationRequested();
+
+
+
+
+
+                // Write referenced sprite sheets:
+                Log.Info("Writing Referenced Sprite Sheets...");
 
                 // Draw sprites to the sprite sheets, save sprite sheets as CIM and PNG:
                 await Parallel.ForEachAsync(spriteAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
@@ -1862,7 +2094,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
 
                         // Export to PNG, for debugging:
-                        spriteSheet.TryExportToPng(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
+                        await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
                     }
                     finally
                     {
@@ -1881,9 +2113,8 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // For each sprite sheet, add a CIM texture entry to the textures XML file:
                 Log.Info($@"Composing textures.xml...", Paths.BuildTexturesDirectory);
-                ComposeTextures_ComposeTexturesXml.Start();
                 XElement parentTexturesCimNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesCim);
-                foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.LocalId))
+                foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.GlobalId))
                 {
                     XElement t = new("t");
                     t.SetAttributeValue("i", spriteSheet.GlobalId);
@@ -1896,9 +2127,10 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.1 * (1.0 / spriteAtlas.SpriteSheets.Count) * (spriteRefs.Count / (double)spriteReferences.Count));
                 }
+
                 // For each sprite, add a texture region to the textures XML file:
                 XElement parentTexturesRegionNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesRegion);
-                foreach (SpriteBuildData sprite in sprites.Values)
+                foreach (SpriteBuildData sprite in sprites.Values.OrderBy(sprite => sprite.GlobalName))
                 {
                     CT.ThrowIfCancellationRequested();
 
@@ -1935,7 +2167,10 @@ public sealed class ModBuilder : IAsyncDisposable
                     return false;
                 ComposeTextures_ComposeTexturesXml.IncrementNormalized(0.4 * (1.0 / spriteReferences.Count));
             }
-
+            ComposeTextures_LoadReferencedSprites.Complete();
+            ComposeTextures_PackReferencedSprites.Complete();
+            ComposeTextures_WriteReferencedSpriteSheets.Complete();
+            ComposeTextures_ComposeTexturesXml.Complete();
 
 
 
@@ -1982,11 +2217,13 @@ public sealed class ModBuilder : IAsyncDisposable
                 sb.AppendLine();
             }
 
-            // Space Haven Launcher devs and maintainers:
+            // Space Haven Launcher devs, maintainers, supporters:
             sb.AppendLine("[Topic]Space Haven Launcher");
             sb.AppendLine("Ghostkeeper666");
             sb.AppendLine("KaiserManny");
             sb.AppendLine();
+
+#warning TODO: Add supporters to credits!
 
             // Add original content now:
             sb.AppendLine(await IOUtils.TryReadAllTextAsync(Paths.TemplateExtraCreditsTxtPath, Log, CT) ?? string.Empty);
@@ -2020,6 +2257,7 @@ public sealed class ModBuilder : IAsyncDisposable
         try
         {
             Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDirectory);
+            ComposeSpaceHavenJar.Start();
 
             // Select files to add to template JAR:
             DirectoryInfo di = new(Paths.BuildStageDirectory);
@@ -2127,16 +2365,18 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
+            WriteVersionInfo.Start();
+
             string[] lines = [BuildSettings.SpaceHavenVersion.ToString(), "(modified)"];
 
             // Haven.xml:
             Build.XmlFile[EXmlFileType.Haven].Xml.Root.SetAttributeValue("libVersion", lines.JoinToString(" "));
-            WriteVersionInfo?.SetNormalized(0.50);
+            WriteVersionInfo.SetNormalized(0.50);
 
             // Version.txt:
             if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), Log, ct))
                 return false;
-            WriteVersionInfo?.Complete();
+            WriteVersionInfo.Complete();
 
             // Done.
             return true;

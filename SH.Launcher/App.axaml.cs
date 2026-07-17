@@ -19,8 +19,8 @@ public partial class App : Application
     {
         AppViewModel.State.Log.SetLogLevel(ELogLevel.Info);
 
-        ToolTip.ShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);
-        ToolTip.BetweenShowDelayProperty.OverrideDefaultValue(typeof(TopLevel), 1);
+        ToolTip.ShowDelayProperty.OverrideDefaultValue<TopLevel>(1);
+        ToolTip.BetweenShowDelayProperty.OverrideDefaultValue<TopLevel>(1);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

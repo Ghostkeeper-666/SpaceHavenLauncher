@@ -164,7 +164,7 @@ public sealed class AnimationsXmlRepository
                 Rotation = Convert.ToSingle(assetPos.Attribute("r").Value),
                 SpriteName = (str = assetPos.Attribute("a")?.Value).IsNullOrWhiteSpace() ? -1 : Convert.ToInt32(str),
 
-                Loop = (str = assetPos.Attribute("l")?.Value).IsNullOrWhiteSpace() ? false : Convert.ToInt32(str) != 0,
+                Loop = !(str = assetPos.Attribute("l")?.Value).IsNullOrWhiteSpace() && Convert.ToInt32(str) != 0,
                 StartFrame = (str = assetPos.Attribute("sf")?.Value).IsNullOrWhiteSpace() ? 0 : (float)Convert.ToSingle(str),
                 EndFrame = (str = assetPos.Attribute("se")?.Value).IsNullOrWhiteSpace() ? 0 : (float)Convert.ToSingle(str),
                 AnimationName = assetPos.Attribute("an")?.Value,

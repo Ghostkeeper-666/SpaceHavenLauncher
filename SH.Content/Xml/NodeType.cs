@@ -108,8 +108,8 @@ public sealed class NodeType
         new("/audio/a", "id", true, EKeyPool.Resource, EXmlFileType.Audio),
 
         // textures:
-        new("/AllTexturesAndRegions/textures/t", "i", true, EKeyPool.TexturesCim, EXmlFileType.Textures),
-        new("/AllTexturesAndRegions/regions/re", "n", true, EKeyPool.TexturesRegion, EXmlFileType.Textures),
+        new("/AllTexturesAndRegions/textures/t", "i", true, EKeyPool.SpriteSheet, EXmlFileType.Textures),
+        new("/AllTexturesAndRegions/regions/re", "n", true, EKeyPool.Sprite, EXmlFileType.Textures),
 
         // animations:
         // ID is ignored by the game, NAME is the primary key!

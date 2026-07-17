@@ -10,7 +10,8 @@ namespace SH.Modding.Build;
 internal sealed class SpriteAtlasBuildData : IDisposable
 {
     public string Name { get; }
-    public List<SpriteSheetBuildData> SpriteSheets { get; } = [];
+    public IReadOnlyList<SpriteSheetBuildData> SpriteSheets => SpriteSheetList;
+    private readonly List<SpriteSheetBuildData> SpriteSheetList = [];
     public int SpriteSheetSize { get; set; } = 2048;
     public int SpriteSpacing { get; set; } = 4;
 
@@ -19,7 +20,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
         get
         {
             List<SpriteBuildData> list = [];
-            foreach (SpriteSheetBuildData ss in SpriteSheets)
+            foreach (SpriteSheetBuildData ss in SpriteSheetList)
                 foreach (SpriteBuildData s in ss.Sprites.OrderBy(s => s.AbsoluteFilePath ?? string.Empty))
                     list.Add(s);
             return list;
@@ -27,7 +28,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
     }
 
     public int SpriteCount =>
-        SpriteSheets.Sum(sh => sh.Count);
+        SpriteSheetList.Sum(sh => sh.Count);
 
     public SpriteAtlasBuildData(string name)
     {
@@ -35,7 +36,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
     }
 
     public void Clear() =>
-        SpriteSheets.Clear();
+        SpriteSheetList.Clear();
 
     public SpriteBuildData GetSpriteWithGlobalId(int globalId) =>
         Sprites?.FirstOrDefault(s => s.GlobalId == globalId);
@@ -46,11 +47,8 @@ internal sealed class SpriteAtlasBuildData : IDisposable
     public SpriteBuildData GetSpriteWithLocalName(string localName) =>
         Sprites?.FirstOrDefault(s => s.LocalName.Equals(localName, StringComparison.Ordinal));
 
-    public void Add(SpriteSheetBuildData spritesheet)
-    {
-        SpriteSheets.Add(spritesheet);
-    }
-
+    public void Add(SpriteSheetBuildData spritesheet) =>
+        SpriteSheetList.Add(spritesheet);
 
     public bool Add(IEnumerable<SpriteBuildData> sprites, ILogger log, CancellationToken ct)
     {
@@ -71,7 +69,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
             SpriteBuildData[] sortedSprites = allSprites.Values.OrderByDescending(sprite => ((ulong)sprite.Width) * ((ulong)sprite.Height)).ToArray();
 
             // Clear all existing spritesheets, since everything will be re-calculated:
-            foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
+            foreach (SpriteSheetBuildData spriteSheet in SpriteSheetList)
             {
                 spriteSheet.Clear();
                 spriteSheet.Resize(SpriteSheetSize, SpriteSheetSize);
@@ -82,8 +80,8 @@ internal sealed class SpriteAtlasBuildData : IDisposable
             long spriteSheetArea = SpriteSheetSize * SpriteSheetSize;
             double efficiency = 0.80;
             int estimatedSpriteSheetCount = 1 + (int)(totalArea / (efficiency * spriteSheetArea));
-            for (int i = SpriteSheets.Count; i < estimatedSpriteSheetCount; ++i)
-                SpriteSheets.Add(new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this));
+            for (int i = SpriteSheetList.Count; i < estimatedSpriteSheetCount; ++i)
+                SpriteSheetList.Add(new(SpriteSheetList.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this));
 
             ct.ThrowIfCancellationRequested();
 
@@ -105,7 +103,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
 
                 // Fill spritesheets with less sprites first:
                 bool spriteWasAdded = false;
-                foreach (SpriteSheetBuildData spriteSheet in SpriteSheets.OrderBy(ss => ss.Sprites.Count))
+                foreach (SpriteSheetBuildData spriteSheet in SpriteSheetList.OrderBy(ss => ss.Sprites.Count))
                 {
                     ct.ThrowIfCancellationRequested();
 
@@ -134,15 +132,15 @@ internal sealed class SpriteAtlasBuildData : IDisposable
 
                 // Create a new sprite sheet, and manually add the first sprite:
                 SpriteSheetBuildData newSpriteSheet =
-                    new(SpriteSheets.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this);
+                    new(SpriteSheetList.Count, SpriteSheetSize, SpriteSheetSize, allSprites.Count, SpriteSpacing, this);
                 newSpriteSheet.Add(sprite);
                 newSpriteSheet.Packer.Rectangles.Add(new SpriteRectangle(0, 0, sprite.Width + SpriteSpacing, sprite.Height + SpriteSpacing, sprite));
-                SpriteSheets.Add(newSpriteSheet);
+                SpriteSheetList.Add(newSpriteSheet);
             }
             log?.Info($"{Name} Sprite Atlas: {count} of {allSprites.Count} sprite(s) packed");
 
             // Pack each sprite:
-            foreach (SpriteSheetBuildData spriteSheet in SpriteSheets)
+            foreach (SpriteSheetBuildData spriteSheet in SpriteSheetList)
             {
                 foreach (SpriteRectangle r in spriteSheet.Packer.Rectangles)
                 {
@@ -172,7 +170,7 @@ internal sealed class SpriteAtlasBuildData : IDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (SpriteSheetBuildData ss in SpriteSheets)
+        foreach (SpriteSheetBuildData ss in SpriteSheetList)
             ss?.Dispose();
     }
     #endregion

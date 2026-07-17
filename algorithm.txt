@@ -1,5 +1,6 @@
 atlases[] = [nearest, linear];
 
+// Load predefined spritesheets
 foreach(t in textures.t)
 {
   if(exist t.image)
@@ -10,6 +11,7 @@ foreach(t in textures.t)
     atlases[t.filter].add(ss)
 }
 
+// Load predefined sprites
 refs = []
 foreach(assetPos in allAssetPos) 
 {
@@ -44,6 +46,7 @@ foreach(assetPos in allAssetPos)
   }
 }
 
+// Render spritesheets
 parallel.foreach(ss in atlases.SelectMany(atlas => atlas.ss))
 {
   if(!ss.hasImage)

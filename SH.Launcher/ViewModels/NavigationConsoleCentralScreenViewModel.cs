@@ -98,7 +98,7 @@ public partial class NavigationConsoleCentralScreenViewModel : ObservableObject
     [ObservableProperty]
     private EControlState _RightLeverState;
 
-    private NavigationConsoleViewModel Parent;
+    private readonly NavigationConsoleViewModel Parent;
 
     public NavigationConsoleCentralScreenViewModel(NavigationConsoleViewModel parent)
     {

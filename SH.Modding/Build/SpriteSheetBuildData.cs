@@ -15,69 +15,68 @@ namespace SH.Modding.Build;
 
 internal sealed class SpriteSheetBuildData : IDisposable
 {
+    /// <summary>
+    /// Constructor for calculated spritesheets
+    /// </summary>
     public SpriteSheetBuildData(int localId, int width, int height, int maxSprites, int spriteSpacing, SpriteAtlasBuildData atlas)
     {
-        ArgumentNullException.ThrowIfNull(atlas);
-        Atlas = atlas;
-
+        Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
         LocalId = localId;
+
         Width = width;
         Height = height;
         PixelFormat = 4;
         PixelData = new byte[PixelFormat * Width * Height];
         SpriteSpacing = spriteSpacing;
+
+        // Packing of sprite images is required:
         Packer = new(Width, Height, maxSprites);
     }
 
-    public SpriteSheetBuildData(string cimPath, SpriteAtlasBuildData atlas)
-    {
-        ArgumentNullException.ThrowIfNull(atlas);
-        Atlas = atlas;
-
-        LocalId = int.TryParse(cimPath.GetFileNameWithoutExtension(), out int localID) ? localID : atlas.SpriteSheets.Count;
-
-        static int readInt32BigEndian(Stream stream)
-        {
-            Span<byte> buffer = stackalloc byte[4];
-            stream.ReadExactly(buffer);
-            return BinaryPrimitives.ReadInt32BigEndian(buffer);
-        }
-
-        using (FileStream fs = new(cimPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, false))
-        using (ZLibStream zs = new(fs, CompressionMode.Decompress))
-        {
-            Width = readInt32BigEndian(zs);
-            Height = readInt32BigEndian(zs);
-            PixelFormat = readInt32BigEndian(zs);
-            if (PixelFormat != 4)
-                throw new Exception($"Expected pixel format = 4, read pixel format = {PixelFormat}");
-            PixelData = new byte[PixelFormat * Width * Height];
-            zs.ReadExactly(PixelData);
-        }
-
-        Packer = new(Width, Height, 0); // no sprites accepted!
-    }
-
+    /// <summary>
+    /// Constructor for predefined spritesheets
+    /// </summary>
     public SpriteSheetBuildData(int localID, string imagePath, SpriteAtlasBuildData atlas)
     {
-        ArgumentNullException.ThrowIfNull(atlas);
-        Atlas = atlas;
-
+        Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
         LocalId = localID;
 
-        using SKBitmap bitmap = SKBitmap.Decode(imagePath)
-             ?? throw new InvalidOperationException($@"Failed to decode image ""{imagePath}""");
+        if (imagePath.EndsWith(".cim", StringComparison.OrdinalIgnoreCase))
+        {
+            // Load from CIM file:
+            static int readInt32BigEndian(Stream stream)
+            {
+                Span<byte> buffer = stackalloc byte[4];
+                stream.ReadExactly(buffer);
+                return BinaryPrimitives.ReadInt32BigEndian(buffer);
+            }
+            using (FileStream fs = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, false))
+            using (ZLibStream zs = new(fs, CompressionMode.Decompress))
+            {
+                Width = readInt32BigEndian(zs);
+                Height = readInt32BigEndian(zs);
+                PixelFormat = readInt32BigEndian(zs);
+                if (PixelFormat != 4)
+                    throw new Exception($"Expected pixel format = 4, read pixel format = {PixelFormat}");
+                PixelData = new byte[PixelFormat * Width * Height];
+                zs.ReadExactly(PixelData);
+            }
+        }
+        else
+        {
+            // Load from image file:
+            using (SKBitmap bitmap = SKBitmap.Decode(imagePath) ?? throw new InvalidOperationException($@"Failed to decode image ""{imagePath}"""))
+            {
+                Width = bitmap.Width;
+                Height = bitmap.Height;
+                PixelFormat = 4; // RGBA8888
+                PixelData = new byte[PixelFormat * Width * Height];
+                Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
+            }
+        }
 
-        Width = bitmap.Width;
-        Height = bitmap.Height;
-
-        // RGBA8888
-        PixelFormat = 4;
-        PixelData = new byte[PixelFormat * Width * Height];
-
-        Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
-
-        Packer = new(Width, Height, 0); // no sprites accepted!
+        // No packing of sprite images allowed:
+        Packer = null;
     }
 
     public SpriteAtlasBuildData Atlas { get; }
@@ -86,8 +85,13 @@ internal sealed class SpriteSheetBuildData : IDisposable
     public int Width { get; private set; }
     public int Height { get; private set; }
     public int PixelFormat { get; }
+
     public byte[] PixelData { get; private set; }
     internal SpritePacker Packer { get; private set; }
+
+    internal bool IsPredefined => Packer == null;
+    internal bool IsRendered => Packer != null;
+
 
     public IReadOnlyList<SpriteBuildData> Sprites => SpriteList;
     private List<SpriteBuildData> SpriteList = [];

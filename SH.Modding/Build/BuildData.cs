@@ -37,8 +37,8 @@ internal sealed class BuildData : IAsyncDisposable
     public bool HasJavaMods => Mods.Any(mod => mod.IsJavaMod);
 
 
-    public OrderedDictionary<EXmlFileType, XmlFile> XmlFile { get; } = [];
-    public OrderedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; } = [];
+    public SortedDictionary<EXmlFileType, XmlFile> XmlFile { get; } = [];
+    public SortedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; } = [];
     public int LastOriginalSpriteId { get; private set; }
 
     public string XmlHash { get; private set; }

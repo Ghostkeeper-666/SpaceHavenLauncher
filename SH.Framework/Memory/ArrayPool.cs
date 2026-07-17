@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
+namespace SH.Framework.Memory;
+
 public sealed class ArrayPool<T>
 {
     public int ArraySize { get; }

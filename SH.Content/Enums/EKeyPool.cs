@@ -8,8 +8,8 @@ public enum EKeyPool
     Trade,
     Resource,
     Text,
-    TexturesCim,
-    TexturesRegion,
+    SpriteSheet,
+    Sprite,
     Animation,
     SpaceHavenSettings,
 }

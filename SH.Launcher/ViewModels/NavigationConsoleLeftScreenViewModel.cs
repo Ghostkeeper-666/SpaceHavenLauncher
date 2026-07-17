@@ -83,7 +83,7 @@ public partial class NavigationConsoleLeftScreenViewModel : ObservableObject
 
     private readonly int Steps = EnumX.MaxValue<ELeftScreenStep>() + 1;
 
-    private NavigationConsoleViewModel Parent;
+    private readonly NavigationConsoleViewModel Parent;
 
     public NavigationConsoleLeftScreenViewModel(NavigationConsoleViewModel parent)
     {

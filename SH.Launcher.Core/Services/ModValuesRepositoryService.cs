@@ -53,7 +53,7 @@ public sealed class ModValuesRepositoryService
             string currentModVersion = rootNode.Attribute("currentModVersion")?.Value;
 
             mod.IsEnabled = bool.TryParse(rootNode.Attribute("enabled")?.Value ?? "true", out bool enabled) && enabled;
-            mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value ?? "0", out int customID) ? customID : 0;
+            mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value, out int customID) ? customID : 0;
 
             XElement versionNode = rootNode.Elements("version")?.FirstOrDefault(v => v.Attribute("v")?.Value == mod.Version.ToString());
             if (versionNode == null)
@@ -121,7 +121,7 @@ public sealed class ModValuesRepositoryService
             {
                 Log.Info($@"[{mod.Name}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
                 mod.IsEnabled = bool.TryParse(rootNode.Attribute("enabled")?.Value ?? "true", out bool enabled) && enabled;
-                mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value ?? "0", out int customID) ? customID : 0;
+                mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value, out int customID) ? customID : 0;
             }
 
             // Get the closest older version:

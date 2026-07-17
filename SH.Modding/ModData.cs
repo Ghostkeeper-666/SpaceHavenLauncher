@@ -214,7 +214,7 @@ public sealed class ModData
         AutoId = ModAutoId.ComputeMajorId(Name);
 
         // MOD ID:
-        ModId = int.TryParse(root.Element("modid")?.Value?.Trim() ?? "0", out int modId) ? modId : 0;
+        ModId = int.TryParse(root.Element("modid")?.Value?.Trim(), out int modId) ? modId : 0;
 
         // VALIDATE MOD ID:
         if (ModId != 0 && (ModId < ModAutoId.MinValue || ModId > ModAutoId.MaxValue))

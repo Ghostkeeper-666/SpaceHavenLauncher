@@ -5,7 +5,6 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 
 namespace SH.Modding.Build;
@@ -179,27 +178,24 @@ internal sealed class AudioBuildData
     {
         try
         {
-            string relativePathPrefix = "library/";
-            string relativePath = TargetRelativePath?.RemovePrefix(relativePathPrefix);
-
-            // Source relative path provided by attribute:
+            // Path provided by the 'filename' attribute:
             SourceRelativePath = Xml.Attribute(ATTRIBUTE_FILENAME)?.Value.AsOSPath();
             if (!SourceRelativePath.IsNullOrWhiteSpace())
             {
-                SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath);
+                SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath).FindFile();
 
-                // Validate paths escaping mod audio dir:
-                if (!SourceAbsolutePath.StartsWith(Mod.AudioDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDir}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
-                    return false;
-                }
-
-                // Validate invalid paths:
-                if (!IOUtils.FileExists(SourceAbsolutePath))
+                // Invalid path:
+                if (SourceAbsolutePath.IsNullOrWhiteSpace())
                 {
                     // Fail, since the explicitly defined path could not be found:
                     Log.Error($@"Invalid mod audio file path ""{SourceRelativePath}"" defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
+                    return false;
+                }
+
+                // Validate paths escaping mod audio dir:
+                if (!SourceAbsolutePath.EscapesDirectory(Mod.AudioDir))
+                {
+                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDir}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
                     return false;
                 }
 
@@ -208,28 +204,30 @@ internal sealed class AudioBuildData
                 return true;
             }
 
-            // Is it a relative path within the mod's audio directory?
-            SourceRelativePath = relativePath.AsOSPath();
-            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath));
-            if (IOUtils.FileExists(SourceAbsolutePath))
+            string relativePathPrefix = "library/";
+            SourceRelativePath = TargetRelativePath.AsStdPath().RemovePrefix(relativePathPrefix).AsOSPath();
+            string filename = SourceRelativePath.GetFileName();
+
+            // Relative path within the mod's audio directory:
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath).FindFile();
+            if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
                 Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
                 return true;
             }
 
-            // Is it a file directly under the mod's audio directory?
-            SourceRelativePath = relativePath.GetFileName();
-            SourceAbsolutePath = GetAudioFilePath(IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath));
-            if (IOUtils.FileExists(SourceAbsolutePath))
+            // File directly under the mod's audio directory:
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, filename).FindFile();
+            if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
+                SourceRelativePath = filename;
                 Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
                 return true;
             }
 
-            // Is it an audio entry using an original audio file? (quite uncommon, warn!)
-            SourceRelativePath = relativePath.AsOSPath();
-            SourceAbsolutePath = IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, relativePath);
-            if (IOUtils.FileExists(SourceAbsolutePath))
+            // Original audio file (uncommon, warn!):
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, SourceRelativePath).FindFile();
+            if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
                 IsOriginalAudioFile = true;
                 Log.Warn($@"Using the ORIGINAL audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
@@ -237,7 +235,7 @@ internal sealed class AudioBuildData
             }
 
             // Audio file not found!
-            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}. {Environment.NewLine}Check for case-sensitive audio file path OR a missing audio file!", Paths.BuildAudioFile);
+            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}", Paths.BuildAudioFile);
             return false;
         }
         catch (Exception ex)
@@ -247,9 +245,6 @@ internal sealed class AudioBuildData
             return false;
         }
     }
-
-    private string GetAudioFilePath(string sourceAbsolutePath) =>
-        Mod.AudioPaths.FirstOrDefault(path => path.Equals(sourceAbsolutePath, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
 
     public override string ToString() =>
         $@"audio entry {ATTRIBUTE_ID}={Id} {ATTRIBUTE_NAME}=""{Name}"" in audio XML file line {Xml.Line()}, last modified by {LastOperation}";
