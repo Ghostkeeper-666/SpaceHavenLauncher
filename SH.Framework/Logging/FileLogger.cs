@@ -47,7 +47,7 @@ public sealed class FileLogger : ILogger
             }
 
             string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, out string error))
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, out string error))
                 throw new Exception(error);
 
             if (!IOUtils.TryWriteAllText(path, string.Empty, out string writeError))

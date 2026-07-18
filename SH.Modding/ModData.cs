@@ -142,8 +142,8 @@ public sealed class ModData
 
         // Audio:
         AudioDir = Dir.CombineAsOSPath(ModdingConstants.AUDIO).FindDir();
-        AudioPaths = AudioDir.GetRelativeFiles(search: ESearchOption.All, endsWithAny: [".mp3", ".ogg"]);
-        AudioRelativePaths = AudioPaths.Select(p => AudioDir.CombineAsOSPath(p)).ToList();
+        AudioRelativePaths = AudioDir.GetRelativeFiles(search: ESearchOption.All, endsWithAny: [".mp3", ".ogg"]);
+        AudioPaths = AudioRelativePaths.Select(p => AudioDir.CombineAsOSPath(p)).ToList();
 
         // Sprites:
         SpritesDir = Dir.CombineAsOSPath(ModdingConstants.TEXTURES).FindDir();

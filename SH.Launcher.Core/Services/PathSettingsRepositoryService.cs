@@ -3,6 +3,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -205,7 +206,7 @@ public sealed class PathSettingsRepositoryService
 
     public string ResolveAppDir()
     {
-        string dir = SpaceHavenLauncher.Directory;
+        string dir = SpaceHavenLauncher.Dir;
         Log.Debug($@"{nameof(ResolveAppDir)}: Auto resolved as ""{dir}""");
         return dir;
     }
@@ -222,7 +223,7 @@ public sealed class PathSettingsRepositoryService
             string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string dir = appDataDir.CombineAsOSPath("SpaceHavenLauncher");
             if (!dir.DirExists())
-                IOUtils.TryCreateDirectory(dir, Log);
+                IOUtils.TryCreateDir(dir, Log);
             return dir;
         }
         catch (Exception ex)
@@ -456,7 +457,7 @@ public sealed class PathSettingsRepositoryService
             if (absoluteDir != null)
                 return absoluteDir;
 
-            if (!IOUtils.TryCreateDirectory(tentativeDir, Log))
+            if (!IOUtils.TryCreateDir(tentativeDir, Log))
                 return null;
 
             return tentativeDir;
@@ -483,7 +484,7 @@ public sealed class PathSettingsRepositoryService
             if (absoluteDir != null)
                 return absoluteDir;
 
-            if (!IOUtils.TryCreateDirectory(tentativeDir, Log))
+            if (!IOUtils.TryCreateDir(tentativeDir, Log))
                 return null;
 
             return tentativeDir;

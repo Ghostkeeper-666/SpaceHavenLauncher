@@ -6,6 +6,7 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
 using SH.Modding;
+using SH.Modding.Models;
 using System;
 using System.IO;
 using System.Linq;
@@ -156,12 +157,12 @@ public sealed class DeploymentService
             ct.ThrowIfCancellationRequested();
 
             // Otherwise reset the cached modified jar:
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.CacheDir, Log, ct))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.CacheDir, Log, ct))
                 return false;
 
             ct.ThrowIfCancellationRequested();
 
-            return await IOUtils.TryCreateDirectoryAsync(Paths.CacheDir, Log, ct);
+            return await IOUtils.TryCreateDirAsync(Paths.CacheDir, Log, ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -180,9 +181,9 @@ public sealed class DeploymentService
         try
         {
             // Cleanup:
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.TemplateDir, Log, ct))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.TemplateDir, Log, ct))
                 return false;
-            if (!await IOUtils.TryCreateDirectoryAsync(Paths.TemplateDir, Log, ct))
+            if (!await IOUtils.TryCreateDirAsync(Paths.TemplateDir, Log, ct))
                 return false;
 
             // Copy config.json file:
@@ -207,7 +208,7 @@ public sealed class DeploymentService
     {
         try
         {
-            if (!await IOUtils.TryCreateDirectoryAsync(Paths.TemplateStageDir, Log, ct))
+            if (!await IOUtils.TryCreateDirAsync(Paths.TemplateStageDir, Log, ct))
                 return false;
 
             using ZipFile zin = new(Paths.BackupJarPath);
@@ -251,7 +252,7 @@ public sealed class DeploymentService
 
                         string extractPath = Path.Combine(Paths.TemplateStageDir, ein.Name);
                         string extractDir = Path.GetDirectoryName(extractPath);
-                        if (!string.IsNullOrEmpty(extractDir) && !await IOUtils.TryCreateDirectoryAsync(extractDir, Log, ct))
+                        if (!string.IsNullOrEmpty(extractDir) && !await IOUtils.TryCreateDirAsync(extractDir, Log, ct))
                             return false;
                         using Stream inStream = zin.GetInputStream(ein);
                         using FileStream outStream = File.Create(extractPath);

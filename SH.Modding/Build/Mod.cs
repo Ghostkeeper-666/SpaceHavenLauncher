@@ -4,6 +4,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Memory;
+using SH.Modding.Models;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -14,9 +15,9 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class ModBuildData : IAsyncDisposable
+internal sealed class Mod : IAsyncDisposable
 {
-    public ModBuildData(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildData build, ILogger log)
+    public Mod(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildInfo build, ILogger log)
     {
         BuildSettings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
         Data = mod ?? throw new ArgumentNullException(nameof(mod));
@@ -29,6 +30,7 @@ internal sealed class ModBuildData : IAsyncDisposable
     }
 
     private readonly BuildSettings BuildSettings;
+    private PathData Paths => BuildSettings.Paths;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
@@ -36,6 +38,7 @@ internal sealed class ModBuildData : IAsyncDisposable
     public VersionInfo Version => Data.Version;
     public string Author => Data.Author;
     public string Dir => Data.Dir;
+    public string InfoXmlPath => Data.InfoXmlPath;
     public int ID => Data.ID;
 
     public string AudioDir => Data.AudioDir;
@@ -70,11 +73,10 @@ internal sealed class ModBuildData : IAsyncDisposable
     public ILogger Log { get; }
     private FileLogger FullFileLogger { get; }
     private FileLogger ErrorFileLogger { get; }
-    public BuildPathData Paths => Build.Paths;
-    public BuildData Build { get; }
-    public SortedDictionary<string, VarBuildData> Variables { get; } = [];
+    public BuildInfo Build { get; }
+    public SortedDictionary<string, Var> Variables { get; } = [];
 
-    public SortedDictionary<string, AudioBuildData> Audio { get; } = [];
+    public SortedDictionary<string, Audio> Audio { get; } = [];
 
     public bool IsXmlMod => HasAudio || HasSprites || HasSpriteSheets || HasLibraryXml || HasPatchXml;
     public bool IsJavaMod => HasJar;
@@ -87,12 +89,12 @@ internal sealed class ModBuildData : IAsyncDisposable
     public bool HasJar => Data.HasJar;
 
     // Mod Build Paths:
-    public string FullLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDirectory, $"{BuildName} (full log).txt");
-    public string ErrorLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDirectory, $"{BuildName} (error log).txt");
-    public string BuildAudioDirectory => IOUtils.CombineAsOSPath(Paths.BuildAudioDirectory, BuildName);
-    public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, BuildName);
-    public string BuildMergeDirectory => IOUtils.CombineAsOSPath(Paths.BuildMergeDirectory, BuildName);
-    public string BuildPatchDirectory => IOUtils.CombineAsOSPath(Paths.BuildPatchDirectory, BuildName);
+    public string FullLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDir, $"{BuildName} (full log).txt");
+    public string ErrorLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDir, $"{BuildName} (error log).txt");
+    public string BuildAudioDirectory => IOUtils.CombineAsOSPath(Paths.BuildAudioDir, BuildName);
+    public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, BuildName);
+    public string BuildMergeDirectory => IOUtils.CombineAsOSPath(Paths.BuildMergeDir, BuildName);
+    public string BuildPatchDir => IOUtils.CombineAsOSPath(Paths.BuildPatchDir, BuildName);
 
     public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> XmlFiles { get; } = new()
     {
@@ -170,10 +172,10 @@ internal sealed class ModBuildData : IAsyncDisposable
                     if (!IOUtils.FileExists(path))
                         return;
                     byte[] buffer = arrayPool.Get();
-                    
-                    if(!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
+
+                    if (!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
                         return; // file not exists
-                    
+
                     Array.Clear(buffer, 0, buffer.Length);
                     BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
                     BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
@@ -273,7 +275,7 @@ internal sealed class ModBuildData : IAsyncDisposable
                 string evaluatedPath = IOUtils.CombineAsOSPath(BuildMergeDirectory, "mod", xmlFile.RelativePath);
                 if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
-                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
+                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDir);
                     return false;
                 }
             }
@@ -292,10 +294,10 @@ internal sealed class ModBuildData : IAsyncDisposable
                     return false;
                 }
 
-                string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDirectory, "mod", xmlFile.RelativePath);
+                string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDir, "mod", xmlFile.RelativePath);
                 if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                 {
-                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDirectory);
+                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDir);
                     return false;
                 }
             }
@@ -319,7 +321,7 @@ internal sealed class ModBuildData : IAsyncDisposable
             {
                 CT.ThrowIfCancellationRequested();
 
-                VarBuildData variable = new(v);
+                Var variable = new(v);
                 if (Variables.ContainsKey(v.Name))
                 {
                     Log.Warn($"Skipping duplicate variable '{v.Name}' => This could be an ERROR", Data.InfoXmlPath);
@@ -339,7 +341,7 @@ internal sealed class ModBuildData : IAsyncDisposable
 
 
 
-    public async Task<bool> TryLoadWithEvaluatedVariablesAsync(XmlFile xmlFile, int modID, int autoID, int customID, IReadOnlyDictionary<string, VarBuildData> variables, ILogger log, CancellationToken ct)
+    public async Task<bool> TryLoadWithEvaluatedVariablesAsync(XmlFile xmlFile, int modID, int autoID, int customID, IReadOnlyDictionary<string, Var> variables, ILogger log, CancellationToken ct)
     {
         try
         {
@@ -393,7 +395,7 @@ internal sealed class ModBuildData : IAsyncDisposable
             }
 
             // Replace mod variables with their respective values:
-            foreach (VarBuildData v in variables.Values)
+            foreach (Var v in variables.Values)
                 replacements[v.BracedName] = v.StrValue;
 
             // Execute replacements in one pass using REGEX:

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SH.Modding.Build;
 
-public sealed class SpritePacker
+internal sealed class SpritePacker
 {
     private static readonly Comparer<SpriteRectangle> AreaDescending =
         Comparer<SpriteRectangle>.Create(static (a, b) => b.Area.CompareTo(a.Area));

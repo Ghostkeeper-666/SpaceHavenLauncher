@@ -95,7 +95,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 ButtonResult result = await MessageBoxManager.GetMessageBoxStandard(
                         "Abort?",
-                        $"Aborting the launch will close {Paths.SpaceHavenName} if it is still running. \n\nDo you want to abort?",
+                        $"Aborting the launch will close {SpaceHavenConstants.SpaceHavenName} if it is still running. \n\nDo you want to abort?",
                         ButtonEnum.YesNo,
                         Icon.Setting,
                         windowStartupLocation: Avalonia.Controls.WindowStartupLocation.CenterOwner)
@@ -115,7 +115,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
         // Progress:
         ProgressInfo progress = new("Progress");
-        ProgressInfo runGame = new("Launch");
+        ProgressInfo runGame = new(SpaceHavenConstants.SpaceHavenName);
 
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
         progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
@@ -150,7 +150,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 runGame.Complete();
 
-                StringBuilder sb = new($"Jumping to {Paths.SpaceHavenName}\n");
+                StringBuilder sb = new($"Jumping to {SpaceHavenConstants.SpaceHavenName}\n");
                 string dashedLine = $"{new('=', sb.Length - 1)}";
                 sb.Insert(0, $"{dashedLine}\n");
                 sb.Append(dashedLine);
@@ -160,8 +160,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 await Task.Yield();
                 State.IsSpaceHavenRunning = true;
                 if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
-                    Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
-                else Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
+                    Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
+                else Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
                 await Task.Yield();
             }
             else
@@ -233,7 +233,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             {
                 ButtonResult result = await MessageBoxManager.GetMessageBoxStandard(
                         "Abort?",
-                        $"Aborting the launch will close {Paths.SpaceHavenName} if it is still running. \n\nDo you want to abort?",
+                        $"Aborting the launch will close {SpaceHavenConstants.SpaceHavenName} if it is still running. \n\nDo you want to abort?",
                         ButtonEnum.YesNo,
                         Icon.Setting,
                         windowStartupLocation: Avalonia.Controls.WindowStartupLocation.CenterOwner)
@@ -252,14 +252,14 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
 
         // Progress:
-        ProgressInfo initializationProgress = new("Warm-up");
-        ProgressInfo javaBuildProgress = new("JAVA Mods");
-        ProgressInfo xmlBuildProgress = new("XML Mods");
+        ProgressInfo initializationProgress = new("Build Initialization");
+        ProgressInfo javaBuildProgress = new("Build JAVA Mods");
+        ProgressInfo xmlBuildProgress = new("Build XML Mods");
         ProgressInfo progress = new("Progress");
         progress.AddChild(initializationProgress, 1);
         progress.AddChild(javaBuildProgress, 1);
         progress.AddChild(xmlBuildProgress, 6);
-        ProgressInfo runGame = new(Paths.SpaceHavenName);
+        ProgressInfo runGame = new(SpaceHavenConstants.SpaceHavenName);
 
         runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
         xmlBuildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
@@ -305,13 +305,13 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             }
 
             // BUILD:
-            BuildSettings settings = new(ct)
+            using BuildSettings settings = new(Paths.Data, ct)
             {
                 AppVersion = SpaceHavenLauncher.Version,
                 AppDir = Paths.AppDir,
                 WorkDir = Paths.WorkDir,
 
-                SpaceHavenVersion = Paths.SpaceHavenVersion,
+                SpaceHavenVersion = State.SpaceHavenVersion,
                 SpaceHavenDir = Paths.SpaceHavenDir,
                 SpaceHavenJarDir = Paths.SpaceHavenJarDir,
                 GamePlatform = State.GamePlatform,
@@ -354,9 +354,9 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                     mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarPaths),
                     Paths.Data.CacheJarPath,
                     ct))
-                    Log.Success($"{Paths.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
+                    Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
                 else
-                    Log.Error($"{Paths.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
+                    Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
             }
             else
             {

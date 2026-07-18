@@ -5,9 +5,9 @@ using System.Linq;
 
 namespace SH.Modding.Build;
 
-internal sealed class VarBuildData
+internal sealed class Var
 {
-    public VarBuildData(VarData data)
+    public Var(VarData data)
     {
         Data = data ?? throw new ArgumentNullException(nameof(data));
         Name = Data?.Name?.Trim()?.Trim('{', '}') ?? throw new ArgumentException(nameof(Name));
@@ -18,7 +18,7 @@ internal sealed class VarBuildData
 
     private VarData Data { get; }
     public string Name { get; }
-    public EVariableType Type { get; } = EVariableType.Unknown; // TODO
+    public EVariableType Type { get; } = EVariableType.String;
     public string BracedName { get; }
     public string StrValue { get; }
     public string Description { get; }

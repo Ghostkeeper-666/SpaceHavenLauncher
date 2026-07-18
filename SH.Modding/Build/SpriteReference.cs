@@ -12,7 +12,7 @@ internal sealed class SpriteReference
     public static string GetKey(string modName, string relativePathOrRelativeReference, ETextureFilter filter) =>
         $"{filter.ToString().ToUpperInvariant()}::{modName}::{relativePathOrRelativeReference?.RemoveSuffix(".png", StringComparison.OrdinalIgnoreCase)?.ToLowerInvariant().AsStdPath()}";
 
-    public SpriteReference(string key, int localId, ModBuildData mod, string assetPosFilenameReference, ETextureFilter filter)
+    public SpriteReference(string key, int localId, Mod mod, string assetPosFilenameReference, ETextureFilter filter)
     {
         Key = !key.IsNullOrWhiteSpace() ? key : throw new ArgumentNullException(nameof(key));
         LocalID = localId;
@@ -22,13 +22,13 @@ internal sealed class SpriteReference
         Filter = filter;
     }
 
-    public SpriteBuildData Sprite { get; internal set; }
+    public Sprite Sprite { get; internal set; }
     public List<XElement> AssetPosNodes { get; } = [];
 
     public int LocalID { get; }
     public string Key { get; }
 
-    public ModBuildData Mod { get; }
+    public Mod Mod { get; }
     public ETextureFilter Filter { get; }
 
     public string BasePath { get; }

@@ -35,7 +35,7 @@ internal sealed class XmlPatchOperation
         EPatchOperation.MathAttribute,
     ];
 
-    public static bool TryCreate(XmlFile modXmlFile, IReadOnlyDictionary<string, VarBuildData> modVariables, XElement patchNode, out XmlPatchOperation patch, ILogger log)
+    public static bool TryCreate(XmlFile modXmlFile, IReadOnlyDictionary<string, Var> modVariables, XElement patchNode, out XmlPatchOperation patch, ILogger log)
     {
         try
         {
@@ -118,7 +118,7 @@ internal sealed class XmlPatchOperation
 
     public XmlFile ModXmlFile { get; private set; }
     public XElement PatchNode { get; private set; }
-    public IReadOnlyDictionary<string, VarBuildData> Variables { get; private set; }
+    public IReadOnlyDictionary<string, Var> Variables { get; private set; }
     public EPatchOperation Operation { get; private set; }
     public bool IsEnabled { get; private set; }
     public string XPath { get; private set; }

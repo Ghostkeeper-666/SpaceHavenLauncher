@@ -6,6 +6,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,28 +15,27 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class BuildData : IAsyncDisposable
+internal sealed class BuildInfo : IAsyncDisposable
 {
-    public BuildData(BuildSettings settings, ILogger log)
+    public BuildInfo(BuildSettings settings, ILogger log)
     {
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         FileLogger = new FileLogger(Paths.BuildLogPath);
         Log = new LoggerCollection(log, FileLogger);
     }
 
-    public ILogger Log { get; }
-    public BuildPathData Paths => BuildSettings.Paths;
-
-    private readonly BuildSettings BuildSettings;
+    private ILogger Log { get; }
+    private BuildSettings BuildSettings { get; }
+    private PathData Paths => BuildSettings.Paths;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
     private FileLogger FileLogger { get; }
-    
-    public List<ModBuildData> Mods { get; } = [];
 
-    public bool HasXmlMods => Mods.Any(mod => mod.IsXmlMod);
-    public bool HasJavaMods => Mods.Any(mod => mod.IsJavaMod);
+    public IReadOnlyList<Mod> Mods => ModList;
+    private readonly List<Mod> ModList = [];
 
+    public bool HasXmlMods => ModList.Any(mod => mod.IsXmlMod);
+    public bool HasJavaMods => ModList.Any(mod => mod.IsJavaMod);
 
     public SortedDictionary<EXmlFileType, XmlFile> XmlFile { get; } = [];
     public SortedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; } = [];
@@ -47,12 +47,10 @@ internal sealed class BuildData : IAsyncDisposable
     public string JavaHash { get; private set; }
     public IReadOnlyDictionary<string, string> JavaHashes { get; private set; } = new Dictionary<string, string>();
 
-    public ModsJsonFile ModsJsonFile { get; } = new();
-
     public void AddMods(IEnumerable<ModData> mods)
     {
         foreach (ModData mod in mods)
-            Mods.Add(new ModBuildData(BuildSettings, Mods.Count, mod, this, Log));
+            ModList.Add(new Mod(BuildSettings, ModList.Count, mod, this, Log));
     }
 
     public async Task<bool> ComputeHash()
@@ -62,7 +60,7 @@ internal sealed class BuildData : IAsyncDisposable
             Log.Info("Computing build hash...");
 
             // Compute mod hashes:
-            await Parallel.ForEachAsync(Mods, ParallelOptions, async (mod, ct) => await mod.ComputeHash());
+            await Parallel.ForEachAsync(ModList, ParallelOptions, async (mod, ct) => await mod.ComputeHash());
 
             // From Space Haven Launcher:
             SortedDictionary<string, string> appData = new()
@@ -90,7 +88,7 @@ internal sealed class BuildData : IAsyncDisposable
                 xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
 
                 // Mods:
-                string xmlModsHashData = Mods.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.Name}={mod.XmlHash}", "\n") ?? string.Empty;
+                string xmlModsHashData = ModList.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.Name}={mod.XmlHash}", "\n") ?? string.Empty;
                 xmlHashes["Mods"] = XxHash64Calculator.ComputeFromString(xmlModsHashData, Log) ?? string.Empty;
 
                 // Overall XML Hash:
@@ -108,7 +106,7 @@ internal sealed class BuildData : IAsyncDisposable
                 javaHashes["App"] = appHash;
 
                 // Mods:
-                string javaModsHashData = Mods.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.Name}={mod.JavaHash}", "\n") ?? string.Empty;
+                string javaModsHashData = ModList.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.Name}={mod.JavaHash}", "\n") ?? string.Empty;
                 javaHashes["Mods"] = XxHash64Calculator.ComputeFromString(javaModsHashData, Log) ?? string.Empty;
 
                 // Overall Java Hash:
@@ -174,36 +172,36 @@ internal sealed class BuildData : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Loading XML files...", Paths.BuildStageDirectory);
+            Log.Info($@"Loading XML files...", Paths.BuildStageDir);
             progress?.Start();
 
             // Instantiate:
-            XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDirectory, Paths.BuildStageHavenXmlPath);
+            XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDir, Paths.BuildStageHavenXmlPath);
             if (!await XmlFile[EXmlFileType.Haven].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.30);
 
-            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDirectory, Paths.BuildStageTextsXmlPath);
+            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDir, Paths.BuildStageTextsXmlPath);
             if (!await XmlFile[EXmlFileType.Texts].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.60);
 
-            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDirectory, Paths.BuildStageAudioXmlPath);
+            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDir, Paths.BuildStageAudioXmlPath);
             if (!await XmlFile[EXmlFileType.Audio].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.61);
 
-            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDirectory, Paths.BuildStageTexturesXmlPath);
+            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDir, Paths.BuildStageTexturesXmlPath);
             if (!await XmlFile[EXmlFileType.Textures].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.64);
 
-            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDirectory, Paths.BuildStageAnimationsXmlPath);
+            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDir, Paths.BuildStageAnimationsXmlPath);
             if (!await XmlFile[EXmlFileType.Animations].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.94);
 
-            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDirectory, Paths.BuildStageSpaceHavenSettingsXmlPath);
+            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDir, Paths.BuildStageSpaceHavenSettingsXmlPath);
             if (!await XmlFile[EXmlFileType.SpaceHavenSettings].TryLoadAsync(Log, ct))
                 return false;
             progress.SetNormalized(0.95);
@@ -220,7 +218,7 @@ internal sealed class BuildData : IAsyncDisposable
         catch (Exception ex)
         {
             Log.Error(ex);
-            Log.Error($@"Unable to read XML files", Paths.BuildStageDirectory);
+            Log.Error($@"Unable to read XML files", Paths.BuildStageDir);
             return false;
         }
     }
@@ -289,7 +287,7 @@ internal sealed class BuildData : IAsyncDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (ModBuildData mod in Mods)
+        foreach (Mod mod in ModList)
             try { await mod.DisposeAsync(); } catch { }
         try { await FileLogger.DisposeAsync(); } catch { }
     }

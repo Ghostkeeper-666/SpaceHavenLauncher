@@ -2,6 +2,7 @@
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
+using SH.Modding.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

@@ -151,7 +151,7 @@ public sealed class SpriteSheet
 
             exportDir = IOUtils.CombineAsOSPath(exportDir, Name.ToString());
             if (!IOUtils.DirExists(exportDir))
-                try { Directory.CreateDirectory(exportDir); } catch { }
+                try { IOUtils.TryCreateDir(exportDir, log); } catch { }
 
             foreach (Sprite sprite in SpritesByName.Values)
             {
@@ -174,7 +174,7 @@ public sealed class SpriteSheet
         try
         {
             if (!IOUtils.DirExists(exportDir))
-                try { Directory.CreateDirectory(exportDir); } catch { }
+                try { IOUtils.TryCreateDir(exportDir, log); } catch { }
 
             using Image<Rgba32> image = new(Width, Height, new Rgba32(0, 0, 0, 0));
 

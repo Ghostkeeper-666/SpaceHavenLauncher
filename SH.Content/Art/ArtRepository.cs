@@ -197,7 +197,7 @@ public sealed class ArtRepository
             bool success = true;
             parallelOptions ??= new() { MaxDegreeOfParallelism = Environment.ProcessorCount, };
 
-            if (!await IOUtils.TryCreateDirectoryAsync(exportDir, Log, parallelOptions.CancellationToken))
+            if (!await IOUtils.TryCreateDirAsync(exportDir, Log, parallelOptions.CancellationToken))
                 return false;
 
             List<SpriteSheet> spriteSheets = SpriteSheets.Values.OrderByDescending(ss => ss.Area).ToList();
@@ -239,7 +239,7 @@ public sealed class ArtRepository
             bool success = true;
             parallelOptions ??= new() { MaxDegreeOfParallelism = Environment.ProcessorCount, };
 
-            if (!await IOUtils.TryCreateDirectoryAsync(exportDir, Log, parallelOptions.CancellationToken))
+            if (!await IOUtils.TryCreateDirAsync(exportDir, Log, parallelOptions.CancellationToken))
                 return false;
 
             // List all sprites to be exported:
@@ -248,7 +248,7 @@ public sealed class ArtRepository
             // Create directories using SpriteSheet names first:
             string[] dirs = SpriteSheets.Keys.Select(name => IOUtils.CombineAsOSPath(exportDir, name.ToString())).ToArray() ?? [];
             foreach (string dir in dirs)
-                if (!await IOUtils.TryCreateDirectoryAsync(dir, Log, parallelOptions.CancellationToken))
+                if (!await IOUtils.TryCreateDirAsync(dir, Log, parallelOptions.CancellationToken))
                     return false;
 
             double delta = 1.0 / sprites.Count;

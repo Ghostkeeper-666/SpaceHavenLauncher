@@ -1,6 +1,7 @@
 ﻿using SH.Content.Enums;
 using SH.Framework.IO;
 using SH.Framework.Progress;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -8,10 +9,11 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-public sealed class BuildSettings : IAsyncDisposable
+public sealed class BuildSettings : IDisposable
 {
-    public BuildSettings(CancellationToken ct = default)
+    public BuildSettings(PathData paths, CancellationToken ct = default)
     {
+        Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         ExternalCT = ct;
         InternalCTS = new();
         LinkedCTS = CancellationTokenSource.CreateLinkedTokenSource(InternalCTS.Token, ExternalCT);
@@ -25,8 +27,6 @@ public sealed class BuildSettings : IAsyncDisposable
         XmlBuildProgress = new ProgressInfo(nameof(XmlBuildProgress));
         JavaBuildProgress = new ProgressInfo(nameof(JavaBuildProgress));
     }
-
-
 
     public VersionInfo AppVersion { get; set; }
     public string AppDir { get; set; }
@@ -44,7 +44,7 @@ public sealed class BuildSettings : IAsyncDisposable
     public IProgressInfo XmlBuildProgress { get; set; }
     public IProgressInfo JavaBuildProgress { get; set; }
 
-    internal BuildPathData Paths { get; set; }
+    public PathData Paths { get; }
 
     private CancellationToken ExternalCT { get; }
     private CancellationTokenSource InternalCTS { get; }
@@ -60,11 +60,14 @@ public sealed class BuildSettings : IAsyncDisposable
         try { InternalCTS.Cancel(); } catch { }
     }
 
-
-    public ValueTask DisposeAsync()
+    #region IDisposable
+    public volatile bool IsDisposed;
+    public void Dispose()
     {
-        try { InternalCTS.Dispose(); } catch { }
-
-        return ValueTask.CompletedTask;
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+        InternalCTS?.Dispose();
     }
+    #endregion
 }

@@ -125,12 +125,12 @@ public sealed class JarRepositoryService
 
             // Clear:
             Log.Info("Clearing export directory...");
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryDeleteDirContentAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to clear output directory ""{outputDirectory}""", outputDirectory);
                 return false;
             }
-            if (!await IOUtils.TryCreateDirectoryAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryCreateDirAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to create output directory ""{outputDirectory}""");
                 return false;
@@ -174,7 +174,7 @@ public sealed class JarRepositoryService
 
                 if (entry.IsDirectory)
                 {
-                    if (await IOUtils.TryCreateDirectoryAsync(targetPath, Log, ct))
+                    if (await IOUtils.TryCreateDirAsync(targetPath, Log, ct))
                         continue;
                     Log.Error($@"Unable to create output directory ""{targetPath}""", outputDirectory);
                     return false;
@@ -182,7 +182,7 @@ public sealed class JarRepositoryService
 
                 // Create directory for file:
                 string dir = Path.GetDirectoryName(targetPath).AsOSPath();
-                if (!dir.IsNullOrWhiteSpace() && !await IOUtils.TryCreateDirectoryAsync(dir, Log, ct))
+                if (!dir.IsNullOrWhiteSpace() && !await IOUtils.TryCreateDirAsync(dir, Log, ct))
                 {
                     Log.Error($@"Unable to create output directory ""{dir}""", outputDirectory);
                     return false;
@@ -233,13 +233,13 @@ public sealed class JarRepositoryService
                 return false;
             }
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryDeleteDirContentAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to clear output subdirectory ""{outputDirectory}""", outputDirectory);
                 return false;
             }
 
-            if (!await IOUtils.TryCreateDirectoryAsync(outputDirectory, Log, ct))
+            if (!await IOUtils.TryCreateDirAsync(outputDirectory, Log, ct))
             {
                 Log.Error($@"Unable to create output subdirectory ""{outputDirectory}""");
                 return false;
@@ -278,14 +278,14 @@ public sealed class JarRepositoryService
 
                 if (entry.IsDirectory)
                 {
-                    if (await IOUtils.TryCreateDirectoryAsync(targetPath, Log, ct))
+                    if (await IOUtils.TryCreateDirAsync(targetPath, Log, ct))
                         continue;
                     Log.Error($@"Unable to create output subdirectory ""{targetPath}""", outputDirectory);
                     return false;
                 }
 
                 string dir = Path.GetDirectoryName(targetPath);
-                if (!string.IsNullOrEmpty(dir) && !await IOUtils.TryCreateDirectoryAsync(dir, Log, ct))
+                if (!string.IsNullOrEmpty(dir) && !await IOUtils.TryCreateDirAsync(dir, Log, ct))
                 {
                     Log.Error($@"Unable to create output subdirectory ""{dir}""", outputDirectory);
                     return false;

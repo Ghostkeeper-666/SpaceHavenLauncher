@@ -9,6 +9,7 @@ using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
+using SH.Modding.Models;
 using System;
 using System.Linq;
 using System.Threading;
@@ -111,10 +112,10 @@ public partial class SystemCoreViewModel : ViewModelBase
     {
         SpaceHavenDir_ForeColor =
             IOUtils.DirExists(Paths.SpaceHavenDir) ? Brushes.LightCyan : Brushes.OrangeRed;
-        
+
         SpaceHavenJarDir_ForeColor =
             IOUtils.DirExists(Paths.SpaceHavenJarDir) ? Brushes.LightCyan : Brushes.OrangeRed;
-        
+
         SteamDir_ForeColor =
             IOUtils.DirExists(Paths.SteamDir) ? Brushes.LightCyan : Brushes.Gold;
 

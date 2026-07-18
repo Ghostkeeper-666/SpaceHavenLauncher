@@ -6,6 +6,7 @@ using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Launcher.Core.Models;
 using SH.Modding;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -72,7 +73,7 @@ public sealed class DebugService
         Add(Paths.BuildStageTexturesXmlPath);
         Add(Paths.BuildStageAnimationsXmlPath);
         Add(Paths.BuildStageSpaceHavenSettingsXmlPath);
-        Add(Paths.BuildStageExtraCreditsVersionPath);
+        Add(Paths.BuildStageExtraCreditsTxtPath);
         Add(Paths.BuildStageStageVersionPath);
     }
 

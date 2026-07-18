@@ -3,13 +3,14 @@ using SH.Content.Xml;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
 namespace SH.Modding.Build;
 
-internal sealed class AudioBuildData
+internal sealed class Audio
 {
     public static readonly string ATTRIBUTE_NAME = "n";
     public static readonly string ATTRIBUTE_ID = "id";
@@ -24,7 +25,7 @@ internal sealed class AudioBuildData
 
     public static readonly string ATTRIBUTE_FILENAME = "filename";
 
-    public AudioBuildData(BuildPathData paths, ModBuildData mod, XElement xml, ILogger log)
+    public Audio(PathData paths, Mod mod, XElement xml, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Mod = mod ?? throw new ArgumentNullException(nameof(mod));
@@ -33,8 +34,8 @@ internal sealed class AudioBuildData
     }
 
     public XElement Xml { get; }
-    public BuildPathData Paths { get; }
-    public ModBuildData Mod { get; }
+    public PathData Paths { get; }
+    public Mod Mod { get; }
 
     private ILogger Log { get; }
 
@@ -57,7 +58,7 @@ internal sealed class AudioBuildData
     public string LastOperation => PatchOperation ?? LibraryOperation ?? Mod?.Name ?? "???";
 
 
-    public bool TryParse(IEnumerable<ModBuildData> mods)
+    public bool TryParse(IEnumerable<Mod> mods)
     {
         ArgumentNullException.ThrowIfNull(mods);
         try
@@ -69,19 +70,19 @@ internal sealed class AudioBuildData
             // Audio name:
             if ((Name = Xml.Attribute(ATTRIBUTE_NAME)?.Value).IsNullOrWhiteSpace())
             {
-                Log.Error($@"Missing or invalid '{ATTRIBUTE_NAME}' in {this}", Paths.BuildAudioFile);
+                Log.Error($@"Missing or invalid '{ATTRIBUTE_NAME}' in {this}", Paths.BuildAudioFilePath);
                 return false;
             }
             if (!Name.Contains('_'))
             {
                 // Space Haven's audio system stops working if audio name does not have at least one underscore character...
-                Log.Warn($"The '{ATTRIBUTE_NAME}' attribute must have least 1 underscore character '_' otherwise the game's audio system could get muted - in {this}", Paths.BuildAudioFile);
+                Log.Warn($"The '{ATTRIBUTE_NAME}' attribute must have least 1 underscore character '_' otherwise the game's audio system could get muted - in {this}", Paths.BuildAudioFilePath);
             }
 
             // Audio ID:
             if (!(Xml.Attribute(ATTRIBUTE_ID)?.Value).TryParse(out int id) || id < 0 || id >= int.MaxValue)
             {
-                Log.Error($@"Missing or invalid '{ATTRIBUTE_ID}' attribute in {this}", Paths.BuildAudioFile);
+                Log.Error($@"Missing or invalid '{ATTRIBUTE_ID}' attribute in {this}", Paths.BuildAudioFilePath);
                 return false;
             }
             Id = id;
@@ -89,7 +90,7 @@ internal sealed class AudioBuildData
             // Audio type:
             if (!(Xml.Attribute(ATTRIBUTE_AUDIO_TYPE)?.Value).TryParse(out EAudioType audioType))
             {
-                Log.Error($@"Missing or invalid '{ATTRIBUTE_AUDIO_TYPE}' attribute in {this}", Paths.BuildAudioFile);
+                Log.Error($@"Missing or invalid '{ATTRIBUTE_AUDIO_TYPE}' attribute in {this}", Paths.BuildAudioFilePath);
                 return false;
             }
             AudioType = audioType;
@@ -103,7 +104,7 @@ internal sealed class AudioBuildData
             string fileExtension = TargetRelativePath.GetFileExtension().Trim('.');
             if (!fileExtension.TryParse(out EAudioFormat audioFormat))
             {
-                Log.Error($@"Unknown audio format '{fileExtension}' in {this}", Paths.BuildAudioFile);
+                Log.Error($@"Unknown audio format '{fileExtension}' in {this}", Paths.BuildAudioFilePath);
                 return false;
             }
 
@@ -113,12 +114,12 @@ internal sealed class AudioBuildData
                 case EAudioFormat.mp3:
                     if ((Xml.Attribute(ATTRIBUTE_MP3)?.Value).IsNullOrWhiteSpace())
                     {
-                        Log.Error($@"Attribute '{ATTRIBUTE_MP3}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFile);
+                        Log.Error($@"Attribute '{ATTRIBUTE_MP3}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     if ((Xml.Attribute(ATTRIBUTE_MP3L)?.Value).IsNullOrWhiteSpace())
                     {
-                        Log.Error($@"Attribute '{ATTRIBUTE_MP3L}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFile);
+                        Log.Error($@"Attribute '{ATTRIBUTE_MP3L}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     break;
@@ -126,12 +127,12 @@ internal sealed class AudioBuildData
                 case EAudioFormat.ogg:
                     if ((Xml.Attribute(ATTRIBUTE_OGG)?.Value).IsNullOrWhiteSpace())
                     {
-                        Log.Error($@"Attribute '{ATTRIBUTE_OGG}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFile);
+                        Log.Error($@"Attribute '{ATTRIBUTE_OGG}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     if ((Xml.Attribute(ATTRIBUTE_OGGL)?.Value).IsNullOrWhiteSpace())
                     {
-                        Log.Error($@"Attribute '{ATTRIBUTE_OGGL}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFile);
+                        Log.Error($@"Attribute '{ATTRIBUTE_OGGL}' is undefined for audio file with format '{AudioFormat}' in {this}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     break;
@@ -144,7 +145,7 @@ internal sealed class AudioBuildData
             if (!Filename.Contains('_'))
             {
                 // Space Haven's audio system stops working if audio name does not have at least one underscore character...
-                Log.Warn($"The filename '{Filename}' should contain at least 1 underscore character '_' otherwise the game's audio system could get muted - in {this}", Paths.BuildAudioFile);
+                Log.Warn($"The filename '{Filename}' should contain at least 1 underscore character '_' otherwise the game's audio system could get muted - in {this}", Paths.BuildAudioFilePath);
             }
 
             // Sound type:
@@ -155,7 +156,7 @@ internal sealed class AudioBuildData
                 SoundType = soundType;
             else
             {
-                Log.Error($@"Missing or invalid '{ATTRIBUTE_SOUND_TYPE}' attribute in {this}", Paths.BuildAudioFile);
+                Log.Error($@"Missing or invalid '{ATTRIBUTE_SOUND_TYPE}' attribute in {this}", Paths.BuildAudioFilePath);
                 return false;
             }
 
@@ -169,7 +170,7 @@ internal sealed class AudioBuildData
         catch (Exception ex)
         {
             // Failure:
-            Log.Error($@"Unable to parse {this}: {Environment.NewLine}{ex}", Paths.BuildAudioFile);
+            Log.Error($@"Unable to parse {this}: {Environment.NewLine}{ex}", Paths.BuildAudioFilePath);
             return false;
         }
     }
@@ -179,7 +180,9 @@ internal sealed class AudioBuildData
         try
         {
             // Path provided by the 'filename' attribute:
-            SourceRelativePath = Xml.Attribute(ATTRIBUTE_FILENAME)?.Value.AsOSPath();
+            string filenameAttribute = Xml.Attribute(ATTRIBUTE_FILENAME)?.Value;
+            SourceRelativePath = filenameAttribute.AsOSPath();
+
             if (!SourceRelativePath.IsNullOrWhiteSpace())
             {
                 SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath).FindFile();
@@ -188,31 +191,33 @@ internal sealed class AudioBuildData
                 if (SourceAbsolutePath.IsNullOrWhiteSpace())
                 {
                     // Fail, since the explicitly defined path could not be found:
-                    Log.Error($@"Invalid mod audio file path ""{SourceRelativePath}"" defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
+                    Log.Error($@"Invalid mod audio file path {ATTRIBUTE_FILENAME}=""{filenameAttribute}"" in {this}", Paths.BuildAudioFilePath);
                     return false;
                 }
 
                 // Validate paths escaping mod audio dir:
-                if (!SourceAbsolutePath.EscapesDirectory(Mod.AudioDir))
+                if (!SourceAbsolutePath.EscapesDir(Mod.AudioDir))
                 {
-                    Log.Error($@"Audio file path ""{SourceRelativePath}"" escapes mod directory ""{Mod.AudioDir}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFile);
+                    Log.Error($@"Audio file path defined by {ATTRIBUTE_FILENAME}=""{filenameAttribute}"" escapes mod directory ""{Mod.AudioDir}"", defined by attribute '{ATTRIBUTE_FILENAME}' in {this}", Paths.BuildAudioFilePath);
                     return false;
                 }
 
                 // Done.
-                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioDirectory);
+                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Mod.AudioDir);
                 return true;
             }
 
-            string relativePathPrefix = "library/";
-            SourceRelativePath = TargetRelativePath.AsStdPath().RemovePrefix(relativePathPrefix).AsOSPath();
+            // ---------------------------------------------------------------------------------------------------------------
+
+            // Path provided by 'mp3' or 'ogg' attributes:
+            SourceRelativePath = TargetRelativePath.AsStdPath().RemovePrefix("library/", StringComparison.Ordinal).AsOSPath();
             string filename = SourceRelativePath.GetFileName();
 
             // Relative path within the mod's audio directory:
             SourceAbsolutePath = IOUtils.CombineAsOSPath(Mod.AudioDir, SourceRelativePath).FindFile();
             if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
-                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
+                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Mod.AudioDir);
                 return true;
             }
 
@@ -221,27 +226,27 @@ internal sealed class AudioBuildData
             if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
                 SourceRelativePath = filename;
-                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
+                Log.Debug($@"Using mod audio file ""{SourceAbsolutePath}"" for {this}", Mod.AudioDir);
                 return true;
             }
 
             // Original audio file (uncommon, warn!):
-            SourceAbsolutePath = IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, SourceRelativePath).FindFile();
+            SourceAbsolutePath = IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, SourceRelativePath).FindFile();
             if (!SourceAbsolutePath.IsNullOrWhiteSpace())
             {
                 IsOriginalAudioFile = true;
-                Log.Warn($@"Using the ORIGINAL audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildAudioFile);
+                Log.Warn($@"Using the ORIGINAL audio file ""{SourceAbsolutePath}"" for {this}", Paths.BuildStageLibraryDir);
                 return true;
             }
 
             // Audio file not found!
-            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}", Paths.BuildAudioFile);
+            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}", Paths.BuildAudioFilePath);
             return false;
         }
         catch (Exception ex)
         {
             // Failure:
-            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}: {Environment.NewLine}{ex}", Paths.BuildAudioFile);
+            Log.Error($@"Unable to locate audio file '{TargetRelativePath}' referenced by {this}: {Environment.NewLine}{ex}", Paths.BuildAudioFilePath);
             return false;
         }
     }

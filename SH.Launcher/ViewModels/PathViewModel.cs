@@ -2,7 +2,7 @@
 using SH.Content;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
+using SH.Modding.Models;
 using System;
 using System.ComponentModel;
 using System.Threading;
@@ -19,12 +19,6 @@ public partial class PathViewModel : ObservableObject
     public ILogger Log => State.Log;
 
     public PathData Data { get; private set; }
-
-    [ObservableProperty]
-    private string _SpaceHavenName;
-
-    [ObservableProperty]
-    private VersionInfo _SpaceHavenVersion;
 
     [ObservableProperty]
     private string _SteamDir;
@@ -75,8 +69,6 @@ public partial class PathViewModel : ObservableObject
     public PathViewModel SetData(PathData data)
     {
         Data = data;
-        SpaceHavenName = SpaceHavenConstants.SpaceHavenName;
-        SpaceHavenVersion = Data.SpaceHavenVersion;
 
         // Calculated directories:
         AppDir = data.AppDir;
@@ -130,12 +122,5 @@ public partial class PathViewModel : ObservableObject
         catch { }
     }
 
-    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
-    {
-        if (!await Data.TryReadSpaceHavenVersion(log, ct))
-            return false;
-        SpaceHavenVersion = Data.SpaceHavenVersion;
-        return true;
-    }
 
 }

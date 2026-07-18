@@ -2,6 +2,7 @@
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Content;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
@@ -174,7 +175,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         HasAppCompatibilityError = !data.AppCompatibility.MatchAll(SpaceHavenLauncher.Name, SpaceHavenLauncher.Version);
 
         SpaceHavenCompatibility = data.SpaceHavenCompatibility.ToDisplayString() ?? "(any)";
-        HasSpaceHavenCompatibilityError = !data.SpaceHavenCompatibility.MatchAll(Paths.SpaceHavenName, Paths.SpaceHavenVersion);
+        HasSpaceHavenCompatibilityError = !data.SpaceHavenCompatibility.MatchAll(SpaceHavenConstants.SpaceHavenName, State.SpaceHavenVersion);
 
         AllModConflictsText = data.ModConflicts.ToDisplayString() ?? "(none)";
         AllModDependenciesText = data.ModDependencies.ToDisplayString() ?? "(none)";

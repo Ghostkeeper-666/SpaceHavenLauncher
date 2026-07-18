@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
+internal sealed class Sprite : IEquatable<Sprite>, IDisposable
 {
-    public SpriteBuildData(string localName, int localId, SpriteSheetBuildData spriteSheet, int width, int height, int x, int y)
+    public Sprite(string localName, int localId, SpriteSheet spriteSheet, int width, int height, int x, int y)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localName);
         ArgumentNullException.ThrowIfNull(spriteSheet);
@@ -37,7 +37,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         Y = y;
     }
 
-    public SpriteBuildData(string localName, int localId, string absoluteFilePath)
+    public Sprite(string localName, int localId, string absoluteFilePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localName);
         ArgumentException.ThrowIfNullOrWhiteSpace(absoluteFilePath);
@@ -72,7 +72,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         }
     }
 
-    public SpriteSheetBuildData SpriteSheet { get; set; }
+    public SpriteSheet SpriteSheet { get; set; }
 
     public string GlobalName { get; set; }
     public string LocalName { get; set; }
@@ -100,7 +100,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         try
         {
             string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
 
             ct.ThrowIfCancellationRequested();
@@ -127,7 +127,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         try
         {
             string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
 
             using SKImage image = SKImage.FromBitmap(Image);
@@ -152,7 +152,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
         }
     }
 
-    public bool Equals(SpriteBuildData other)
+    public bool Equals(Sprite other)
     {
         if (other is null)
             return false;
@@ -162,7 +162,7 @@ internal sealed class SpriteBuildData : IEquatable<SpriteBuildData>, IDisposable
     }
 
     public override bool Equals(object obj) =>
-        obj is SpriteBuildData other && Equals(other);
+        obj is Sprite other && Equals(other);
 
     public override string ToString() => LocalName.ToString();
 

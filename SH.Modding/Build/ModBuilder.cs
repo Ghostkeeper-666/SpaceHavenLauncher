@@ -6,10 +6,10 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Modding.Models;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,12 +22,12 @@ namespace SH.Modding.Build;
 public sealed class ModBuilder : IAsyncDisposable
 {
     private readonly BuildSettings BuildSettings;
-    private BuildPathData Paths => BuildSettings.Paths;
+    private PathData Paths => BuildSettings.Paths;
 
     private readonly LoggerCollection Log;
     private FileLogger FileLogger;
 
-    private BuildData Build;
+    private BuildInfo Build;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
@@ -75,12 +75,6 @@ public sealed class ModBuilder : IAsyncDisposable
     public ModBuilder(BuildSettings settings, ILogger log)
     {
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
-        BuildSettings.Paths = new(
-            settings.AppDir,
-            settings.WorkDir,
-            settings.SpaceHavenDir,
-            settings.SpaceHavenJarDir
-        );
         Log = new LoggerCollection(log);
     }
 
@@ -243,7 +237,7 @@ public sealed class ModBuilder : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Log.Error(ex, Paths.BuildDirectory);
+            Log.Error(ex, Paths.BuildDir);
             return false;
         }
     }
@@ -253,9 +247,9 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Starting Build...", Paths.BuildDirectory);
+            Log.Info($"Starting Build...", Paths.BuildDir);
 
-            Build = new BuildData(BuildSettings, Log);
+            Build = new BuildInfo(BuildSettings, Log);
 
             // No mods?
             if ((BuildSettings?.Mods?.Count ?? 0) <= 0)
@@ -308,9 +302,9 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Reset build stage files:
                 ResetBuildStage.Start();
                 Log.Info("Resetting build stage files...");
-                if (!await TryResetBuildStageDirectoryAsync())
+                if (!await TryResetBuildStageDirAsync())
                     return false;
-                if (!await IOUtils.TryCopyDirectoryAsync(Paths.TemplateStageDirectory, Paths.BuildStageDirectory, true, Log, ParallelOptions))
+                if (!await IOUtils.TryCopyDirAsync(Paths.TemplateStageDir, Paths.BuildStageDir, true, Log, ParallelOptions))
                     return false;
                 ResetBuildStage.Complete();
             }
@@ -420,10 +414,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 DeployConfigJson.Complete();
 
                 // Create mods.json:
-                ComposeModsJson.Start();
-                if (!await TryWriteModsJsonAsync())
+                if (!await TryComposeModsJsonAsync())
                     return false;
-                ComposeModsJson.Complete();
             }
 
 
@@ -442,14 +434,14 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
             // Done.
-            Log.Success($"{this} has completed", Paths.BuildDirectory);
+            Log.Success($"{this} has completed", Paths.BuildDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error(ex, Paths.BuildDirectory);
-            Log.Error($"Build has failed", Paths.BuildDirectory);
+            Log.Error(ex, Paths.BuildDir);
+            Log.Error($"Build has failed", Paths.BuildDir);
             return false;
         }
         finally
@@ -558,7 +550,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Debug("Initializing build...", Paths.BuildDirectory);
+            Log.Debug("Initializing build...", Paths.BuildDir);
             Initialization?.Start();
 
             // Initialize build data, and start logging build to file, right after the build directory reset:
@@ -569,7 +561,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Initialization?.SetNormalized(0.45);
 
             // Load mod variables:
-            foreach (ModBuildData mod in Build.Mods)
+            foreach (Mod mod in Build.Mods)
                 if (!await mod.TryMapVariables())
                     return false;
             Initialization?.SetNormalized(0.75);
@@ -583,59 +575,17 @@ public sealed class ModBuilder : IAsyncDisposable
             }
             Initialization?.SetNormalized(0.95);
 
-            // 'mods.json' file:
-            Build.ModsJsonFile.GamePlatform = BuildSettings.GamePlatform;
-            Build.ModsJsonFile.GameVersion = BuildSettings.SpaceHavenVersion.ToString();
-            Build.ModsJsonFile.GameJarDir = Paths.SpaceHavenJarDir;
-            Build.ModsJsonFile.AOPLibs.Add(Paths.CacheAspectjPath);
-            Build.ModsJsonFile.AOPLibs.Add(Paths.CacheAspectjWeaverPath);
-            Build.ModsJsonFile.AOPLibs.Sort();
-
-            foreach (ModBuildData mod in Build.Mods)
-            {
-                ModInfo modInfo = new();
-                modInfo.SchemaVersion = "1";
-                modInfo.Name = mod.Name;
-                modInfo.Version = mod.Version.ToString();
-                modInfo.Directory = mod.Dir.AsStdPath();
-                modInfo.ID = mod.ID;
-                modInfo.Textures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath()));
-                modInfo.Audio.AddRange(mod.AudioPaths.Select(path => path.AsStdPath()));
-                modInfo.Java.AddRange(mod.JarFilePaths.Select(path => path.AsStdPath()));
-                modInfo.Other.AddRange(mod.OtherFilesPaths.Select(path => path.AsStdPath()));
-                foreach (VarBuildData var in mod.Variables.Values)
-                {
-                    VarInfo varInfo = new();
-                    varInfo.Name = var.Name;
-                    varInfo.Type = var.Type;
-                    varInfo.Value = var.StrValue;
-                    modInfo.Vars.Add(varInfo);
-                }
-                Build.ModsJsonFile.Mods.Add(modInfo);
-            }
-
             // Done.
             Initialization?.Complete();
-            Log.Success("Build initialization is complete", Paths.BuildDirectory);
+            Log.Success("Build initialization is complete", Paths.BuildDir);
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error($"Unable to initialize build: {ex}", Paths.BuildDirectory);
+            Log.Error($"Unable to initialize build: {ex}", Paths.BuildDir);
             return false;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
 
     private async Task<bool> TryComputeHashes()
     {
@@ -700,13 +650,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryResetBuildStageDirectoryAsync()
+    private async Task<bool> TryResetBuildStageDirAsync()
     {
         try
         {
             Log.Info($@"Resetting build stage directory...");
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildStageDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.BuildStageDir, Log, CT))
                 return false;
 
             // Done.
@@ -737,22 +687,22 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Info($@"Resetting XML build...");
             ResetXmlBuild.Start();
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildAudioDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.BuildAudioDir, Log, CT))
                 return false;
 
             ResetXmlBuild.SetNormalized(0.10);
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildTexturesDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.BuildTexturesDir, Log, CT))
                 return false;
 
             ResetXmlBuild.SetNormalized(0.20);
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildMergeDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.BuildMergeDir, Log, CT))
                 return false;
 
             ResetXmlBuild.SetNormalized(0.50);
 
-            if (!await IOUtils.TryDeleteDirectoryContentAsync(Paths.BuildPatchDirectory, Log, CT))
+            if (!await IOUtils.TryDeleteDirContentAsync(Paths.BuildPatchDir, Log, CT))
                 return false;
 
             // Done.
@@ -783,7 +733,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Merging XML files...", Paths.BuildMergeDirectory);
+            Log.Info($@"Merging XML files...", Paths.BuildMergeDir);
             MergeXml.Start();
 
             EXmlFileType[] supportedXmlMergeFileTypes =
@@ -798,7 +748,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
             HashSet<XmlFile> mergedSpaceHavenXmlFiles = [];
 
-            foreach (ModBuildData mod in Build.Mods)
+            foreach (Mod mod in Build.Mods)
             {
                 CT.ThrowIfCancellationRequested();
 
@@ -829,7 +779,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         // Get target file:
                         if (!Build.XmlFile.TryGetValue(xmlFileType, out XmlFile spaceHavenXmlFile))
                         {
-                            modLog.Error($@"Unable to get target XML file of type '{xmlFileType}'", Paths.BuildStageDirectory);
+                            modLog.Error($@"Unable to get target XML file of type '{xmlFileType}'", Paths.BuildStageDir);
                             return false;
                         }
 
@@ -966,7 +916,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                         // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
                         // Save merged Space Haven XML file to mod merge directory:
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildMergeDir, spaceHavenXmlFile.RelativePath), Log, CT))
                         //    return false;
                     }
                 }
@@ -980,7 +930,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Save merged XML files to build merge directory:
             foreach (XmlFile spaceHavenXmlFile in mergedSpaceHavenXmlFiles)
             {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildMergeDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildMergeDir, spaceHavenXmlFile.RelativePath), Log, CT))
                     return false;
                 // Update line numbers:
                 if (!await spaceHavenXmlFile.TryReparse(Log, CT))
@@ -989,13 +939,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             MergeXml?.Complete();
-            Log.Success("XML merge completed", Paths.BuildMergeDirectory);
+            Log.Success("XML merge completed", Paths.BuildMergeDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($@"Unable to merge XML files: {ex}", Paths.BuildMergeDirectory);
+            Log.Error($@"Unable to merge XML files: {ex}", Paths.BuildMergeDir);
             return false;
         }
     }
@@ -1017,7 +967,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info("Patching XML files...", Paths.BuildPatchDirectory);
+            Log.Info("Patching XML files...", Paths.BuildPatchDir);
             PatchXml.Start();
 
             EXmlFileType[] SupportedXmlPatchFileTypes =
@@ -1031,7 +981,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ];
 
             // Select mods with library XML files:
-            foreach (ModBuildData mod in Build.Mods)
+            foreach (Mod mod in Build.Mods)
             {
                 CT.ThrowIfCancellationRequested();
 
@@ -1046,12 +996,12 @@ public sealed class ModBuilder : IAsyncDisposable
                         continue;
                     }
 
-                    modLog.Debug("Performing XML patch operations...", mod.BuildPatchDirectory);
+                    modLog.Debug("Performing XML patch operations...", mod.BuildPatchDir);
 
                     // Create mod patch dir:
-                    if (!await IOUtils.TryCreateDirectoryAsync(mod.BuildPatchDirectory, modLog, CT))
+                    if (!await IOUtils.TryCreateDirAsync(mod.BuildPatchDir, modLog, CT))
                     {
-                        modLog.Error($@"Unable to create directory: ""{mod.BuildPatchDirectory}""", Paths.BuildPatchDirectory);
+                        modLog.Error($@"Unable to create directory: ""{mod.BuildPatchDir}""", Paths.BuildPatchDir);
                         return false;
                     }
 
@@ -1082,7 +1032,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         // Get target file:
                         if (!Build.XmlFile.TryGetValue(targetXmlType, out XmlFile spaceHavenXmlFile))
                         {
-                            modLog.Error($@"Unable to get target XML file of type '{targetXmlType}'", Paths.BuildStageDirectory);
+                            modLog.Error($@"Unable to get target XML file of type '{targetXmlType}'", Paths.BuildStageDir);
                             return false;
                         }
                         spaceHavenModifiedFiles.Add(spaceHavenXmlFile);
@@ -1251,7 +1201,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
 
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildPatchDir, spaceHavenXmlFile.RelativePath), Log, CT))
                         //    return false;
                         // Save and reload to update line numbers of XML nodes:
                         //if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
@@ -1266,7 +1216,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
             foreach (XmlFile spaceHavenXmlFile in Build.XmlFile.Values)
             {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildPatchDirectory, spaceHavenXmlFile.RelativePath), Log, CT))
+                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildPatchDir, spaceHavenXmlFile.RelativePath), Log, CT))
                     return false;
                 // Update line numbers:
                 if (!await spaceHavenXmlFile.TryReparse(Log, CT))
@@ -1275,13 +1225,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             PatchXml?.Complete();
-            Log.Success("XML patch completed", Paths.BuildPatchDirectory);
+            Log.Success("XML patch completed", Paths.BuildPatchDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($@"Unable to patch XML files: {ex}", Paths.BuildPatchDirectory);
+            Log.Error($@"Unable to patch XML files: {ex}", Paths.BuildPatchDir);
             return false;
         }
     }
@@ -1301,14 +1251,14 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Fixing TEXT entries...", Paths.BuildAudioDirectory);
+            Log.Info($@"Fixing TEXT entries...", Paths.BuildAudioDir);
             FixTexts.Start();
 
             // Get texts document:
             XmlFile spaceHavenTextsXmlFile = Build.XmlFile[EXmlFileType.Texts];
 
             // Also save here, for debugging:
-            if (!await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsFile, Log, CT))
+            if (!await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsXmlPath, Log, CT))
                 return false;
 
             // Supported "languages
@@ -1330,7 +1280,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                         if (!int.TryParse(t.Attribute("id")?.Value ?? "-1", out int id) || id <= 0)
                         {
-                            Log.Error($"Invalid text entry with missing or invalid attribute id='{t.Attribute("id")?.Value}' in texts file at {line}", Paths.BuildTextsFile);
+                            Log.Error($"Invalid text entry with missing or invalid attribute id='{t.Attribute("id")?.Value}' in texts file at {line}", Paths.BuildTextsXmlPath);
                             return false;
                         }
 
@@ -1345,12 +1295,12 @@ public sealed class ModBuilder : IAsyncDisposable
                             XElement languageNode = t.Element(language);
                             if (languageNode == null)
                             {
-                                Log.Debug($"Fixing text entry <t> id={id} with missing translation to language '{language}'", Paths.BuildTextsFile);
+                                Log.Debug($"Fixing text entry <t> id={id} with missing translation to language '{language}'", Paths.BuildTextsXmlPath);
                                 t.Add(languageNode = new XElement(language, textContent));
                             }
                             else if (languageNode.Value.IsNullOrEmpty())
                             {
-                                Log.Debug($"Fixing text entry <t> id={id} with missing text content for translation to language '{language}'", Paths.BuildTextsFile);
+                                Log.Debug($"Fixing text entry <t> id={id} with missing text content for translation to language '{language}'", Paths.BuildTextsXmlPath);
                                 languageNode.Value = textContent;
                             }
                         }
@@ -1365,7 +1315,7 @@ public sealed class ModBuilder : IAsyncDisposable
             catch
             {
                 // Save texts document, for debugging:
-                try { await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsFile, Log, CT); }
+                try { await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsXmlPath, Log, CT); }
                 catch { }
                 throw;
             }
@@ -1381,7 +1331,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to fix TEXT entries: {ex}", Paths.BuildAudioDirectory);
+            Log.Error($"Unable to fix TEXT entries: {ex}", Paths.BuildAudioDir);
             return false;
         }
     }
@@ -1401,18 +1351,18 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($@"Composing AUDIO...", Paths.BuildAudioDirectory);
+            Log.Info($@"Composing AUDIO...", Paths.BuildAudioDir);
             ComposeAudio.Start();
 
             // Get and save animations document, for debugging:
             XmlFile spaceHavenAudioXmlFile = Build.XmlFile[EXmlFileType.Audio];
-            if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildAudioFile, Log, CT))
+            if (!await spaceHavenAudioXmlFile.TrySaveToAsync(Paths.BuildAudioFilePath, Log, CT))
                 return false;
 
             // Collect all assetPos filename references and save it to spriteReference objects:
             bool errors = false;
-            OrderedDictionary<int, AudioBuildData> audioById = []; // keep original order!
-            OrderedDictionary<string, AudioBuildData> audioByName = []; // keep original order!
+            OrderedDictionary<int, Audio> audioById = []; // keep original order!
+            OrderedDictionary<string, Audio> audioByName = []; // keep original order!
             List<XElement> audioNodes = spaceHavenAudioXmlFile.Root.Descendants("a").ToList();
             foreach (XElement audioNode in audioNodes)
             {
@@ -1426,15 +1376,15 @@ public sealed class ModBuilder : IAsyncDisposable
                         continue;
 
                     // Get mod:
-                    ModBuildData mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
+                    Mod mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
                     if (mod == null)
                     {
-                        Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFile);
+                        Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFilePath);
                         return false;
                     }
 
                     // Parse audio:
-                    AudioBuildData audio = new(Paths, mod, audioNode, mod.Log);
+                    Audio audio = new(Paths, mod, audioNode, mod.Log);
                     if (!audio.TryParse(Build.Mods))
                     {
                         errors = true;
@@ -1446,17 +1396,17 @@ public sealed class ModBuilder : IAsyncDisposable
                         continue;
 
                     // Check for duplicate audio ID:
-                    if (audioById.TryGetValue(audio.Id, out AudioBuildData existingAudio1))
+                    if (audioById.TryGetValue(audio.Id, out Audio existingAudio1))
                     {
-                        Log.Error($@"Duplicate audio ID: {Environment.NewLine}{existingAudio1} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                        Log.Error($@"Duplicate audio ID: {Environment.NewLine}{existingAudio1} {Environment.NewLine}{audio}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     else audioById[audio.Id] = audio;
 
                     // Check for duplicate audio NAME:
-                    if (audioByName.TryGetValue(audio.Name, out AudioBuildData existingAudio2))
+                    if (audioByName.TryGetValue(audio.Name, out Audio existingAudio2))
                     {
-                        Log.Error($@"Duplicate audio NAME: {Environment.NewLine}{existingAudio2} {Environment.NewLine}{audio}", Paths.BuildAudioFile);
+                        Log.Error($@"Duplicate audio NAME: {Environment.NewLine}{existingAudio2} {Environment.NewLine}{audio}", Paths.BuildAudioFilePath);
                         return false;
                     }
                     else audioByName[audio.Name] = audio;
@@ -1470,10 +1420,10 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Copy audio files:
-            foreach (AudioBuildData audio in audioByName.Values)
+            foreach (Audio audio in audioByName.Values)
             {
-                string targetAbsolutePath = Paths.BuildStageDirectory.CombineAsOSPath(audio.TargetRelativePath);
-                if (targetAbsolutePath.EscapesDirectory(Paths.BuildStageDirectory))
+                string targetAbsolutePath = Paths.BuildStageDir.CombineAsOSPath(audio.TargetRelativePath);
+                if (targetAbsolutePath.EscapesDir(Paths.BuildStageDir))
                 {
                     Log.Error($@"Invalid target audio file path ""{targetAbsolutePath}"" for {audio}");
                     return false;
@@ -1488,13 +1438,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             ComposeAudio?.Complete();
-            Log.Success($"AUDIO files ready", Paths.BuildAudioDirectory);
+            Log.Success($"AUDIO files ready", Paths.BuildAudioDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose AUDIO: {ex}", Paths.BuildAudioDirectory);
+            Log.Error($"Unable to compose AUDIO: {ex}", Paths.BuildAudioDir);
             return false;
         }
     }
@@ -1517,7 +1467,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
         try
         {
-            Log.Info($@"Composing TEXTURES...", Paths.BuildTexturesDirectory);
+            Log.Info($@"Composing TEXTURES...", Paths.BuildTexturesDir);
             ComposeTextures.Start();
 
             // Get and save textures document, for debugging:
@@ -1547,7 +1497,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
             // THIS LOADS PREDEFINED SPRITES AND SPRITESHEETS GIVEN BY MODIFICATIONS IN TEXTURES.XML:
-            SpriteAtlasBuildData predefinedAtlas = new("PREDEFINED");
+            SpriteAtlas predefinedAtlas = new("PREDEFINED");
             try
             {
                 List<XElement> modifiedSpriteSheetNodes =
@@ -1597,7 +1547,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     // mod:
                     string modName = t.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                    ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unknown mod for <t> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {t.Line()}", spaceHavenTexturesXmlFile.Path);
@@ -1627,7 +1577,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     if (!absoluteImagePath.IsNullOrWhiteSpace())
                     {
                         Log.Debug($@"Creating rendered spritesheet '{globalId}' (without a predefined image)", spaceHavenTexturesXmlFile.Path);
-                        SpriteSheetBuildData spriteSheet = new(key, absoluteImagePath, predefinedAtlas) { GlobalId = globalId, };
+                        SpriteSheet spriteSheet = new(key, absoluteImagePath, predefinedAtlas) { GlobalId = globalId, };
                         lock (predefinedAtlas)
                             predefinedAtlas.Add(spriteSheet);
                     }
@@ -1638,7 +1588,7 @@ public sealed class ModBuilder : IAsyncDisposable
                             width = -1;
                         if (!int.TryParse(t.Attribute("h").Value, out int height))
                             height = -1;
-                        SpriteSheetBuildData spriteSheet = new(key, width, height, 2 * modifiedSpriteNodes.Count + 1, 0, predefinedAtlas) { GlobalId = globalId, };
+                        SpriteSheet spriteSheet = new(key, width, height, 2 * modifiedSpriteNodes.Count + 1, 0, predefinedAtlas) { GlobalId = globalId, };
                         lock (predefinedAtlas)
                             predefinedAtlas.Add(spriteSheet);
                     }
@@ -1671,7 +1621,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     // mod:
                     string modName = re.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                    ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unknown mod for <re> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
@@ -1681,7 +1631,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // spritesheet:
                     _ = int.TryParse(re.Attribute("t")?.Value, out int spriteSheetLocalID);
-                    SpriteSheetBuildData spriteSheet = predefinedAtlas.SpriteSheets.FirstOrDefault(ss => ss.LocalId == spriteSheetLocalID);
+                    SpriteSheet spriteSheet = predefinedAtlas.SpriteSheets.FirstOrDefault(ss => ss.LocalId == spriteSheetLocalID);
                     if (spriteSheet == null)
                     {
                         Log.Error($@"<re> node maps to unknown <t> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
@@ -1705,7 +1655,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     _ = int.TryParse(re.Attribute("y")?.Value, out int y);
 
                     // remap data:
-                    SpriteBuildData sprite;
+                    Sprite sprite;
                     int globalName;
                     int spriteLocalId = Interlocked.Increment(ref lastLocalSpriteId);
                     int globalId = Interlocked.Increment(ref lastGlobalSpriteId);
@@ -1786,7 +1736,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
                 // Remap <assetPos a="..."> in animations.xml:
-                List<SpriteBuildData> allSprites = predefinedAtlas.Sprites;
+                List<Sprite> allSprites = predefinedAtlas.Sprites;
                 foreach ((string spriteLocalName, List<XElement> assetPosList) in spriteLocalNameToAssetPos.ToTuples())
                 {
                     CT.ThrowIfCancellationRequested();
@@ -1820,7 +1770,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         string pngFilename = $"{spriteSheet.GlobalId}.png";
 
                         // Save rendered spritesheets as PNG file, for debugging:
-                        if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, pngFilename), Log, ct))
+                        if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, pngFilename), Log, ct))
                         {
                             Fail();
                             return;
@@ -1829,7 +1779,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // Save as CIM file to build stage directory:
                     string cimFilename = $"{spriteSheet.GlobalId}.cim";
-                    if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct))
+                    if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, cimFilename), Log, ct))
                     {
                         Fail();
                         return;
@@ -1906,7 +1856,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // owner mod:
                     string modName = assetPos?.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                    ModBuildData mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unable to retrieve mod owning <assetPos> node with 'filename' reference ""{assetPosFilenameReference}"", in animations file line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
@@ -1994,7 +1944,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 List<SpriteReference> spriteRefs = spriteReferences.Values.Where(s => s.Filter == filter).ToList();
                 if (spriteRefs.Count <= 0)
                 {
-                    Log.Info($"No mod sprite references were found requiring the texture filter '{filter}'", Paths.BuildTexturesDirectory);
+                    Log.Info($"No mod sprite references were found requiring the texture filter '{filter}'", Paths.BuildTexturesDir);
                     continue;
                 }
 
@@ -2003,15 +1953,15 @@ public sealed class ModBuilder : IAsyncDisposable
                 CT.ThrowIfCancellationRequested();
 
                 // Load referenced sprites:
-                SortedDictionary<string, SpriteBuildData> sprites = [];
+                SortedDictionary<string, Sprite> sprites = [];
                 await Parallel.ForEachAsync(spriteRefs, ParallelOptions, async (spriteRef, ct) =>
                 //await Parallel.ForEachAsync(spriteRefs, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (spriteRef, ct) =>
                 {
                     try
                     {
-                        Log.Debug($"Loading sprite {spriteRef.Key}...", Paths.BuildTexturesDirectory);
+                        Log.Debug($"Loading sprite {spriteRef.Key}...", Paths.BuildTexturesDir);
 
-                        SpriteBuildData sprite = new(spriteRef.Key, spriteRef.LocalID, spriteRef.AbsolutePath);
+                        Sprite sprite = new(spriteRef.Key, spriteRef.LocalID, spriteRef.AbsolutePath);
 
                         lock (sprites)
                         {
@@ -2035,7 +1985,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Pack referenced sprites:
                 Log.Info($"Compose Textures: Packing Referenced Sprites ({filter.ToString()})...");
-                using SpriteAtlasBuildData spriteAtlas = new(filter.ToString().ToUpperInvariant())
+                using SpriteAtlas spriteAtlas = new(filter.ToString().ToUpperInvariant())
                 {
                     SpriteSheetSize = filter == ETextureFilter.Linear ? 4096 : 2048,
                     SpriteSpacing = filter == ETextureFilter.Linear ? 0 : 4,
@@ -2056,10 +2006,10 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
                 // Sequentially assign spritesheet KEY and sprite NAME/ID: 
-                foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets)
+                foreach (SpriteSheet spriteSheet in spriteAtlas.SpriteSheets)
                 {
                     spriteSheet.GlobalId = Build.AllocateNextNumericId(EKeyPool.SpriteSheet);
-                    foreach (SpriteBuildData sprite in spriteSheet.Sprites)
+                    foreach (Sprite sprite in spriteSheet.Sprites)
                     {
                         sprite.GlobalId = ++lastGlobalSpriteId;
                         sprite.GlobalName = Build.AllocateNextNumericId(EKeyPool.Sprite).ToString();
@@ -2080,7 +2030,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     try
                     {
-                        Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDirectory);
+                        Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDir);
 
                         if (!spriteSheet.TryRenderFromSprites(Log))
                         {
@@ -2091,10 +2041,10 @@ public sealed class ModBuilder : IAsyncDisposable
                         string cimFilename = $"{spriteSheet.GlobalId}.cim";
 
                         // Export to CIM to build stage directory:
-                        await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDirectory, cimFilename), Log, ct);
+                        await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, cimFilename), Log, ct);
 
                         // Export to PNG, for debugging:
-                        await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDirectory, $"{spriteSheet.GlobalId}.png"), Log, ct);
+                        await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, $"{spriteSheet.GlobalId}.png"), Log, ct);
                     }
                     finally
                     {
@@ -2112,9 +2062,9 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
                 // For each sprite sheet, add a CIM texture entry to the textures XML file:
-                Log.Info($@"Composing textures.xml...", Paths.BuildTexturesDirectory);
+                Log.Info($@"Composing textures.xml...", Paths.BuildTexturesDir);
                 XElement parentTexturesCimNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesCim);
-                foreach (SpriteSheetBuildData spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.GlobalId))
+                foreach (SpriteSheet spriteSheet in spriteAtlas.SpriteSheets.OrderBy(s => s.GlobalId))
                 {
                     XElement t = new("t");
                     t.SetAttributeValue("i", spriteSheet.GlobalId);
@@ -2130,7 +2080,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // For each sprite, add a texture region to the textures XML file:
                 XElement parentTexturesRegionNode = spaceHavenTexturesXmlFile.GetParentNode(NodeType.TexturesRegion);
-                foreach (SpriteBuildData sprite in sprites.Values.OrderBy(sprite => sprite.GlobalName))
+                foreach (Sprite sprite in sprites.Values.OrderBy(sprite => sprite.GlobalName))
                 {
                     CT.ThrowIfCancellationRequested();
 
@@ -2176,13 +2126,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             ComposeTextures.Complete();
-            Log.Success($"TEXTURES ready", Paths.BuildTexturesDirectory);
+            Log.Success($"TEXTURES ready", Paths.BuildTexturesDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose TEXTURES: {ex}", Paths.BuildTexturesDirectory);
+            Log.Error($"Unable to compose TEXTURES: {ex}", Paths.BuildTexturesDir);
             return false;
         }
     }
@@ -2198,7 +2148,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Debug($"Adding mod authors to '{SpaceHavenConstants.EXTRA_CREDITS_TXT}' file...", Paths.CacheDirectory);
+            Log.Debug($"Adding mod authors to '{SpaceHavenConstants.EXTRA_CREDITS_TXT}' file...", Paths.CacheDir);
             ComposeCredits.Start();
 
             StringBuilder sb = new();
@@ -2239,7 +2189,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDirectory);
+            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
             return false;
         }
     }
@@ -2256,14 +2206,14 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDirectory);
+            Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDir);
             ComposeSpaceHavenJar.Start();
 
             // Select files to add to template JAR:
-            DirectoryInfo di = new(Paths.BuildStageDirectory);
+            DirectoryInfo di = new(Paths.BuildStageDir);
             FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
             JarAppender jar = new();
-            if (!await jar.AppendTo(Paths.TemplateJarPath, Paths.CacheJarPath, Paths.BuildStageDirectory, files, Log, ParallelOptions))
+            if (!await jar.AppendTo(Paths.TemplateJarPath, Paths.CacheJarPath, Paths.BuildStageDir, files, Log, ParallelOptions))
                 return false;
 
             ComposeSpaceHavenJar.SetNormalized(0.85);
@@ -2291,29 +2241,29 @@ public sealed class ModBuilder : IAsyncDisposable
                 .Select(path => path.AsStdPath())
                 .ToList());
 
-            string jarsTxtPath = IOUtils.CombineAsOSPath(Paths.CacheDirectory, "jars.txt");
+            string jarsTxtPath = IOUtils.CombineAsOSPath(Paths.CacheDir, "jars.txt");
             if (!await IOUtils.TryWriteAllTextAsync(jarsTxtPath, classPaths.JoinToString("\r\n"), Log, CT))
                 return false;
 
             ComposeSpaceHavenJar.SetNormalized(0.95);
 
             // Deploy aop / java agent libs to cache dir:
-            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJ), IOUtils.CombineAsOSPath(Paths.CacheDirectory, ModdingConstants.ASPECTJ), true, Log, CT))
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJ), IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJ), true, Log, CT))
                 return false;
-            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJWEAVER), IOUtils.CombineAsOSPath(Paths.CacheDirectory, ModdingConstants.ASPECTJWEAVER), true, Log, CT))
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, ModdingConstants.ASPECTJWEAVER), IOUtils.CombineAsOSPath(Paths.CacheDir, ModdingConstants.ASPECTJWEAVER), true, Log, CT))
                 return false;
-            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, "LauncherAgent.jar"), IOUtils.CombineAsOSPath(Paths.CacheDirectory, "LauncherAgent.jar"), true, Log, CT))
+            if (!await IOUtils.TryCopyFileAsync(IOUtils.CombineAsOSPath(Paths.AppDir, "LauncherAgent.jar"), IOUtils.CombineAsOSPath(Paths.CacheDir, "LauncherAgent.jar"), true, Log, CT))
                 return false;
 
             // Done.
             ComposeSpaceHavenJar?.Complete();
-            Log.Success($"'{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' is ready", Paths.CacheDirectory);
+            Log.Success($"'{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' is ready", Paths.CacheDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDirectory);
+            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
             return false;
         }
     }
@@ -2328,27 +2278,80 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryWriteModsJsonAsync()
+    private async Task<bool> TryComposeModsJsonAsync()
     {
         try
         {
-            string content = Build.ModsJsonFile.ToJsonString();
+            ComposeModsJson.Start();
 
-            // Build directory:
-            if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildModsJsonPath, content, Log, CT))
-                return false;
+            ModsJsonFile m = new();
 
-            // Cache directory:
+            // Absolute Base Paths:
+            m.BasePaths.OriginalGameJarDir = Paths.SpaceHavenJarDir.AsStdPath();
+            m.BasePaths.ClassicModsDir = Paths.ClassicModsDir.AsStdPath();
+            m.BasePaths.SteamModsDir = Paths.SteamModsDir.AsStdPath();
+
+            // Game environment:
+            m.GameEnvironment.SpaceHavenVersion = BuildSettings.SpaceHavenVersion.ToString();
+            m.GameEnvironment.SpaceHavenLauncherVersion = BuildSettings.AppVersion.ToString();
+            m.GameEnvironment.Aspectj = ModdingConstants.ASPECTJ;
+            m.GameEnvironment.AspectjWeaver = ModdingConstants.ASPECTJWEAVER;
+            m.GameEnvironment.GamePlatform = BuildSettings.GamePlatform;
+
+            // Mods:
+            foreach (Mod mod in Build.Mods)
+            {
+                ModInfo modInfo = new();
+                m.Mods.Add(modInfo);
+
+                modInfo.Name = mod.Name;
+                modInfo.Version = mod.Version.ToString();
+                modInfo.ID = mod.ID;
+
+                // Relative Paths:
+                string modDir = mod.Dir.AsStdPath();
+                
+                modInfo.Dir = modDir;
+                if (!m.BasePaths.ClassicModsDir.IsNullOrWhiteSpace())
+                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.ClassicModsDir, "[ClassicMods]");
+                if (!m.BasePaths.SteamModsDir.IsNullOrWhiteSpace())
+                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.SteamModsDir, "[SteamMods]");
+
+                modDir += '/';
+                modInfo.InfoXml = mod.InfoXmlPath.AsStdPath().Replace(modDir, string.Empty);
+                modInfo.SpriteTextures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+                modInfo.SpriteSheetTextures.AddRange(mod.SpriteSheetPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+                modInfo.AudioFiles.AddRange(mod.AudioPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+                modInfo.JarFiles.AddRange(mod.JarFilePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+                modInfo.OtherFiles.AddRange(mod.OtherFilesPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+
+                // Variables:
+                foreach (Var var in mod.Variables.Values)
+                {
+                    VarInfo varInfo = new();
+                    varInfo.Name = var.Name;
+                    varInfo.Type = var.Type;
+                    varInfo.Value = var.StrValue;
+                    modInfo.Vars.Add(varInfo);
+                }
+            }
+
+            string content = m.ToJsonString();
+
+            ComposeModsJson.SetNormalized(0.50);
+
+            // Write to cache directory:
             if (!await IOUtils.TryWriteAllTextAsync(Paths.CacheModsJsonPath, content, Log, CT))
                 return false;
 
             //Done.
+            ComposeModsJson.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log?.Error($"Unable to create {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDirectory);
+            Log?.Error($"Unable to create {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDir);
             return false;
         }
     }
@@ -2403,7 +2406,13 @@ public sealed class ModBuilder : IAsyncDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        try { await FileLogger.DisposeAsync(); } catch { }
+        try
+        {
+            if (FileLogger != null)
+                await FileLogger.DisposeAsync();
+        }
+        catch { }
     }
     #endregion
 }
+

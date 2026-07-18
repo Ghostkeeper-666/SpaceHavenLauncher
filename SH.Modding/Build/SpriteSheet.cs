@@ -13,12 +13,12 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpriteSheetBuildData : IDisposable
+internal sealed class SpriteSheet : IDisposable
 {
     /// <summary>
     /// Constructor for calculated spritesheets
     /// </summary>
-    public SpriteSheetBuildData(int localId, int width, int height, int maxSprites, int spriteSpacing, SpriteAtlasBuildData atlas)
+    public SpriteSheet(int localId, int width, int height, int maxSprites, int spriteSpacing, SpriteAtlas atlas)
     {
         Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
         LocalId = localId;
@@ -36,7 +36,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
     /// <summary>
     /// Constructor for predefined spritesheets
     /// </summary>
-    public SpriteSheetBuildData(int localID, string imagePath, SpriteAtlasBuildData atlas)
+    public SpriteSheet(int localID, string imagePath, SpriteAtlas atlas)
     {
         Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
         LocalId = localID;
@@ -79,7 +79,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         Packer = null;
     }
 
-    public SpriteAtlasBuildData Atlas { get; }
+    public SpriteAtlas Atlas { get; }
     public int GlobalId { get; set; } = int.MinValue;
     public int LocalId { get; }
     public int Width { get; private set; }
@@ -93,16 +93,16 @@ internal sealed class SpriteSheetBuildData : IDisposable
     internal bool IsRendered => Packer != null;
 
 
-    public IReadOnlyList<SpriteBuildData> Sprites => SpriteList;
-    private List<SpriteBuildData> SpriteList = [];
+    public IReadOnlyList<Sprite> Sprites => SpriteList;
+    private List<Sprite> SpriteList = [];
     public int Count => SpriteList.Count;
 
     public int SpriteSpacing { get; set; }
 
-    public OrderedDictionary<string, SpriteBuildData> SpritesByName { get; } = [];
-    public OrderedDictionary<string, SpriteBuildData> SpritesById { get; } = [];
+    public OrderedDictionary<string, Sprite> SpritesByName { get; } = [];
+    public OrderedDictionary<string, Sprite> SpritesById { get; } = [];
 
-    public void Add(SpriteBuildData sprite)
+    public void Add(Sprite sprite)
     {
         SpriteList.Add(sprite);
         sprite.SpriteSheet = this;
@@ -130,7 +130,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         {
             using SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
             using SKCanvas canvas = new(bitmap);
-            foreach (SpriteBuildData sprite in SpriteList)
+            foreach (Sprite sprite in SpriteList)
                 canvas.DrawBitmap(sprite.Image, sprite.X, sprite.Y);
 
             Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
@@ -232,10 +232,10 @@ internal sealed class SpriteSheetBuildData : IDisposable
         try
         {
             exportDir = exportDir.CombineAsOSPath(LocalId.ToString());
-            if (!IOUtils.TryCreateDirectory(exportDir, log))
+            if (!IOUtils.TryCreateDir(exportDir, log))
                 return false;
 
-            foreach (SpriteBuildData sprite in SpritesByName.Values)
+            foreach (Sprite sprite in SpritesByName.Values)
             {
                 string exportPath = exportDir.CombineAsOSPath($"{sprite.LocalId}.png");
                 await sprite.TryExportToPngAsync(exportPath, log, ct);
@@ -256,7 +256,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         try
         {
             string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
 
             ct.ThrowIfCancellationRequested();
@@ -288,7 +288,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         try
         {
             string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDirectory(dir, log))
+            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
 
             SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
@@ -325,7 +325,7 @@ internal sealed class SpriteSheetBuildData : IDisposable
         IsDisposed = true;
         PixelData = null;
         Packer = null;
-        foreach (SpriteBuildData sprite in SpriteList)
+        foreach (Sprite sprite in SpriteList)
             sprite?.Dispose();
         SpriteList = null;
     }

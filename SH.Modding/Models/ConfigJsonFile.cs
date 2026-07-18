@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SH.Modding.ConfigJson;
+namespace SH.Modding.Models;
 
 public sealed class ConfigJsonFile
 {

@@ -6,6 +6,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Content;
 using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -15,7 +16,7 @@ using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.ViewModels.Enums;
 using SH.Modding;
-using SH.Modding.ConfigJson;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,6 +46,10 @@ public partial class AppViewModel : ObservableObject
     // App Settings (variables to be persisted):
     [ObservableProperty]
     private AppSettingsViewModel _AppSettings = new();
+
+    // Space Haven:
+    [ObservableProperty]
+    private VersionInfo _SpaceHavenVersion;
 
     // BACKGROUND:
     [ObservableProperty]
@@ -465,9 +470,9 @@ public partial class AppViewModel : ObservableObject
             if (forceReset)
             {
                 Log.Info($"Resetting {SpaceHavenLauncher.Name} files...");
-                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.TemplateDir, Log, ct);
-                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.BuildDir, Log, ct);
-                await IOUtils.TryDeleteDirectoryContentAsync(Paths.Data.CacheDir, Log, ct);
+                await IOUtils.TryDeleteDirContentAsync(Paths.Data.TemplateDir, Log, ct);
+                await IOUtils.TryDeleteDirContentAsync(Paths.Data.BuildDir, Log, ct);
+                await IOUtils.TryDeleteDirContentAsync(Paths.Data.CacheDir, Log, ct);
             }
 
             DeploymentService svc = new(Paths.Data, Log);
@@ -523,13 +528,13 @@ public partial class AppViewModel : ObservableObject
             // CACHE:
             Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
             VersionParserService versionParser = new();
-            if (!await Paths.TryReadSpaceHavenVersion(Log, InitializationCTS.Token))
+            if (!await State.TryReadSpaceHavenVersion(Log, InitializationCTS.Token))
             {
-                Log.Error($"Unable to read {Paths.SpaceHavenName} version from template JAR file", Paths.Data.TemplateDir);
+                Log.Error($"Unable to read {SpaceHavenConstants.SpaceHavenName} version from template files", Paths.Data.TemplateDir);
                 return false;
 
             }
-            Log.Success($"Detected {Paths.SpaceHavenName} version {Paths.SpaceHavenVersion}");
+            Log.Success($"Detected {SpaceHavenConstants.SpaceHavenName} version {State.SpaceHavenVersion}");
 
             Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
             if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(InitializationCTS.Token, CacheProgress)))
@@ -683,5 +688,22 @@ public partial class AppViewModel : ObservableObject
             }
         });
     }
+
+    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
+    {
+        try
+        {
+            VersionParserService svc = new();
+            SpaceHavenVersion = await svc.TryReadVersion(Paths.Data.TemplateStageVersionPath, log, ct);
+            return SpaceHavenVersion != null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            log?.Error(ex);
+            return false;
+        }
+    }
+
 
 }

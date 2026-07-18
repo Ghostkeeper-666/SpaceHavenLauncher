@@ -1,6 +1,6 @@
 ﻿namespace SH.Modding.Build;
 
-public enum EXmlPatchAttributeMathOperator
+internal enum EXmlPatchAttributeMathOperator
 {
     Add,
     Subtract,

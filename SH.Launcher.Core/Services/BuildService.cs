@@ -21,7 +21,7 @@ public sealed class BuildService
         {
             // Build scoped:
             {
-                ModBuilder builder = new(settings, Log);
+                await using ModBuilder builder = new(settings, Log);
                 if (!await Task.Run(() => builder.TryBuildAsync()))
                     return false;
             }

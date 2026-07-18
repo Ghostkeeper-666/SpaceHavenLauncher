@@ -1,15 +1,9 @@
 ﻿using SH.Content;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
-using SH.Framework.Logging;
-using SH.Launcher.Core.Services;
-using SH.Modding;
-using System;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace SH.Launcher.Core.Models;
+namespace SH.Modding.Models;
 
 /// <summary>
 /// A class for persisting path information
@@ -30,22 +24,6 @@ public sealed class PathData
         JREPath = data.JREPath;
     }
 
-    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
-    {
-        try
-        {
-            VersionParserService svc = new();
-            SpaceHavenVersion = await svc.TryReadVersion(TemplateStageVersionPath, log, ct);
-            return SpaceHavenVersion != null;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
     #region Mutable Properties
 
     public string AppDir { get; set; }
@@ -57,7 +35,6 @@ public sealed class PathData
     public string SpaceHavenDir { get; set; }
     public string SpaceHavenJarDir { get; set; }
     public string JREPath { get; set; }
-    public VersionInfo SpaceHavenVersion { get; set; }
 
     #endregion Mutable Properties
 
@@ -126,10 +103,12 @@ public sealed class PathData
     public string TemplateAnimationsXmlPath => TemplateStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.ANIMATIONS);
     public string TemplateSpaceHavenSettingsXmlPath => TemplateStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.FILES, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
     public string TemplateStageVersionPath => TemplateStageDir.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
+    public string TemplateExtraCreditsTxtPath => TemplateStageDir.CombineAsOSPath(SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
     public string TemplateJarPath => TemplateDir.CombineAsOSPath(ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
     public string TemplateJarHashPath => TemplateDir.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
     public string TemplateConfigJsonPath => TemplateDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
+
 
 
     public string BuildDir => WorkDir.CombineAsOSPath(ModdingConstants.BUILD);
@@ -139,18 +118,19 @@ public sealed class PathData
     public string BuildJavaHashPath => BuildDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH_TXT);
 
     public string BuildLogsDir => BuildDir.CombineAsOSPath("logs");
+    public string BuildLogPath => BuildDir.CombineAsOSPath("BuildLog.txt");
+
     public string BuildTexturesDir => BuildDir.CombineAsOSPath("textures");
     public string BuildAudioDir => BuildDir.CombineAsOSPath("audio");
     public string BuildMergeDir => BuildDir.CombineAsOSPath("merge");
     public string BuildPatchDir => BuildDir.CombineAsOSPath("patch");
     public string BuildTextsDir => BuildDir.CombineAsOSPath("texts");
+
+    public string BuildAudioFilePath => BuildAudioDir.CombineAsOSPath(SpaceHavenConstants.AUDIO);
+    public string BuildTextsXmlPath => BuildTextsDir.CombineAsOSPath(SpaceHavenConstants.TEXTS);
+
     public string BuildStageDir => BuildDir.CombineAsOSPath(ModdingConstants.STAGE);
-    public string BuildModsJsonPath => BuildDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
-
-    public string BuildgeneratedTexturesXmlPath => BuildTexturesDir.CombineAsOSPath(SpaceHavenConstants.TEXTURES + ".xml");
-
     public string BuildStageVersionPath => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
-
     public string BuildStageLibraryDir => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY);
     public string BuildStageHavenXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.HAVEN);
     public string BuildStageTextsXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.TEXTS);
@@ -159,7 +139,7 @@ public sealed class PathData
     public string BuildStageAnimationsXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.ANIMATIONS);
     public string BuildStageSpaceHavenSettingsXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.FILES, SpaceHavenConstants.SPACEHAVENSETTINGS_XML);
     public string BuildStageStageVersionPath => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
-    public string BuildStageExtraCreditsVersionPath => BuildStageDir.CombineAsOSPath("ExtraCredits.txt");
+    public string BuildStageExtraCreditsTxtPath => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
     public string CacheDir => WorkDir.CombineAsOSPath("cache");
     public string CacheJarPath => CacheDir.CombineAsOSPath(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);

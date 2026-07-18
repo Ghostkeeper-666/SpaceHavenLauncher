@@ -193,7 +193,7 @@ public static class IOUtils
         path.EvaluatePath().AsStdPath();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool EscapesDirectory(this string path, string dir)
+    public static bool EscapesDir(this string path, string dir)
     {
         if (path.IsNullOrWhiteSpace())
             return true;
@@ -308,6 +308,10 @@ public static class IOUtils
             if (!di.Exists)
                 return null;
             string[] parts = absoluteDirectoryPath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            {
+                string part = parts[--i];
+                string path = root.L
+            }
             for (int i = 0; i < parts.Length;)
             {
                 string part = parts[i++];
@@ -651,7 +655,7 @@ public static class IOUtils
 
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(dir, log, ct))
                 return false;
 
             writeSettings = writeSettings == null ?
@@ -698,7 +702,7 @@ public static class IOUtils
 
 
 
-    public static bool TryCreateDirectory(string directory, out string error)
+    public static bool TryCreateDir(string directory, out string error)
     {
         try
         {
@@ -713,22 +717,22 @@ public static class IOUtils
             return false;
         }
     }
-    public static bool TryCreateDirectory(string directory, ILogger log)
+    public static bool TryCreateDir(string directory, ILogger log)
     {
         directory = directory.AsOSPath();
-        if (TryCreateDirectory(directory, out string error))
+        if (TryCreateDir(directory, out string error))
             return true;
         string parent = null;
         try { parent = Path.GetDirectoryName(directory).AsOSPath(); } catch { }
         log?.Error(error, parent);
         return false;
     }
-    public static async Task<bool> TryCreateDirectoryAsync(string directory, ILogger log, CancellationToken ct)
+    public static async Task<bool> TryCreateDirAsync(string directory, ILogger log, CancellationToken ct)
     {
         try
         {
             ct.ThrowIfCancellationRequested();
-            return await Task.Run(() => TryCreateDirectory(directory, log), ct);
+            return await Task.Run(() => TryCreateDir(directory, log), ct);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -742,11 +746,11 @@ public static class IOUtils
 
 
 
-    public static async Task<bool> TryDeleteDirectoryAsync(string directory, ILogger log, CancellationToken ct) =>
-        await TryDeleteDirectoryAsync(directory, true, log, ct);
-    public static async Task<bool> TryDeleteDirectoryContentAsync(string directory, ILogger log, CancellationToken ct) =>
-        await TryDeleteDirectoryAsync(directory, false, log, ct);
-    public static async Task<bool> TryDeleteDirectoryAsync(string directory, bool deleteRootDirectory, ILogger log, CancellationToken ct)
+    public static async Task<bool> TryDeleteDirAsync(string directory, ILogger log, CancellationToken ct) =>
+        await TryDeleteDirAsync(directory, true, log, ct);
+    public static async Task<bool> TryDeleteDirContentAsync(string directory, ILogger log, CancellationToken ct) =>
+        await TryDeleteDirAsync(directory, false, log, ct);
+    public static async Task<bool> TryDeleteDirAsync(string directory, bool deleteRootDirectory, ILogger log, CancellationToken ct)
     {
         return await Task.Run(() =>
         {
@@ -764,7 +768,7 @@ public static class IOUtils
                 if (!Directory.Exists(root))
                     return true;
 
-                DeleteDirectoryContents(root, root, ct);
+                DeleteDirContents(root, root, ct);
 
                 if (deleteRootDirectory)
                     try { Directory.Delete(root); }
@@ -783,7 +787,7 @@ public static class IOUtils
             }
         }, ct);
     }
-    private static void DeleteDirectoryContents(string root, string current, CancellationToken ct)
+    private static void DeleteDirContents(string root, string current, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -807,7 +811,7 @@ public static class IOUtils
             // Junction/symlink: do not delete the link target’s content, just the link itself
             bool isLink = di.LinkTarget != null || di.Attributes.HasFlag(FileAttributes.ReparsePoint);
             if (!isLink)
-                DeleteDirectoryContents(root, fullPath, ct);
+                DeleteDirContents(root, fullPath, ct);
 
             di.Attributes = FileAttributes.Normal;
             try { di.Delete(); }
@@ -876,7 +880,7 @@ public static class IOUtils
         {
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(dir, out error))
+            if (!dir.IsNullOrWhiteSpace() && !TryCreateDir(dir, out error))
                 return false;
             File.WriteAllText(path, text ?? string.Empty);
             error = null;
@@ -895,7 +899,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(Path.GetDirectoryName(path), log, ct))
                 return false;
             await File.WriteAllTextAsync(path, text ?? string.Empty, ct);
             return true;
@@ -968,7 +972,7 @@ public static class IOUtils
         {
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
-            if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(Path.GetDirectoryName(absolutePath), out error))
+            if (!dir.IsNullOrWhiteSpace() && !TryCreateDir(Path.GetDirectoryName(absolutePath), out error))
                 return false;
             File.AppendAllText(absolutePath, text ?? string.Empty);
             error = null;
@@ -987,7 +991,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(dir, log, ct))
                 return false;
             await File.AppendAllTextAsync(absolutePath, text ?? string.Empty, ct);
             return true;
@@ -1008,7 +1012,7 @@ public static class IOUtils
         {
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(dir, out error))
+            if (!dir.IsNullOrWhiteSpace() && !TryCreateDir(dir, out error))
                 return false;
             File.WriteAllBytes(path, bytes ?? Array.Empty<byte>());
             error = null;
@@ -1027,7 +1031,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             path = path.AsOSPath();
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(Path.GetDirectoryName(path), log, ct))
                 return false;
             await File.WriteAllBytesAsync(path, bytes ?? Array.Empty<byte>(), ct);
             return true;
@@ -1100,7 +1104,7 @@ public static class IOUtils
         {
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
-            if (!dir.IsNullOrWhiteSpace() && !TryCreateDirectory(Path.GetDirectoryName(absolutePath), out error))
+            if (!dir.IsNullOrWhiteSpace() && !TryCreateDir(Path.GetDirectoryName(absolutePath), out error))
                 return false;
             File.AppendAllBytes(absolutePath, bytes ?? Array.Empty<byte>());
             error = null;
@@ -1119,7 +1123,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             absolutePath = absolutePath.AsOSPath();
             string dir = Path.GetDirectoryName(absolutePath);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(dir, log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(dir, log, ct))
                 return false;
             await File.AppendAllBytesAsync(absolutePath, bytes ?? Array.Empty<byte>(), ct);
             return true;
@@ -1163,7 +1167,7 @@ public static class IOUtils
             source = source.AsOSPath();
             target = target.AsOSPath();
             string targetDir = Path.GetDirectoryName(target);
-            if (!TryCreateDirectory(targetDir, out error))
+            if (!TryCreateDir(targetDir, out error))
                 return false;
             File.Copy(source, target, overwrite);
             return true;
@@ -1193,7 +1197,7 @@ public static class IOUtils
             if (ct.IsCancellationRequested)
                 return false;
             string targetDir = Path.GetDirectoryName(targetPath);
-            if (!await TryCreateDirectoryAsync(targetDir, log, ct))
+            if (!await TryCreateDirAsync(targetDir, log, ct))
                 return false;
             const int bufferSize = 64 * 1024;
             FileMode fileMode = overwrite ? FileMode.Create : FileMode.CreateNew;
@@ -1214,7 +1218,7 @@ public static class IOUtils
 
 
 
-    public static async Task<bool> TryCopyDirectoryAsync(string source, string target, bool overwrite, ILogger log, ParallelOptions parallelOptions)
+    public static async Task<bool> TryCopyDirAsync(string source, string target, bool overwrite, ILogger log, ParallelOptions parallelOptions)
     {
         try
         {
@@ -1234,7 +1238,7 @@ public static class IOUtils
                 log?.Error($@"Target directory is not defined");
                 return false;
             }
-            if (!await TryCreateDirectoryAsync(target, log, parallelOptions?.CancellationToken ?? default))
+            if (!await TryCreateDirAsync(target, log, parallelOptions?.CancellationToken ?? default))
                 return false;
 
             // Collect copy information - we intentionally ignore if something changes later on:
@@ -1243,7 +1247,7 @@ public static class IOUtils
 
             // Create subdirectories:
             foreach (DirectoryInfo sourceSubDirInfo in subDirs)
-                if (!await TryCreateDirectoryAsync(CombineAsOSPath(target, Path.GetRelativePath(source, sourceSubDirInfo.FullName)), log, parallelOptions?.CancellationToken ?? default))
+                if (!await TryCreateDirAsync(CombineAsOSPath(target, Path.GetRelativePath(source, sourceSubDirInfo.FullName)), log, parallelOptions?.CancellationToken ?? default))
                     return false;
 
             // Add own cancellation token source to parallel options:
@@ -1284,7 +1288,7 @@ public static class IOUtils
             ArgumentNullException.ThrowIfNull(ms);
 
             string dir = Path.GetDirectoryName(path);
-            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirectoryAsync(Path.GetDirectoryName(path), log, ct))
+            if (!dir.IsNullOrWhiteSpace() && !await TryCreateDirAsync(Path.GetDirectoryName(path), log, ct))
                 return false;
 
             if (start < 0 || count < 0 || start >= ms.Length || count > ms.Length || start > ms.Length - count)

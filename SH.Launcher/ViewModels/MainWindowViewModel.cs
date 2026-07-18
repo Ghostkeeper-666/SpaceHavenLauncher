@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SH.Content;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
@@ -7,6 +8,7 @@ using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
+using SH.Modding.Models;
 using System;
 using System.Linq;
 using System.Threading;
@@ -126,7 +128,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (!await repo.TrySaveAsync(pathData, ct))
                 Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
             State.Paths = new PathViewModel(pathData);
-            Paths.PropertyChanged += Paths_PropertyChanged;
+            State.PropertyChanged += State_PropertyChanged;
             Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
             return success;
         }
@@ -138,21 +140,23 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void Paths_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void State_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
         {
-            case nameof(PathViewModel.SpaceHavenName):
-            case nameof(PathViewModel.SpaceHavenVersion):
+            case nameof(State.SpaceHavenVersion):
                 Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
-                if (Paths.SpaceHavenVersion != null)
-                    Title += $"  -  {Paths.SpaceHavenName} {Paths.SpaceHavenVersion}";
+                if (State.SpaceHavenVersion != null)
+                    Title += $"  -  {SpaceHavenConstants.SpaceHavenName} {State.SpaceHavenVersion}";
                 return;
 
             default:
                 return;
         }
     }
+
+
+
 
     private async Task<bool> InitializeAppSettings(CancellationToken ct)
     {

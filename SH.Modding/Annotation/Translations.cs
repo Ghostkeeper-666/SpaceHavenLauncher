@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SH.Modding.Annotation;
 
-public static class Translations
+internal static class Translations
 {
     public static IReadOnlyDictionary<ELanguage, string> LinkedBy { get; } = new Dictionary<ELanguage, string>()
     {

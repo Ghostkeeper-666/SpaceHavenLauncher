@@ -69,7 +69,7 @@ public static class WebpExporter
 
             string dir = path.GetParentDirAsOSPath();
             if (!IOUtils.DirExists(dir))
-                try { await IOUtils.TryCreateDirectoryAsync(dir, log, ct); }
+                try { await IOUtils.TryCreateDirAsync(dir, log, ct); }
                 catch (Exception ex) { Debug.WriteLine(ex); }
 
             await IOUtils.TryWriteAllBytesAsync(path, animatedWebP, log, ct);
