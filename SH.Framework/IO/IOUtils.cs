@@ -308,10 +308,6 @@ public static class IOUtils
             if (!di.Exists)
                 return null;
             string[] parts = absoluteDirectoryPath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-            {
-                string part = parts[--i];
-                string path = root.L
-            }
             for (int i = 0; i < parts.Length;)
             {
                 string part = parts[i++];
