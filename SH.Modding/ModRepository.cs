@@ -35,7 +35,7 @@ public sealed class ModRepository
             {
                 ct.ThrowIfCancellationRequested();
 
-                string evaluatedModsRootDir = modsRootDir.EvaluatePath();
+                string evaluatedModsRootDir = modsRootDir.AsEvaluatedOSPath();
                 if (!IOUtils.DirExists(evaluatedModsRootDir))
                 {
                     Log.Error($@"Mods ROOT directory not found: ""{modsRootDir}""");

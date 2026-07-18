@@ -186,11 +186,11 @@ public static class IOUtils
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string AsEvaluatedOSPath(this string path) =>
-        path.EvaluatePath().AsOSPath();
+        EvaluateOSPath(path);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string AsEvaluatedStdPath(this string path) =>
-        path.EvaluatePath().AsStdPath();
+        EvaluateOSPath(path).AsStdPath();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool EscapesDir(this string path, string dir)
@@ -251,36 +251,31 @@ public static class IOUtils
         return filename.Equals(name ?? string.Empty, strCmp);
     }
 
-#warning traverse in the opposite direction, to avoid permission issues accessing the root dir!
-    public static string FindFile(this string absoluteRegularFilePath, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    public static string FindFile(this string absoluteFilePath)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(absoluteRegularFilePath))
+            if (string.IsNullOrWhiteSpace(absoluteFilePath))
                 return null;
 
-            absoluteRegularFilePath = absoluteRegularFilePath.AsEvaluatedOSPath();
-            if (absoluteRegularFilePath.FileExists())
-                return absoluteRegularFilePath;
+            absoluteFilePath = EvaluateOSPath(absoluteFilePath);
+            if (absoluteFilePath.FileExists())
+                return absoluteFilePath;
 
-            string root = Path.GetPathRoot(absoluteRegularFilePath);
-            if (root.IsNullOrWhiteSpace())
+            string dir = absoluteFilePath.GetParentDirAsOSPath().FindDir();
+            if (dir == null)
                 return null;
-            FileSystemInfo info = new DirectoryInfo(root);
-            if (!info.Exists)
+            DirectoryInfo di = new(dir);
+
+            string filename = absoluteFilePath.GetFileName();
+            if (filename.IsNullOrWhiteSpace())
                 return null;
-            string[] parts = absoluteRegularFilePath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 0; i < parts.Length;)
-            {
-                string part = parts[i++];
-                DirectoryInfo di = (DirectoryInfo)info;
-                info = i >= parts.Length ?
-                    di.EnumerateFiles().FirstOrDefault(file => part.Equals(file.Name, strCmp)) :
-                    di.EnumerateDirectories().FirstOrDefault(dir => part.Equals(dir.Name, strCmp));
-                if (info == null)
-                    return null;
-            }
-            return (info as FileInfo)?.FullName;
+
+            FileInfo fi = di.EnumerateFiles().FirstOrDefault(file => filename.Equals(file.Name, StringComparison.OrdinalIgnoreCase));
+            if (fi == null)
+                return null;
+
+            return fi.FullName;
         }
         catch (Exception ex)
         {
@@ -289,29 +284,59 @@ public static class IOUtils
         }
     }
 
-#warning traverse in the opposite direction, to avoid permission issues accessing the root dir!
-    public static string FindDir(this string absoluteDirectoryPath, StringComparison strCmp = StringComparison.OrdinalIgnoreCase)
+    public static string FindDir(this string absoluteDir)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(absoluteDirectoryPath))
+            if (string.IsNullOrWhiteSpace(absoluteDir))
                 return null;
 
-            absoluteDirectoryPath = absoluteDirectoryPath.AsEvaluatedOSPath();
-            if (absoluteDirectoryPath.DirExists())
-                return absoluteDirectoryPath;
+            // Start by evaluating the directory path
+            absoluteDir = EvaluateOSPath(absoluteDir);
+            if (absoluteDir.DirExists())
+                return absoluteDir;
 
-            string root = Path.GetPathRoot(absoluteDirectoryPath);
+            // First locate the deepest existing ancestor
+
+            string root = Path.GetPathRoot(absoluteDir) ?? string.Empty;
             if (root.IsNullOrWhiteSpace())
                 return null;
-            DirectoryInfo di = new(root);
-            if (!di.Exists)
-                return null;
-            string[] parts = absoluteDirectoryPath.Substring(root.Length).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 0; i < parts.Length;)
+
+            string relativeDir = absoluteDir[root.Length..];
+            if (relativeDir.Length <= 0)
+                return root;
+
+            // This splits subdirectory names and forcibly ignores multiple sequential directory separators
+            string[] parts = relativeDir.Split(DirSeparator, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length <= 0)
+                return root;
+
+            // Traverse from leaf to root, in order to find the last good path
+            // This avoids access permission issues the best we can...
+            DirectoryInfo di = null;
+            int index;
+            for (index = parts.Length; index > 0; --index)
             {
-                string part = parts[i++];
-                di = di.EnumerateDirectories().FirstOrDefault(dir => part.Equals(dir.Name, strCmp));
+                di = new(CombineAsOSPath(root, parts[0..index]));
+                if(di.Exists)
+                    break;
+                di = null;
+            }
+
+            // Start from root if no good directory was found
+            if (di == null)
+            {
+                di = new(root);
+                if (!di.Exists)
+                    return null;
+            }
+            
+            // Now perform case-insensitive search until the whole directory path is reached
+            
+            for (int i = index; i < parts.Length; ++i)
+            {
+                string part = parts[i];
+                di = di.EnumerateDirectories().FirstOrDefault(dir => part.Equals(dir.Name, StringComparison.OrdinalIgnoreCase));
                 if (di == null)
                     return null;
             }
@@ -324,21 +349,24 @@ public static class IOUtils
         }
     }
 
-    public static string EvaluatePath(this string path)
+    private static string EvaluateOSPath(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        // Initial cleanup:
+        if (path.IsNullOrWhiteSpace())
             return string.Empty;
 
-        // Initial cleanup:
-        path = path.AsOSPath();
-
         // Expand environment variables:
-        path = Environment.ExpandEnvironmentVariables(path);
+        path = Environment.ExpandEnvironmentVariables(path).AsOSPath();
+        if (path.IsNullOrWhiteSpace())
+            return string.Empty;
 
-        if (path.StartsWith('~'))
-            path = $"{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}{path.Substring(1)}";
-        else if (path.StartsWith($"~{Path.DirectorySeparatorChar}"))
-            path = $"{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}{path[1..]}";
+        if (OS.IsLnx || OS.IsMac)
+        {
+            if (path.StartsWith($"~{Path.DirectorySeparatorChar}"))
+                path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path.Substring(2));
+            else if (path.StartsWith('~'))
+                path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path.Substring(1));
+        }
 
         // Normalize "." and "..":
         path = Path.GetFullPath(path);

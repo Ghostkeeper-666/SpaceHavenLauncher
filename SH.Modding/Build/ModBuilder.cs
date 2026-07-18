@@ -2313,17 +2313,17 @@ public sealed class ModBuilder : IAsyncDisposable
                 
                 modInfo.Dir = modDir;
                 if (!m.BasePaths.ClassicModsDir.IsNullOrWhiteSpace())
-                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.ClassicModsDir, "[ClassicMods]");
+                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.ClassicModsDir, "[ClassicMods]", StringComparison.OrdinalIgnoreCase);
                 if (!m.BasePaths.SteamModsDir.IsNullOrWhiteSpace())
-                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.SteamModsDir, "[SteamMods]");
+                    modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.SteamModsDir, "[SteamMods]", StringComparison.OrdinalIgnoreCase);
 
                 modDir += '/';
-                modInfo.InfoXml = mod.InfoXmlPath.AsStdPath().Replace(modDir, string.Empty);
-                modInfo.SpriteTextures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
-                modInfo.SpriteSheetTextures.AddRange(mod.SpriteSheetPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
-                modInfo.AudioFiles.AddRange(mod.AudioPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
-                modInfo.JarFiles.AddRange(mod.JarFilePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
-                modInfo.OtherFiles.AddRange(mod.OtherFilesPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty)));
+                modInfo.InfoXml = mod.InfoXmlPath.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase);
+                modInfo.SpriteTextures.AddRange(mod.SpritePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase)));
+                modInfo.SpriteSheetTextures.AddRange(mod.SpriteSheetPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase)));
+                modInfo.AudioFiles.AddRange(mod.AudioPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase)));
+                modInfo.JarFiles.AddRange(mod.JarFilePaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase)));
+                modInfo.OtherFiles.AddRange(mod.OtherFilesPaths.Select(path => path.AsStdPath().Replace(modDir, string.Empty, StringComparison.OrdinalIgnoreCase)));
 
                 // Variables:
                 foreach (Var var in mod.Variables.Values)
