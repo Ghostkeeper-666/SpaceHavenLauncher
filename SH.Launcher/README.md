@@ -1,154 +1,166 @@
-# Space Haven Launcher
+# Space Haven Launcher (SHL)
 
-This is a launcher program made for Space Haven. It starts the original game as well as a modified one.
+This is a mod launcher application developed for Space Haven. It starts the original game as well as a modified one. It is intended to be a full replacement for the old Mod Loader project
+
+This project is independent and is not affiliated with, endorsed by, or officially supported by BugByte unless explicitly stated otherwise.
+
 
 ## Installation
 
-**Everyone**:
-- make sure Space Haven Launcher has write permissions on Space Haven folder
+Installation instructions, prerequisites, and required configuration steps are provided in **INSTALL.MD**.
 
-**Windows**:
-- Place the app anywhere, run the app, then on the app's System Core tab you can create a desktop icon
-
-**Linux**:
-- check whether the application has execute permissions:
-```chmod 755 ./SpaceHavenLauncher```
-
-**macOS**:
-- place the application here:
-```/Applications/SpaceHavenLauncher.app```
-- remove the "downloaded" app flag:
-```xattr -dr com.apple.quarantine SpacehavenLauncher.app```
-- due to temporary lack of notarization, codesign the application too:
-```codesign --force --deep --sign - *```
-
-## Mod Installation
-
-- First of all, you can always reinstall the game if everything fails
-- Space Haven Launcher should autodetect changes to Space Haven
-- Some mods are indeed incompatible: work is on progress to detect/map conflicts
-- Save your games frequently: some mods are unstable (especially the JAVA ones)
-- Reinstalling the game via Steam should NOT delete your savegames
-- Steam sometimes does NOT update subscribed workshop mods to their latest version
-- You may also get mods from the NEXUS MODS webpage, just put them under the game's "mods" folder
-- e.g. you may download the the 'My Storage' mod and unzip it to:
-
-Windows: `C:\Program Files (x86)\Steam\steamapps\common\SpaceHaven\mods\MyStorage`
-
-Linux: `~/.steam/steam/steamapps/common/SpaceHaven/spacehaven/mods/MyStorage`
-
-macOS: `~/Library/Application Support/Steam/steamapps/common/SpaceHaven/spacehaven.app/Contents/Resources/mods/MyStorage`
-
-## TODO
-
-- Export libraries with XML annotation/comments
 
 ## Main Features
 
-- Launcher for XML and JAVA mods
-- Exporting of game data
-- Display of fan-art
+- Mod builder and loader for modified game instances
+- Support for both XML and JAVA mods
 - Advanced XML/JAVA mod build system
 - Detailed error detection and reporting
-- Improved quality of life for players and modders!
+- Immersive and responsive user interface
+- Export of modified game data according to BugByte's EULA terms
 
-## Performance and UX
 
-- This program makes advanced use of GPU and multi-threading in order to render the best user experience
-- Comprehensive LOG: lines can be right-clicked to jump to related file/directory/link
-- Space Haven Launcher background images can be made darker or completely disabled for best performance
-- Caching and hashing of intermediate files is extensively used
-- The responsive user-friendly interface resembles the game art
-- Display of fan art (please fill a defect formular if you want your art to be removed)
+## User Experience / User Interface
+
+- This application makes use of GPU acceleration and multi-threading to provide a smooth and responsive user experience
+- Comprehensive logging: Left-click a line to copy it; right-click it to navigate to the related file, directory, or link
+- SHL background images can be made darker or be completely disabled
+- Caching and hashing of intermediate files for improved build performance
 - Valuable feedback for mod developers through logs and intermediate files
 - Customizable persistent application settings
+- Responsive user-friendly interface resembling the game theme
+- Reliable mod variable value management
+- Display of fan art as a slideshow
 
-## Directories and File Paths
 
-- Automatic detection of relevant directories and file paths
-- Manual user input of desired paths (also a fallback if autodetection of paths fails)
-- The application remembers path settings
-- Automatic backup of game files
-- All cached files are stored under the application work directory
+## Path Configuration
+
+- Automatic detection of relevant paths for mod loading
+- Manual setup of custom paths (also used as a fallback if automatic detection fails)
+- Persistent path settings
+- Generated files are primarily stored in the application's WORK directory
+
 
 ## Initialization
 
-- Auto backups the original game file for build/restore
-- Prepares template files for optimized build and for exporting assets
-- Re-initialization is possible by clicking buttons on 'Navigation Console'
+- Template files are prepared for optimized mod builds during app initialization
+- Re-initialization can be triggered by clicking the buttons on the left side of the Navigation Console
 
-## Mod Loading
 
+## Mod Loading and Design
+
+- SHL is not responsible for security threats, vulnerabilities, or other risks introduced by loaded mods
 - Supported mod types: XML, JAVA, or XML+JAVA
-- Easy enabling and disabling of mods without writing to mod directory
+- Easy enabling and disabling of mods without modifying the mod directory
 - Detailed logging of mod loading
 - Remembers mod loading sequence
 - Detects malformed info.xml
 - Detects missing mandatory fields in info.xml
-- Allows modder to define a backgroung.jpg/png file as backgroung for the mod in the mod launcher
-- Allows modder to define a backgroung.jpg/png file as backgroung for the mod in the mod launcher
+- Allows modders to define font color and a background image for the mod page
 - Detects MOD ID Conflicts
 - Allows assigning a new CUSTOM ID to replace the MOD ID
-- Allows mods without MOD ID, by assigning AUTO ID
-- To use AUTO ID you must declare your internal IDs like this: mid="{id}0001"
-- The {id} variable is reserved, don't use it!
+- Allows mods without a MOD ID by assigning an AUTO ID
+- To use AUTO ID, you must declare internal IDs using the following format: mid="{id}0001" (ALWAYS 4 digits after `{id}`)
+- The {id} variable is reserved and must not be used!
+
+
+## Mod Variables
+
+- Mod variables are persisted in `WORK_DIR/values/*.xml` files
+- The player can define custom mod variable values
+- The player can set variable values from following sources: ORIGINAL, SUGGESTED, or OLD MOD VERSION
+
+- Variables can be searched by their description
+- Detection of duplicate declared variables in info.xml
+- ORIGINAL variable values should make the mod resemble the original game as much as possible
+- SUGGESTED variable values should make the game resemble the modder's intended behavior
+- ORIGINAL variable values are read from the first existing attribute: 'original', 'default', or 'value'
+- SUGGESTED variable values are read from the first existing attribute: 'suggested', or 'value'
+- The CURRENT variable value defaults to SUGGESTED if never set before
+
 
 ## XML Mods
 
-- Allow merging XML or patching XML without writing to mod directory
-- Persistence of XML mod variables without writing to mod directory
-- Persistence of XML mod variables for previous versions of the mod
-- Allow the player to choose variable values from: ORIGINAL, SUGGESTED, or PREVIOUS MOD VERSION
-- Supported target XML files: haven, texts, audio, textures, animations, spacehavensettings.xml
+- Merging of content provided by mod `library/` XML files
+- Patch operations defined by mod `patches/` XML files
+- Sprite textures are provided by mod `textures/*` files
+- Sprite sheet textures (CIM) are provided by mod `cim/*` files
+- Audio is provided by mod `audio/*` files
 
-## XML Mod Variables
 
-- Variables can be searched by their description
-- Variables can be individually set or set ALL at once with ORIGINAL, SUGGESTED, or PREVIOUS MOD VERSION VALUES
-- Detection of duplicate declared variables in info.xml
-- ORIGINAL variable values should make the mod resemble the original game as much as possible
-- SUGGESTED variable values should make the game resemble the modders intention
-- ORIGINAL variable value is read from the first existing attribute: 'original', 'default', or 'value'
-- SUGGESTED variable value is read from the first existing attribute: 'suggested', or 'value'
-- CURRENT variable value defaults to SUGGESTED if never set before
+## Mod Build
 
-## XML Mod Build
+When launching a modified game, SHL performs a modded build:
+- after re-initializing the application
+- when the previous build has failed
+- when any change is detected (mod loading sequence, mod variable, mod file content, etc)
+- if the corresponding System Core settings force it
 
-- Rebuild: happens when previous build has failed, or by re-initializing
+
+## XML Build Features
+
 - Validation of XML merge/patch syntax errors
 - Validation of missing mod variables
-- Validation of maformed XPATH
-- XML Build Process: separate log for each mod
-- XML Build Process: Stores intermediate results for later analysis
-- Audio Merge: validation of duplicate IDs
-- Audio Merge: intermediate file 'audio' for each mod
-- Audio Merge: Better tracking of modified XML nodes by adding additional atributes
-- Textures Merge: validation of duplicate IDs
-- Textures Merge: Intermediate files 'textures' and 'animations' for each mod <<<<
-- Textures Merge: Better tracking of modified XML nodes by adding additional atributes
-- XML Merge: Autogenerates texture IDs (mod self-overriding its XML nodes)
-- XML Merge: Validation of one mod overriding XML nodes from other mods
-- XML Merge: Better tracking of modified XML nodes by adding additional atributes
-- XML Patch: intermediate files for later analysis
-- Version Info: generation of version.txt
-- Version Info: set version of 'haven' file
+- Validation of malformed XPATH expressions
+- Separate log for each mod
+- Intermediate results for later analysis
+- Autogeneration of sequential IDs for textures and audio
+- Generation of version.txt / haven file version info
+- Update the credits section with the names of mod authors and contributors
+- Generation of mods.json file for JAVA mods
 
-## JAVA Mods
 
-- **ATTENTION**: The game is currently shiped with java 1.8.0_461
-- Make sure you understand what are the relevant Java technologies available for that version of java!
-- aspectjweaver-1.9.19.jar and aspectj-1.9.19.jar are copied over to Space Haven directory
-- The 2 libraries above and the mods' JAR files are added to config.json
-- "vmArgs" are adjusted accordingly (macOS needs additional "-XstartOnFirstThread")
+## JAVA Build Features
 
-## Exporting assets
+- The modded game is started using the game's shipped JRE
+- Current AOP libraries: aspectjweaver-1.9.19.jar and aspectj-1.9.19.jar
+- For advanced users: "vmArgs" can be manually configured in System Core tab
+- The modded game is started by directly calling java.exe
+- The modded JAR files are attached through the LauncherAgent JAVA agent
+- Real-time logging of java.exe is performed, just set log verbosity to VERBOSE in System Core tab
+- Make sure you understand the JAVA technologies available in the version included with the game before creating advanced JAVA mods
 
-- **ATTENTION**: You must agree with BugByte EULA and with modders' LICENSES in order to export assets
-- Exporting of ORIGINAL game libraries and exploded textures
-- Exporting of MODIFIED game libraries and exploded textures
 
-## License and Usage
+## Mod Compatibility
 
-Currently this is a private, proprietary project developed by Ghostkeeper666.
-You are not allowed to copy, redistribute, or publish any part of this code (including uploading it to another repository or sharing it publicly) without Ghostkeeper666's explicit public written permission, which may be revoked at any time.
-You are also not allowed to copy, redistribute, or publish any files of this application without Ghostkeeper666's explicit public written permission, which may be revoked at any time.
+- SHL provides tools for loading and building mods but cannot guarantee compatibility between third-party mods.
+- SHL provides tools to assist with resolving conflicting MOD IDs, but some conflicts require manual resolution by mod authors.
+- Mod conflicts must be resolved by mod authors or users.
+
+
+## Bug Reports and Support
+
+- When reporting issues, please provide the `DEBUG.ZIP` file generated by SHL from the System Core tab, as well as detailed reproduction steps whenever possible.
+- The official Space Haven Discord is the primary supported channel for bug reports and technical support. Reports submitted through other channels may not receive support.
+
+
+## Terms of Use and License Restrictions
+
+- You are granted permission to use SHL for personal and community purposes, provided that you comply with these terms and all applicable third-party licenses.
+- SHL is a non-profit project developed and maintained by Ghostkeeper666, relying solely on voluntary donations from its supporters.
+- These terms apply to SHL-created source code, binaries, assets, documentation, and other project files, excluding third-party components governed by their own licenses.
+- You may not redistribute or publish SHL binaries, source code, or project files, or otherwise make SHL or any part of it publicly available without the explicit written permission of Ghostkeeper666.
+- To the extent permitted by applicable law, you may not modify, reverse engineer, decompile, or create derivative works of SHL without the explicit written permission of Ghostkeeper666.
+- SHL is provided "as is" without warranties of any kind. Ghostkeeper666 shall not be liable for any damage, data loss, corrupted files, crashes, security issues, vulnerabilities, or other problems resulting from the use of SHL or third-party mods.
+- SHL does not create, verify, or take responsibility for third-party mods. Each mod remains the responsibility of its respective author, and users are responsible for ensuring compliance with applicable mod licenses.
+- Any additional permission granted beyond these terms for redistribution, modification, or publication may be revoked at any time.
+- Ghostkeeper666 reserves the right to modify these terms at any time.
+
+
+## Data Collection
+
+- SHL may generate local diagnostic information, logs, and debug files strictly required for mod loading, troubleshooting, and debugging purposes.
+
+
+## Export Responsibility
+
+- SHL does not grant any ownership, licensing, or redistribution rights to exported game files, Space Haven files, or third-party mod files.
+- Users are solely responsible for ensuring that any exported or shared files generated by SHL comply with the BugByte EULA and all applicable mod licenses.
+- SHL does not authorize or permit the redistribution, publication, or sharing of files belonging to Space Haven or third-party mods unless explicitly allowed by their respective owners or licenses.
+
+
+## Roadmap
+
+- With the explicit written permission of Ghostkeeper666 and the full support of BugByte, this project may transition into a proprietary project under an agreement between BugByte and Ghostkeeper666.
+- Alternatively, the project may be released as an open-source initiative, while voluntary donations continue to support the ongoing work of Ghostkeeper666.
+
