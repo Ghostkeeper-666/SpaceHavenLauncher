@@ -10,8 +10,8 @@ public sealed class LogMessage
 
     public LogMessage(ELogLevel level, object o)
     {
-        Level = level;
         SeqNum = Interlocked.Increment(ref GlobalSeqNum);
+        Level = level;
         RawText = $"{o}";
     }
 
@@ -30,7 +30,7 @@ public sealed class LogMessage
     public string Suffix { get; set; }
 
     public string Text => $"{Prefix}{RawText}{Suffix}";
-    private readonly string RawText;
+    public string RawText { get; set; }
 
     public string Link { get; set; }
 

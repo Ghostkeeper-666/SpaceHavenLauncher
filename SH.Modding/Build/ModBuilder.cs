@@ -826,7 +826,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                                     // Read id and name:
                                     string key = nodeType.KeyAttribute != null ? node.Attribute(nodeType.KeyAttribute)?.Value : null;
-                                    string src = $"{mod.Name}, {modXmlFile.RelativePath}, line {node.Line()}";
+                                    string src = $"{mod.UniqueName}, {modXmlFile.RelativePath}, line {node.Line()}";
 
                                     // Replace existing nodes with same id OR same name:
                                     HashSet<XElement> existingNodes = [];
@@ -864,7 +864,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                                             if (existingMod == null)
                                                 modLog.Debug($@"Replacing {prettyExistingNode} with {prettyNewNode}", modXmlFile.Path);
-                                            else if (existingMod == mod.Name)
+                                            else if (existingMod == mod.UniqueName)
                                                 modLog.Warn($@"Replacing {prettyExistingNode} with {prettyNewNode}. The node was modified by the same mod => This could be an ERROR", modXmlFile.Path);
                                             else
                                                 modLog.Warn($@"Replacing {prettyExistingNode} with {prettyNewNode} => This is a potential MOD INCOMPATIBILITY", modXmlFile.Path);
@@ -873,13 +873,13 @@ public sealed class ModBuilder : IAsyncDisposable
                                     }
 
                                     // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                    node.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                    node.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                     if (xmlFileType == EXmlFileType.Animations)
                                     {
                                         // Mark animations assetPos nodes:
                                         foreach (XElement assetPos in node.DescendantsAndSelf("assetPos"))
                                         {
-                                            assetPos.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            assetPos.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             assetPos.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
@@ -888,7 +888,7 @@ public sealed class ModBuilder : IAsyncDisposable
                                         // Mark audio nodes:
                                         foreach (XElement a in node.DescendantsAndSelf("a"))
                                         {
-                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
@@ -897,13 +897,13 @@ public sealed class ModBuilder : IAsyncDisposable
                                         // Mark sprite sheet nodes:
                                         foreach (XElement a in node.DescendantsAndSelf("t"))
                                         {
-                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                         // Mark sprite nodes:
                                         foreach (XElement a in node.DescendantsAndSelf("re"))
                                         {
-                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
@@ -1093,11 +1093,11 @@ public sealed class ModBuilder : IAsyncDisposable
                                 {
                                     foreach (XElement targetNode in targetNodes.Where(n => n.Name == "a"))
                                     {
-                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                         string targetAttribute = patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value;
                                         if (targetAttribute == "filename" || targetAttribute == "mp3" || targetAttribute == "ogg")
                                         {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                         }
                                     }
@@ -1108,10 +1108,10 @@ public sealed class ModBuilder : IAsyncDisposable
                                 {
                                     foreach (XElement targetNode in targetNodes.Where(n => n.Name == "assetPos"))
                                     {
-                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                         if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "filename")
                                         {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                         }
                                     }
@@ -1122,19 +1122,19 @@ public sealed class ModBuilder : IAsyncDisposable
                                 {
                                     foreach (XElement targetNode in targetNodes.Where(n => n.Name == "t"))
                                     {
-                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                         if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "i")
                                         {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                         }
                                     }
                                     foreach (XElement targetNode in targetNodes.Where(n => n.Name == "re"))
                                     {
-                                        string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                         if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "n")
                                         {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                         }
                                     }
@@ -1148,10 +1148,10 @@ public sealed class ModBuilder : IAsyncDisposable
                                 // Mark audio nodes:
                                 if (targetXmlType == EXmlFileType.Audio)
                                 {
-                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                     foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("a") ?? [])
                                     {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                     }
                                 }
@@ -1159,10 +1159,10 @@ public sealed class ModBuilder : IAsyncDisposable
                                 // Mark animations <assetPos> nodes which have the attribute 'filename':
                                 else if (targetXmlType == EXmlFileType.Animations)
                                 {
-                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                     foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos").Where(n => n.Attribute("filename") != null) ?? [])
                                     {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                     }
                                 }
@@ -1170,15 +1170,15 @@ public sealed class ModBuilder : IAsyncDisposable
                                 // Mark textures nodes:
                                 else if (targetXmlType == EXmlFileType.Textures)
                                 {
-                                    string src = $"{mod.Name}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
                                     foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("t") ?? [])
                                     {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                     }
                                     foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("re") ?? [])
                                     {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.Name);
+                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                         valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                     }
                                 }
@@ -1376,7 +1376,7 @@ public sealed class ModBuilder : IAsyncDisposable
                         continue;
 
                     // Get mod:
-                    Mod mod = Build.Mods.FirstOrDefault(m => m.Name == owner);
+                    Mod mod = Build.Mods.FirstOrDefault(m => m.UniqueName == owner);
                     if (mod == null)
                     {
                         Log.Error($@"Unable to find owner mod for audio entry at line {audioNode.Line()}", Paths.BuildAudioFilePath);
@@ -1547,7 +1547,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     // mod:
                     string modName = t.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.UniqueName == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unknown mod for <t> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {t.Line()}", spaceHavenTexturesXmlFile.Path);
@@ -1621,7 +1621,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     // mod:
                     string modName = re.Attribute(NodeType.ATTRIBUTE_OWNER).Value;
-                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.UniqueName == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unknown mod for <re> node in file ""{spaceHavenTexturesXmlFile.FileName}"" line {re.Line()}", spaceHavenTexturesXmlFile.Path);
@@ -1856,7 +1856,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // owner mod:
                     string modName = assetPos?.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
-                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.Name == modName);
+                    Mod mod = Build.Mods.FirstOrDefault(mod => mod.UniqueName == modName);
                     if (mod == null)
                     {
                         Log.Error($@"Unable to retrieve mod owning <assetPos> node with 'filename' reference ""{assetPosFilenameReference}"", in animations file line {assetPos.Line()}", Paths.BuildStageAnimationsXmlPath);
@@ -1883,7 +1883,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     Log.Debug($@"Registering sprite reference for {pretty}", Paths.BuildStageAnimationsXmlPath);
 
                     // local name:
-                    string spriteRefKey = SpriteReference.GetKey(mod.Name, assetPosFilenameReference, filter);
+                    string spriteRefKey = SpriteReference.GetKey(mod.UniqueName, assetPosFilenameReference, filter);
 
                     // Get or create sprite reference:
                     if (!spriteReferences.TryGetValue(spriteRefKey, out SpriteReference spriteRef))
@@ -2304,7 +2304,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 ModInfo modInfo = new();
                 m.Mods.Add(modInfo);
 
-                modInfo.Name = mod.Name;
+                modInfo.UniqueName = mod.UniqueName;
                 modInfo.Version = mod.Version.ToString();
                 modInfo.ID = mod.ID;
 

@@ -55,7 +55,7 @@ internal sealed class Audio
 
     public string LibraryOperation { get; private set; }
     public string PatchOperation { get; private set; }
-    public string LastOperation => PatchOperation ?? LibraryOperation ?? Mod?.Name ?? "???";
+    public string LastOperation => PatchOperation ?? LibraryOperation ?? Mod?.UniqueName ?? "???";
 
 
     public bool TryParse(IEnumerable<Mod> mods)

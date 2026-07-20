@@ -25,7 +25,7 @@ public partial class ModPageView : UserControl
     public PathViewModel Paths => State.Paths;
     public ILogger Log => State.Log;
 
-    private string ModName => ViewModel?.Mod?.Name;
+    private string DisplayName => ViewModel?.Mod?.DisplayName;
 
     private ModPageViewModel ViewModel;
     private CancellationTokenSource CTS;
@@ -239,7 +239,7 @@ public partial class ModPageView : UserControl
     {
         _ = Task.Run(async () =>
         {
-            Log.Debug($@"Background save task started for mod '{ModName}'.");
+            Log.Debug($@"Background save task started for mod '{DisplayName}'");
             PeriodicTimer timer = new(TimeSpan.FromMilliseconds(100));
             try
             {
@@ -252,7 +252,7 @@ public partial class ModPageView : UserControl
             catch (OperationCanceledException)
             {
                 // normal shutdown
-                Log.Debug($@"Background save task stopped for mod '{ModName}'.");
+                Log.Debug($@"Background save task stopped for mod '{DisplayName}'");
             }
         }, ct);
     }

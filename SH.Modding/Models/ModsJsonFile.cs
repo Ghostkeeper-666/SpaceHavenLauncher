@@ -79,44 +79,48 @@ public sealed class ModInfo
 {
     [JsonPropertyOrder(1)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-    public string Name { get; set; }
+    public string UniqueName { get; set; }
 
     [JsonPropertyOrder(2)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-    public string Version { get; set; }
+    public string DisplayName { get; set; }
 
     [JsonPropertyOrder(3)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-    public int ID { get; set; }
+    public string Version { get; set; }
 
     [JsonPropertyOrder(4)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+    public int ID { get; set; }
+
+    [JsonPropertyOrder(5)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string Dir { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string InfoXml { get; set;}
 
-    [JsonPropertyOrder(5)]
+    [JsonPropertyOrder(6)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<string> SpriteTextures { get; set; } = [];
 
-    [JsonPropertyOrder(6)]
+    [JsonPropertyOrder(7)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<string> SpriteSheetTextures { get; set; } = [];
 
-    [JsonPropertyOrder(7)]
+    [JsonPropertyOrder(8)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<string> AudioFiles { get; set; } = [];
 
-    [JsonPropertyOrder(8)]
+    [JsonPropertyOrder(9)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<string> JarFiles { get; set; } = [];
 
-    [JsonPropertyOrder(9)]
+    [JsonPropertyOrder(10)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<string> OtherFiles { get; set; } = [];
 
-    [JsonPropertyOrder(10)]
+    [JsonPropertyOrder(11)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public List<VarInfo> Vars { get; set; } = [];
 }

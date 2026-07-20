@@ -161,7 +161,7 @@ public partial class LeftPaneItemViewModel : ObservableObject
                 // DISABLED
                 if (!Mod.IsEnabled)
                 {
-                    Label = Mod.Name;
+                    Label = Mod.DisplayName;
                     LabelColor = new SolidColorBrush(Color.Parse("#bf7f888f"));
                     Image = DisabledImage;
                     Strikethrough = 3;
@@ -171,7 +171,7 @@ public partial class LeftPaneItemViewModel : ObservableObject
                 // ERRORS
                 if (Mod.HasModIdError || Mod.HasAppCompatibilityError || Mod.HasSpaceHavenCompatibilityError || Mod.HasModConflictsError || Mod.HasModDependenciesError)
                 {
-                    Label = Mod.Name;
+                    Label = Mod.DisplayName;
                     LabelColor = Brushes.Tomato;
                     Image = ErrorImage;
                     Strikethrough = 0;
@@ -181,7 +181,7 @@ public partial class LeftPaneItemViewModel : ObservableObject
                 // HIGHLIGHT MODS WITH CUSTOM ID:
                 if (Mod.HasCustomId)
                 {
-                    Label = $"{Mod.Name}  [CUSTOM ID]";
+                    Label = $"{Mod.DisplayName}  [CUSTOM ID]";
                     LabelColor = new SolidColorBrush(Color.Parse("#DFFFAF"));
                     Image = EnabledImage;
                     Strikethrough = 0;
@@ -189,7 +189,7 @@ public partial class LeftPaneItemViewModel : ObservableObject
                 }
 
                 // OK
-                Label = Mod.Name;
+                Label = Mod.DisplayName;
                 LabelColor = new SolidColorBrush(Color.Parse("#8FFFBF"));
                 Image = EnabledImage;
                 Strikethrough = 0;
@@ -255,5 +255,5 @@ public partial class LeftPaneItemViewModel : ObservableObject
         }
     }
 
-    public override string ToString() => Mod?.Name ?? Type.ToString();
+    public override string ToString() => Mod?.UniqueName ?? Type.ToString();
 }

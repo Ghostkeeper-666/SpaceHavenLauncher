@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -25,7 +24,8 @@ public sealed class ModData
     public bool IsXmlMod => XmlLibraryPaths.Count > 0 || XmlPatchPaths.Count > 0;
     public bool IsJavaMod => JarPaths.Count > 0;
 
-    public string Name { get; set; }
+    public string UniqueName { get; set; }
+    public string DisplayName { get; set; }
     public string InfoXmlDescription { get; set; }
     public string MarkdownDescription { get; set; }
     public VersionInfo Version { get; set; }
@@ -82,8 +82,8 @@ public sealed class ModData
     public IReadOnlyList<string> JarRelativePaths { get; private set; }
     public IReadOnlyList<string> OtherFilesRelativePaths { get; private set; }
 
-    public override int GetHashCode() => Name.GetHashCode();
-    public override string ToString() => $"{Name} {Version}";
+    public override int GetHashCode() => UniqueName.GetHashCode();
+    public override string ToString() => $"{UniqueName} {Version}";
 
     internal static async Task<ModData> TryLoad(string modDir, ILogger log, CancellationToken ct)
     {
@@ -94,7 +94,7 @@ public sealed class ModData
             if (!IOUtils.DirExists(mod.Dir))
                 return null;
 
-            if(!mod.MapPaths())
+            if (!mod.MapPaths())
                 return null;
 
             if (!await mod.TryParseInfoXml(modDir, log, ct))
@@ -105,7 +105,7 @@ public sealed class ModData
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            log?.Error($"[{mod.Name}] {ex.Message}", mod.Dir);
+            log?.Error($"[{mod.UniqueName}] {ex.Message}", mod.Dir);
             return null;
         }
     }
@@ -116,7 +116,7 @@ public sealed class ModData
         InfoXmlPath = Dir
             .GetFiles(ESearchOption.TopDir, equalsAny: [ModdingConstants.INFO_XML, ModdingConstants.INFO_XML.GetFileNameWithoutExtension()])
             .FirstOrDefault();
-        if(InfoXmlPath == null)
+        if (InfoXmlPath == null)
             return false;
 
         // description.md:
@@ -202,16 +202,27 @@ public sealed class ModData
             return false;
         }
 
-        // UNIQUE NAME
-        Name = NormalizeModName(root.Element("name")?.Value);
-        if (Name.IsNullOrWhiteSpace())
+        // UNIQUE MOD NAME
         {
-            log?.Error($@"Each mod must have a unique valid name! The XML node <name> is missing or invalid in file ""{InfoXmlPath}""", InfoXmlPath);
-            return false;
+            DisplayName = root.Element("name")?.Value;
+            if (DisplayName.IsNullOrWhiteSpace())
+            {
+                log?.Error($@"Each mod must have a unique valid name! A mod has undefined or blank name, in file ""{InfoXmlPath}""", InfoXmlPath);
+                return false;
+            }
+            else if (ModUniqueNameGenerator.Generate(DisplayName, out string uniqueName))
+            {
+                UniqueName = uniqueName; // valid
+            }
+            else
+            {
+                log?.Error($@"Each mod must have a unique valid name! The mod name '{DisplayName}' was evaluated as a blank unique name, in file ""{InfoXmlPath}""", InfoXmlPath);
+                return false;
+            }
         }
 
         // AUTO ID:
-        AutoId = ModAutoId.ComputeMajorId(Name);
+        AutoId = ModAutoId.ComputeMajorId(UniqueName);
 
         // MOD ID:
         ModId = int.TryParse(root.Element("modid")?.Value?.Trim(), out int modId) ? modId : 0;
@@ -219,7 +230,7 @@ public sealed class ModData
         // VALIDATE MOD ID:
         if (ModId != 0 && (ModId < ModAutoId.MinValue || ModId > ModAutoId.MaxValue))
         {
-            log?.Warn($"[{Name}] MOD ID must be within the range [{ModAutoId.MinValue}, {ModAutoId.MaxValue}] => Assigning an automatic ID instead. This MOD may fail to load in case it heavily depends on its MOD ID", InfoXmlPath);
+            log?.Warn($"[{UniqueName}] MOD ID must be within the range [{ModAutoId.MinValue}, {ModAutoId.MaxValue}] => Assigning an automatic ID instead. This MOD may fail to load in case it heavily depends on its MOD ID", InfoXmlPath);
             ModId = 0;
         }
 
@@ -229,14 +240,14 @@ public sealed class ModData
         // TODO: First make mod author mandatory, then remove this code:
         if (Author.IsNullOrWhiteSpace())
         {
-            if (Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+            if (UniqueName.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
                 Author = "Gravelyn";
-            else if (Name.Contains("CustomizerPlus"))
+            else if (UniqueName.Contains("CustomizerPlus"))
                 Author = "r4v4g3 (r0xx0r3r)";
             else
             {
                 Author = string.Empty;
-                log?.Warn($@"Missing mod author in mod ""{Name}""");
+                log?.Warn($@"Missing mod author in mod ""{UniqueName}""");
             }
         }
 
@@ -244,7 +255,7 @@ public sealed class ModData
         InfoXmlDescription = root.Element("description")?.Value?.TrimStart(' ', '\t', '\r', '\n', '~');
         if (InfoXmlDescription == null)
         {
-            log?.Error($@"[{Name}] Missing or empty <decription> node, file=""{InfoXmlPath}""", InfoXmlPath);
+            log?.Error($@"[{UniqueName}] Missing or empty <decription> node, file=""{InfoXmlPath}""", InfoXmlPath);
             return false;
         }
 
@@ -339,7 +350,7 @@ public sealed class ModData
                 modName =
                     modName?.Trim();
                 if (modName.IsNullOrWhiteSpace())
-                    throw new Exception($@"[{Name}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
+                    throw new Exception($@"[{UniqueName}] Missing property ""name"" in <modConflict> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
 
                 VersionInfo version =
                     new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
@@ -364,13 +375,13 @@ public sealed class ModData
             {
                 ct.ThrowIfCancellationRequested();
 
-                string modName =
+                string varName =
                     node.Attribute("name")?.Value?.Trim() ??
                     node.Attribute("n")?.Value?.Trim();
-                modName =
-                    modName?.Trim();
-                if (modName.IsNullOrWhiteSpace())
-                    throw new Exception($@"[{Name}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
+                varName =
+                    varName?.Trim();
+                if (varName.IsNullOrWhiteSpace())
+                    throw new Exception($@"[{UniqueName}] Missing property ""name"" in <modDependency> node in {ModdingConstants.INFO_XML}, line={node.Line()} file=""{ModdingConstants.INFO_XML}""");
 
                 VersionInfo version =
                     new(node.Attribute("version")?.Value ?? node.Attribute("v")?.Value ?? node.Value);
@@ -379,7 +390,7 @@ public sealed class ModData
                     node.Attribute("operator")?.Value ??
                     node.Attribute("op")?.Value);
 
-                modDependencies.Add(new(modName, version, op));
+                modDependencies.Add(new(varName, version, op));
             }
             ModDependencies.AddRange(modDependencies.OrderBy(m => m.Name));
         }
@@ -406,14 +417,14 @@ public sealed class ModData
                     string name = v.Attribute("name")?.Value?.Trim('{', '}', ' ');
                     if (name.IsNullOrWhiteSpace())
                     {
-                        log?.Error($"[{Name}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", InfoXmlPath);
+                        log?.Error($"[{UniqueName}] A <var> node is missing the 'name' property in {ModdingConstants.INFO_XML}, line={line}", InfoXmlPath);
                         return false;
                     }
 
                     // Validate reserved variable name:
                     if (ModAutoId.IdVariable.Equals(name, StringComparison.OrdinalIgnoreCase))
                     {
-                        log?.Error($"[{Name}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", InfoXmlPath);
+                        log?.Error($"[{UniqueName}] Variable name '{name}' is RESERVED and can NOT be declared in {ModdingConstants.INFO_XML}, line={line}", InfoXmlPath);
                         return false;
                     }
 
@@ -468,7 +479,7 @@ public sealed class ModData
                     {
                         // 'warn as error', just once for each variable:
                         if (!duplicateVariables.Contains(name))
-                            log?.Warn($"[{Name}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", InfoXmlPath);
+                            log?.Warn($"[{UniqueName}] Skipping duplicate variable '{name}' -> This is certainly a BUG in this MOD", InfoXmlPath);
                         duplicateVariables.Add(name);
                         continue;
                     }
@@ -513,52 +524,9 @@ public sealed class ModData
         return true;
     }
 
-    private const string ValidModNameChars = "01234567890abcdefghijklmnopqrstuvwxyz-()";
 
-    private readonly ImmutableDictionary<char, string> SpecialModNameChars = ImmutableDictionary.CreateRange(new[]
-    {
-        new KeyValuePair<char, string>('&', "And"),
-        new KeyValuePair<char, string>('+', "Plus"),
-        new KeyValuePair<char, string>('[', "("),
-        new KeyValuePair<char, string>(']', ")"),
-        new KeyValuePair<char, string>('{', "("),
-        new KeyValuePair<char, string>('}', ")"),
-    });
 
-    private string NormalizeModName(string name)
-    {
-        if (name.IsNullOrWhiteSpace())
-            return string.Empty;
 
-        StringBuilder sb = new();
-        char prevChar = default;
-
-        for (int i = 0; i < name.Length; ++i)
-        {
-            char ch = name[i];
-
-            // Valid chars:
-            if (ValidModNameChars.Contains(ch, StringComparison.OrdinalIgnoreCase))
-            {
-                sb.Append(ch);
-                continue;
-            }
-
-            // Special treatment for other chars:
-            if (SpecialModNameChars.TryGetValue(ch, out string replacement))
-            {
-                sb.Append(replacement);
-                continue;
-            }
-
-            // Otherwise replace by a whitespace:
-            if (prevChar != ' ' && sb.Length > 0)
-                sb.Append(' ');
-        }
-
-        // Done.
-        return sb.ToString().Trim(); // trim whitespaces
-    }
 
 
 }

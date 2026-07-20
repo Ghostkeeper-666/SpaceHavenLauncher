@@ -80,7 +80,7 @@ public partial class ModPageViewModel : ViewModelBase
         if (!Mod.IsEnabled)
         {
             TitleBrush = Brushes.Gray;
-            Title = $"{Mod.Name}  {Mod.Version}  (DISABLED)";
+            Title = $"{Mod.DisplayName}  {Mod.Version}  (DISABLED)";
         }
         else
         {
@@ -95,13 +95,13 @@ public partial class ModPageViewModel : ViewModelBase
 
             if (errors.Count > 0)
             {
-                Title = $"{Mod.Name}  {Mod.Version}  ({errors.JoinToString(", ")})";
+                Title = $"{Mod.DisplayName}  {Mod.Version}  ({errors.JoinToString(", ")})";
                 TitleBrush = Brushes.OrangeRed;
             }
             else // No errors
             {
                 TitleBrush = Mod.ForegroundColor;
-                Title = $"{Mod.Name}  {Mod.Version}";
+                Title = $"{Mod.DisplayName}  {Mod.Version}";
             }
         }
     }

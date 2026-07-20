@@ -206,7 +206,7 @@ public partial class AppViewModel : ObservableObject
                 break;
 
             case EPageType.Mod:
-                CurrentPage = ModPages[value.Mod.Name];
+                CurrentPage = ModPages[value.Mod.UniqueName];
                 break;
 
             default:
@@ -266,7 +266,7 @@ public partial class AppViewModel : ObservableObject
             if (mod.ModIdErrors.Count > 0)
             {
                 mod.HasModIdError = mod.ModIdErrors.Count > 0;
-                mod.ModIdErrorText = $"MOD ID CONFLICT WITH:\n\n{mod.ModIdErrors.Select(m => $"- {m.Name}").JoinToString("\n")}";
+                mod.ModIdErrorText = $"MOD ID CONFLICT WITH:\n\n{mod.ModIdErrors.Select(m => $"- {m.DisplayName}").JoinToString("\n")}";
             }
             else
             {
@@ -287,7 +287,7 @@ public partial class AppViewModel : ObservableObject
         {
             foreach (ModViewModel targetMod in Mods.Where(m => m.IsEnabled && m != sourceMod))
             {
-                if (!sourceMod.Data.ModConflicts.MatchAny(targetMod.Name, targetMod.Version))
+                if (!sourceMod.Data.ModConflicts.MatchAny(targetMod.UniqueName, targetMod.Version) && !sourceMod.Data.ModConflicts.MatchAny(targetMod.DisplayName, targetMod.Version))
                     continue;
                 sourceMod.ModConflictsErrors.Add(targetMod);
                 targetMod.ModConflictsErrors.Add(sourceMod);
@@ -300,7 +300,7 @@ public partial class AppViewModel : ObservableObject
             if (mod.ModConflictsErrors.Count > 0)
             {
                 mod.HasModConflictsError = mod.ModConflictsErrors.Count > 0;
-                mod.ModConflictsErrorText = $"INCOMPATIBLE MODS:\n\n{mod.ModConflictsErrors.Select(m => $"- {m.Name}").JoinToString("\n")}";
+                mod.ModConflictsErrorText = $"INCOMPATIBLE MODS:\n\n{mod.ModConflictsErrors.Select(m => $"- {m.DisplayName}").JoinToString("\n")}";
             }
             else
             {
@@ -328,7 +328,10 @@ public partial class AppViewModel : ObservableObject
         {
             foreach (VersionCompatibility dependency in sourceMod.Data.ModDependencies.Items)
             {
-                ModViewModel targetMod = Mods.FirstOrDefault(t => dependency.Match(t.Name, t.Version));
+                ModViewModel targetMod =
+                    Mods.FirstOrDefault(t => dependency.Match(t.DisplayName, t.Version)) ??
+                    Mods.FirstOrDefault(t => dependency.Match(t.UniqueName, t.Version));
+
                 if (targetMod == null)
                 {
                     sourceMod.MissingDependencies.Add(dependency);
@@ -363,9 +366,9 @@ public partial class AppViewModel : ObservableObject
             // Dependencies:
             if (mod.AllDependencies.Count > 0)
             {
-                string directDependencies = mod.DirectDependencies.Select(d => $"- {d.Name} {d.Version}\n").JoinToString();
+                string directDependencies = mod.DirectDependencies.Select(d => $"- {d.DisplayName} {d.Version}\n").JoinToString();
                 sb.AppendLine($"DIRECTLY REQUIRES \n{directDependencies}");
-                string indirectDependencies = mod.AllDependencies.Where(d => !mod.DirectDependencies.Contains(d)).Select(d => $"- {d.Name} {d.Version}\n").JoinToString();
+                string indirectDependencies = mod.AllDependencies.Where(d => !mod.DirectDependencies.Contains(d)).Select(d => $"- {d.DisplayName} {d.Version}\n").JoinToString();
                 if (!indirectDependencies.IsNullOrEmpty())
                     sb.AppendLine($"INDIRECTLY REQUIRES \n{indirectDependencies}");
             }
@@ -373,24 +376,30 @@ public partial class AppViewModel : ObservableObject
             // References:
             if (mod.AllReferences.Count > 0)
             {
-                string directReferences = mod.DirectReferences.Select(d => $"- {d.Name} {d.Version}\n").JoinToString();
+                string directReferences = mod.DirectReferences.Select(d => $"- {d.DisplayName} {d.Version}\n").JoinToString();
                 sb.AppendLine($"DIRECTLY REQUIRED BY \n{directReferences}");
-                string indirectReferences = mod.AllReferences.Where(d => !mod.DirectReferences.Contains(d)).Select(d => $"- {d.Name} {d.Version}\n").JoinToString();
+                string indirectReferences = mod.AllReferences.Where(d => !mod.DirectReferences.Contains(d)).Select(d => $"- {d.DisplayName} {d.Version}\n").JoinToString();
                 if (!indirectReferences.IsNullOrEmpty())
                     sb.AppendLine($"INDIRECTLY REQUIRED BY \n{indirectReferences}");
             }
 
             // Missing:
             string allMissing = mod.
-                AllDependencies.Where(d => !d.IsEnabled).Select(d => $"- {d.Name} {d.Version}\n")
-                .Concat(mod.AllDependencies.SelectMany(d => d.MissingDependencies).Where(missing => !Mods.Any(m => m.Name == missing.Name)).Select(missing => $"- {missing}\n"))
+                AllDependencies.Where(d => !d.IsEnabled).Select(d => $"- {d.DisplayName} {d.Version}\n")
+                .Concat(
+                    mod.AllDependencies
+                    .SelectMany(d => d.MissingDependencies)
+                    .Where(missing =>
+                        !Mods.Any(m => m.DisplayName == missing.Name) &&
+                        !Mods.Any(m => m.UniqueName == missing.Name))
+                    .Select(missing => $"- {missing}\n"))
                 .OrderBy(str => str).Distinct().JoinToString();
 
             if (!allMissing.IsNullOrEmpty())
                 sb.AppendLine($"NOT Found / NOT Enabled \n{allMissing}");
 
             // Circular:
-            string circular = mod.CircularDependencyChain.Select(d => $"- {d.Name} {d.Version}\n").JoinToString();
+            string circular = mod.CircularDependencyChain.Select(d => $"- {d.DisplayName} {d.Version}\n").JoinToString();
             if (!circular.IsNullOrEmpty())
                 sb.AppendLine($"CIRCULAR REFERENCES \n{circular}");
 
@@ -622,7 +631,7 @@ public partial class AppViewModel : ObservableObject
 
                 ModViewModel mod = new(modData, mods.Values);
                 Mods.Add(mod);
-                ModPages.Add(mod.Name, new ModPageViewModel(mod));
+                ModPages.Add(mod.UniqueName, new ModPageViewModel(mod));
                 LeftPaneItems.Add(new LeftPaneItemViewModel(EPageType.Mod, mod));
                 await Task.Yield();
             }
@@ -679,7 +688,7 @@ public partial class AppViewModel : ObservableObject
                 case EPageType.Mod:
                     if (parts.Length < 2)
                         return;
-                    LeftPaneItemViewModel mod = State.LeftPaneItems.FirstOrDefault(item => item.Type == EPageType.Mod && (item?.Mod?.Name?.Replace(" ", string.Empty).Equals(parts[1].Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase) ?? false));
+                    LeftPaneItemViewModel mod = State.LeftPaneItems.FirstOrDefault(item => item.Type == EPageType.Mod && (item?.Mod?.UniqueName?.Replace(" ", string.Empty).Equals(parts[1].Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase) ?? false));
                     if (mod != null) State.SelectedLeftPaneItem = mod;
                     return;
 

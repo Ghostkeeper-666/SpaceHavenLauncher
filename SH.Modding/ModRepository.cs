@@ -66,13 +66,13 @@ public sealed class ModRepository
                 }
 
                 // Add mod:
-                if (!mods.TryAdd(mod.Name, mod))
+                if (!mods.TryAdd(mod.UniqueName, mod))
                 {
                     ++modErrors;
-                    Log.Error($@"The mod '{mod.Name}' could not be loaded twice. Please check for duplicate mods in your mod root directories. Keeping ""{mods[mod.Name].Dir}"" and skipping ""{mod.Dir}""", mod.Dir);
+                    Log.Error($@"The mod '{mod.UniqueName}' could not be loaded twice. Please check for duplicate mods in your mod root directories. Keeping ""{mods[mod.UniqueName].Dir}"" and skipping ""{mod.Dir}""", mod.Dir);
                     continue;
                 }
-                Log.Debug($@"Mod '{mod.Name}' was loaded successfully", mod.Dir);
+                Log.Debug($@"Mod '{mod.UniqueName}' was loaded successfully", mod.Dir);
             }
 
             // Initially just sort by name (will be sorted again somewhere else):

@@ -1,6 +1,5 @@
 ﻿using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Modding;
 using SH.Modding.Models;
 using System;
@@ -15,8 +14,8 @@ namespace SH.Launcher.Core.Services;
 
 public sealed class ModValuesRepositoryService
 {
-    public static readonly string MOD_VALUES_TOKEN = "<MOD_NAME>";
-    public static string MOD_VALUES => $"{MOD_VALUES_TOKEN}.xml";
+    public static readonly string MOD_UNIQUE_NAME_TOKEN = "<MOD_NAME>";
+    public static string MOD_VALUES_FILENAME => $"{MOD_UNIQUE_NAME_TOKEN}.xml";
 
     private readonly PathData Paths;
     private readonly ILogger Log;
@@ -35,7 +34,7 @@ public sealed class ModValuesRepositoryService
         await Semaphore.WaitAsync(ct);
         try
         {
-            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
+            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES_FILENAME.Replace(MOD_UNIQUE_NAME_TOKEN, mod.UniqueName));
 
             if (!IOUtils.FileExists(modValuesPath))
                 return false;
@@ -98,7 +97,7 @@ public sealed class ModValuesRepositoryService
         await Semaphore.WaitAsync(ct);
         try
         {
-            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
+            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES_FILENAME.Replace(MOD_UNIQUE_NAME_TOKEN, mod.UniqueName));
 
             if (!IOUtils.FileExists(modValuesPath))
                 return false;
@@ -120,7 +119,7 @@ public sealed class ModValuesRepositoryService
 
             if (setToCurrentValue)
             {
-                Log.Info($@"[{mod.Name}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
+                Log.Info($@"[{mod.UniqueName}] Importing mod values from previous mod version {oldVersion} to new mod version {mod.Version}");
                 mod.IsEnabled = bool.TryParse(rootNode.Attribute("enabled")?.Value ?? "true", out bool enabled) && enabled;
                 mod.CustomId = int.TryParse(rootNode.Attribute("customID")?.Value, out int customID) ? customID : 0;
             }
@@ -183,7 +182,7 @@ public sealed class ModValuesRepositoryService
         await Semaphore.WaitAsync(ct);
         try
         {
-            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES.Replace(MOD_VALUES_TOKEN, mod.Name));
+            string modValuesPath = Path.Combine(Paths.ModValuesDir, MOD_VALUES_FILENAME.Replace(MOD_UNIQUE_NAME_TOKEN, mod.UniqueName));
 
             // Read or create document:
             XDocument doc = IOUtils.FileExists(modValuesPath) ? await IOUtils.TryLoadXDocumentAsync(modValuesPath, Log, ct) ?? new() : new();
@@ -195,7 +194,7 @@ public sealed class ModValuesRepositoryService
                 rootNode = new("mod");
                 doc.Add(rootNode);
             }
-            rootNode.SetAttributeValue("name", mod.Name);
+            rootNode.SetAttributeValue("name", mod.UniqueName);
             rootNode.SetAttributeValue("enabled", mod.IsEnabled);
             rootNode.SetAttributeValue("customID", mod.CustomId);
             rootNode.SetAttributeValue("currentModVersion", mod.Version.ToString());
@@ -291,8 +290,8 @@ public sealed class ModValuesRepositoryService
             }
 
             // Add missing ones:
-            foreach (ModData mod in original.Values.Where(mod => !sorted.ContainsKey(mod.Name)))
-                sorted.TryAdd(mod.Name, mod);
+            foreach (ModData mod in original.Values.Where(mod => !sorted.ContainsKey(mod.UniqueName)))
+                sorted.TryAdd(mod.UniqueName, mod);
 
             // Update:
             await TrySaveModSortingInternal(sorted.Values, ct);
@@ -341,7 +340,7 @@ public sealed class ModValuesRepositoryService
             foreach (ModData mod in mods)
             {
                 XElement modNode = new("mod");
-                modNode.SetAttributeValue("name", mod.Name);
+                modNode.SetAttributeValue("name", mod.UniqueName);
                 rootNode.Add(modNode);
             }
 

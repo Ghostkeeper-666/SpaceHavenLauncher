@@ -39,7 +39,10 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
     private IBrush _ForegroundColor;
 
     [ObservableProperty]
-    private string _Name;
+    private string _UniqueName;
+
+    [ObservableProperty]
+    private string _DisplayName;
 
     [ObservableProperty]
     private string _InfoXmlDescription;
@@ -156,7 +159,8 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         otherMods ??= [];
 
         IsEnabled = data.IsEnabled;
-        Name = data.Name;
+        UniqueName = data.UniqueName;
+        DisplayName = data.DisplayName;
         InfoXmlDescription = data.InfoXmlDescription;
         MarkdownDescription = data.MarkdownDescription;
         Version = data.Version;
@@ -223,11 +227,11 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             ForegroundColor ??= new SolidColorBrush(Color.Parse("#FFBF00"));
         else if (Author.Contains("chewday", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= new SolidColorBrush(Color.Parse("#7FBF3F"));
-        else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
+        else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || UniqueName.StartsWith("Customizer") || UniqueName.StartsWith("Furry Haven"))
             ForegroundColor ??= Brushes.LightCoral;
         else if (Author.Contains("Kaiser", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= Brushes.DeepSkyBlue;
-        else if (Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+        else if (UniqueName.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
             ForegroundColor ??= Brushes.LightPink;
 
         // Fallback:
@@ -249,9 +253,9 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Fuklaw.jpg");
         else if (Author.Contains("chewday", StringComparison.OrdinalIgnoreCase))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Chewday.jpg");
-        else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || Name.StartsWith("Customizer") || Name.StartsWith("Furry Haven"))
+        else if (Author.Contains("r4v4g3", StringComparison.OrdinalIgnoreCase) || Author.Contains("r0xx0r3r", StringComparison.OrdinalIgnoreCase) || UniqueName.StartsWith("Customizer") || UniqueName.StartsWith("Furry Haven"))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Ravage.jpg");
-        else if (Name.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
+        else if (UniqueName.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
             State.ForcedBackground ??= ImageX.FromAssetLoader($"avares://{SpaceHavenLauncher.AssemblyName}/Assets/Images/Backgrounds/bg-Bikini.jpg");
     }
 
@@ -271,8 +275,7 @@ public partial class ModViewModel : ObservableObject, IComparable<ModViewModel>
         FinalId = ModId != 0 ? ModId : AutoId;
 
     public int CompareTo(ModViewModel other) =>
-        Name.CompareTo(other?.Name);
+        UniqueName.CompareTo(other?.UniqueName);
 
-    public override string ToString() => Name;
-
+    public override string ToString() => UniqueName;
 }

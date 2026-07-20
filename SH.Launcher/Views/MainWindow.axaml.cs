@@ -186,7 +186,7 @@ public partial class MainWindow : Window
                         break;
                     }
 
-                    if (item.Type != EPageType.Mod || item.Mod.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    if (item.Type != EPageType.Mod || item.Mod.DisplayName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                         filteredMods.Add(item);
                 }
 

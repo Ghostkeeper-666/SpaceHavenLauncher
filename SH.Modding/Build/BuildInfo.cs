@@ -88,7 +88,7 @@ internal sealed class BuildInfo : IAsyncDisposable
                 xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
 
                 // Mods:
-                string xmlModsHashData = ModList.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.Name}={mod.XmlHash}", "\n") ?? string.Empty;
+                string xmlModsHashData = ModList.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.UniqueName}={mod.XmlHash}", "\n") ?? string.Empty;
                 xmlHashes["Mods"] = XxHash64Calculator.ComputeFromString(xmlModsHashData, Log) ?? string.Empty;
 
                 // Overall XML Hash:
@@ -106,7 +106,7 @@ internal sealed class BuildInfo : IAsyncDisposable
                 javaHashes["App"] = appHash;
 
                 // Mods:
-                string javaModsHashData = ModList.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.Name}={mod.JavaHash}", "\n") ?? string.Empty;
+                string javaModsHashData = ModList.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.UniqueName}={mod.JavaHash}", "\n") ?? string.Empty;
                 javaHashes["Mods"] = XxHash64Calculator.ComputeFromString(javaModsHashData, Log) ?? string.Empty;
 
                 // Overall Java Hash:

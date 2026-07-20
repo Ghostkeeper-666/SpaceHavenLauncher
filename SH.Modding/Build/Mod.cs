@@ -26,7 +26,7 @@ internal sealed class Mod : IAsyncDisposable
         FullFileLogger = new FileLogger(FullLogPath);
         ErrorFileLogger = new FileLogger(ErrorLogPath);
         ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
-        Log = new LoggerCollection(log, FullFileLogger, ErrorFileLogger) { Prefix = $"[{Name}] " };
+        Log = new LoggerCollection(log, FullFileLogger, ErrorFileLogger) { Prefix = $"[{UniqueName}] " };
     }
 
     private readonly BuildSettings BuildSettings;
@@ -34,7 +34,7 @@ internal sealed class Mod : IAsyncDisposable
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
-    public string Name => Data.Name;
+    public string UniqueName => Data.UniqueName;
     public VersionInfo Version => Data.Version;
     public string Author => Data.Author;
     public string Dir => Data.Dir;
@@ -66,7 +66,7 @@ internal sealed class Mod : IAsyncDisposable
     public IReadOnlyList<string> OtherFilesRelativePaths => Data.OtherFilesRelativePaths;
 
 
-    public string BuildName => $"[{BuildSeqNum}] {Data.Name}";
+    public string BuildName => $"[{BuildSeqNum}] {Data.UniqueName}";
     public int BuildSeqNum { get; }
 
     private ModData Data { get; }
@@ -434,5 +434,5 @@ internal sealed class Mod : IAsyncDisposable
     }
     #endregion
 
-    public override string ToString() => Data.Name;
+    public override string ToString() => Data.UniqueName;
 }

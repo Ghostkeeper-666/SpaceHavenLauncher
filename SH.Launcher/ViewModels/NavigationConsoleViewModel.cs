@@ -49,9 +49,6 @@ public partial class NavigationConsoleViewModel : ViewModelBase
     [ObservableProperty]
     private StreamGeometry _ToggleLogViewButtonIcon = null;
 
-    [ObservableProperty]
-    private ObservableCollection<string> _LogHistory = [];
-
     private readonly MainWindowViewModel Parent;
 
     public NavigationConsoleViewModel(MainWindowViewModel parent)
