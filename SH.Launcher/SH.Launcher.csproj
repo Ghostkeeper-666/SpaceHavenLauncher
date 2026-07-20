@@ -50,7 +50,7 @@
     <None Update="Assets\Icons\SpaceHavenLauncher.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="INSTALL.MD">
+    <None Update="INSTALL.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="LauncherAgent.jar">

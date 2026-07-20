@@ -7,7 +7,7 @@ This project is independent and is not affiliated with, endorsed by, or official
 
 ## Installation
 
-Installation instructions, prerequisites, and required configuration steps are provided in **INSTALL.MD**.
+Installation instructions, prerequisites, and required configuration steps are provided in **INSTALL.md**.
 
 
 ## Main Features
