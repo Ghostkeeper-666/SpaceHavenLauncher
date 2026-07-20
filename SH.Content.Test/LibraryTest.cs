@@ -76,7 +76,7 @@ public sealed class LibraryTest
             };
 
             // Create Base Output Directory
-            if (!IOUtils.TryCreateDirectory(exportDir, Log))
+            if (!IOUtils.TryCreateDir(exportDir, Log))
                 return false;
 
             // Textures
@@ -209,7 +209,7 @@ public sealed class LibraryTest
     private async Task ExportAnimationToWEBPAsync(string animationName, string outputDir, CancellationToken ct)
     {
         Clip clip = await AnimationRenderer.RenderClipAsync(animationName, 512, 512, TimeSpan.FromSeconds(10), false, ct);
-        WebpExporter.TryExport(clip, outputDir, 16.0, 1.0, Log);
+        await WebpExporter.TryExportAsync(clip, outputDir, 16.0, 1.0, Log, default);
         clip.Dispose();
     }
 

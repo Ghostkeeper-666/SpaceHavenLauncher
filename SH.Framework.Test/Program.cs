@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace SH.Framework.Test;
 
-internal class Program
+internal static class Program
 {
     private static void OnLogMessage(object sender, LogMessage e) =>
         Console.WriteLine($"[{e.Level.ToString().ToUpperInvariant()}]    {e?.Text}");

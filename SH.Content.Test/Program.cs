@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace SH.Content.Test;
 
-public sealed class Program
+public static class Program
 {
     private static void Logger_OnMessage(object sender, LogMessage e) =>
         Console.WriteLine(e.Text);
