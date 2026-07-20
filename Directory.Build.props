@@ -1,6 +1,10 @@
 <Project>
 
   <PropertyGroup>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+
     <!-- fallback for local builds -->
     <Version Condition="'$(Version)' == ''">6.6.6</Version>
   </PropertyGroup>

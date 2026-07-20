@@ -2,10 +2,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <RootNamespace>SH.Launcher</RootNamespace>
     <AssemblyName>SpaceHavenLauncher</AssemblyName>
 		<Copyright>Ghostkeeper666</Copyright>
     <ApplicationIcon>SpaceHavenLauncher.ico</ApplicationIcon>
