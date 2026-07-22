@@ -4,7 +4,6 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using SH.Launcher.Core.Models;
 using SH.Modding;
 using SH.Modding.Models;
 using System;
@@ -58,7 +57,7 @@ public sealed class DebugService
         AddMany(Paths.BuildLogsDir.GetFiles(ESearchOption.All));
         AddMany(Paths.BuildTextsDir.GetFiles(ESearchOption.All));
 
-        AddMany(Paths.BuildTexturesDir.GetFiles(ESearchOption.TopDir));
+        AddMany(Paths.BuildTexturesDir.GetFiles(ESearchOption.TopDir).Where(path => !path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)));
 
         string ignoreMergeLibrary = Paths.BuildMergeDir.CombineAsOSPath(ModdingConstants.LIBRARY);
         AddMany(Paths.BuildMergeDir.GetFiles(ESearchOption.All).Where(path => !path.StartsWith(ignoreMergeLibrary, StringComparison.OrdinalIgnoreCase)));
@@ -103,7 +102,7 @@ public sealed class DebugService
 
             // Try to delete existing file:
             string debugZipDir = Paths.DebugFilePath.GetParentDirAsOSPath();
-            List<string> debugZipPaths = debugZipDir.GetFiles(ESearchOption.TopDir, equalsAny: [ PathData.DebugFilename ]);
+            List<string> debugZipPaths = debugZipDir.GetFiles(ESearchOption.TopDir, equalsAny: [PathData.DebugFilename]);
             foreach (string debugZipPath in debugZipPaths)
             {
                 if (!await IOUtils.TryDeleteFileAsync(Paths.DebugFilePath, Log, ct))
@@ -118,7 +117,7 @@ public sealed class DebugService
             double sumSize = 0;
             double totalSize = 0;
             foreach (string absolutePath in FilePaths)
-                if(absolutePath.TryGetFileInfo(out long fileSize, out _))
+                if (absolutePath.TryGetFileInfo(out long fileSize, out _))
                     totalSize += fileSize;
 
             // Pack files:
@@ -145,7 +144,7 @@ public sealed class DebugService
                         continue; // should never happen
 
                     // Read basic file information:
-                    if(!absolutePath.TryGetFileInfo(out long fileSize, out DateTime fileTime))
+                    if (!absolutePath.TryGetFileInfo(out long fileSize, out DateTime fileTime))
                         continue;
 
                     // Generate new zip entry:

@@ -26,13 +26,9 @@ public static class ModdingConstants
     public static readonly string ASPECTJWEAVER = "aspectjweaver-1.9.19.jar";
     public static readonly string MODS_JSON = "mods.json";
 
-    public static readonly string TEMPLATE_SPACEHAVEN_JAR = "templatespacehaven.jar";
-    public static readonly string MODIFIED_SPACEHAVEN_JAR = SpaceHavenConstants.SPACEHAVEN_JAR;
-
-    public static readonly string XML_BUILD_HASH_TXT = "xml.hash";
-    public static readonly string JAVA_BUILD_HASH_TXT = "java.hash";
-    public static readonly string ORIGINAL_JAR_HASH_TXT = "originaljar.hash";
-    public static readonly string MODIFIED_JAR_HASH_TXT = "modifiedjar.hash";
+    public static readonly string XML_BUILD_HASH = "xml.hash";
+    public static readonly string JAVA_BUILD_HASH = "java.hash";
+    public static readonly string SPACEHAVENJAR_HASH = "spacehavenjar.hash";
 
     public static readonly string IdVariable = "id";
     public static readonly string BracedIdVariable = "{id}";

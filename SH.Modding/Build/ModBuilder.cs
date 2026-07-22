@@ -31,7 +31,7 @@ public sealed class ModBuilder : IAsyncDisposable
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
-    public bool IsNewJar { get; private set; }
+    public bool needsNewJar { get; private set; }
     public bool NeedsXmlBuild { get; private set; }
     public bool NeedsJavaBuild { get; private set; }
 
@@ -247,7 +247,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Starting Build...", Paths.BuildDir);
+            Log.Info($"Starting mod build...", Paths.BuildDir);
 
             Build = new BuildInfo(BuildSettings, Log);
 
@@ -274,9 +274,9 @@ public sealed class ModBuilder : IAsyncDisposable
                 JavaBuild.Start();
             else
             {
-                Log.Success("JAVA build skipped");
-                JavaBuild.Complete();
+                Log.Info("JAVA build skipped");
                 JavaBuild.RemoveAll(); // avoid further updates from children
+                JavaBuild.Complete();
             }
 
             // Skip XML build?
@@ -284,14 +284,17 @@ public sealed class ModBuilder : IAsyncDisposable
                 XmlBuild.Start();
             else
             {
-                Log.Success("XML build skipped");
-                XmlBuild.Complete();
+                Log.Info("XML build skipped");
                 XmlBuild.RemoveAll(); // avoid further updates from children
+                XmlBuild.Complete();
             }
 
             // All builds skipped?
             if (!NeedsJavaBuild && !NeedsXmlBuild)
+            {
+                Log.Success($"Mod build was skipped", Paths.BuildDir);
                 return true;
+            }
 
 
 
@@ -338,6 +341,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildJavaHashPath, Paths.CacheJavaHashPath, true, Log, CT))
                     return false;
                 DeployJavaHash.Complete();
+
+                Log.Info("JAVA build has completed");
             }
 
 
@@ -378,12 +383,14 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await IOUtils.TryCopyFileAsync(Paths.BuildXmlHashPath, Paths.CacheXmlHashPath, true, Log, CT))
                     return false;
                 DeployXmlHash.Complete();
+
+                Log.Info("XML build has completed");
             }
 
 
 
 
-            // Deployment:
+            // Final deployment to cache directory:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
                 // Write version to haven.xml AND to version.txt:
@@ -423,18 +430,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Build completed:
             if (NeedsJavaBuild)
-            {
-                JavaBuild.RemoveAll();
                 JavaBuild.Complete();
-            }
             if (NeedsXmlBuild)
-            {
-                XmlBuild.RemoveAll();
                 XmlBuild.Complete();
-            }
 
             // Done.
-            Log.Success($"{this} has completed", Paths.BuildDir);
+            Log.Success($"Mod build has completed", Paths.BuildDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -550,7 +551,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Debug("Initializing build...", Paths.BuildDir);
+            Log.Debug("Initializing mod build...", Paths.BuildDir);
             Initialization?.Start();
 
             // Initialize build data, and start logging build to file, right after the build directory reset:
@@ -577,12 +578,12 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             Initialization?.Complete();
-            Log.Success("Build initialization is complete", Paths.BuildDir);
+            Log.Info("Mod build initialization is complete", Paths.BuildDir);
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error($"Unable to initialize build: {ex}", Paths.BuildDir);
+            Log.Error($"Unable to initialize mod build: {ex}", Paths.BuildDir);
             return false;
         }
     }
@@ -604,31 +605,35 @@ public sealed class ModBuilder : IAsyncDisposable
             if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildJavaHashPath, Build.JavaHash, Log, CT))
                 return false;
 
-            // JAR:
-            string templateJarHash = IOUtils.FileExists(Paths.TemplateJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, CT) : null;
-            templateJarHash ??= string.Empty;
-            string buildJarHash = IOUtils.FileExists(Paths.BuildJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.BuildJarHashPath, Log, CT) : null;
-            buildJarHash ??= string.Empty;
-            string cacheJarHash = IOUtils.FileExists(Paths.CacheJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.CacheJarHashPath, Log, CT) : null;
-            cacheJarHash ??= string.Empty;
-            IsNewJar = templateJarHash != buildJarHash || buildJarHash != cacheJarHash;
+            // BUILD!
+            if (!BuildSettings.SkipRebuilding)
+                return true;
 
-            // Is a new build required?
+            // By mods?
             NeedsXmlBuild = Build.HasXmlMods;
             NeedsJavaBuild = Build.HasJavaMods;
-            if (BuildSettings.SkipRebuilding)
-            {
-                NeedsXmlBuild &=
-                    IsNewJar ||
-                    !IOUtils.FileExists(Paths.CacheJarPath) ||
-                    !IOUtils.FileExists(Paths.CacheJarHashPath) ||
-                    (Build.XmlHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheXmlHashPath, Log, CT) ?? string.Empty);
 
-                NeedsJavaBuild &=
-                    !IOUtils.FileExists(Paths.CacheConfigJsonPath) ||
-                    !IOUtils.FileExists(Paths.CacheJavaHashPath) ||
-                    (Build.JavaHash ?? string.Empty) != (await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty);
+            // By JAR?
+            string templateJarHash = IOUtils.FileExists(Paths.TemplateJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, CT) : null;
+            templateJarHash ??= string.Empty;
+            string cacheJarHash = IOUtils.FileExists(Paths.CacheJarHashPath) ? await IOUtils.TryReadAllTextAsync(Paths.CacheJarHashPath, Log, CT) : null;
+            cacheJarHash ??= string.Empty;
+            needsNewJar = templateJarHash != cacheJarHash || cacheJarHash.IsNullOrWhiteSpace() || !IOUtils.FileExists(Paths.CacheJarPath) || !IOUtils.FileExists(Paths.CacheJarHashPath);
+            if (needsNewJar)
+            {
+                Log.Debug($"A new {SpaceHavenConstants.SpaceHavenName} must be generated");
+                NeedsXmlBuild = true;
+                NeedsJavaBuild = true;
+                return true;
             }
+
+            // By XML inputs?
+            string prevXmlHash = await IOUtils.TryReadAllTextAsync(Paths.CacheXmlHashPath, Log, CT) ?? string.Empty;
+            NeedsXmlBuild = Build.XmlHash != prevXmlHash;
+
+            // By JAVA inputs?
+            string prevJavaHash = await IOUtils.TryReadAllTextAsync(Paths.CacheJavaHashPath, Log, CT) ?? string.Empty;
+            NeedsJavaBuild = Build.JavaHash != prevJavaHash;
 
             // Done.
             return true;
@@ -636,7 +641,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($@"Unable to compute build bypass: {ex}");
+            Log.Error($@"Unable to compute mod build hashes: {ex}");
             return false;
         }
     }
@@ -665,7 +670,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($@"Unable reset XML build: {ex}");
+            Log.Error($@"Unable reset build stage directory: {ex}");
             return false;
         }
     }
@@ -2189,7 +2194,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
+            Log.Error($"Unable to compose final '{SpaceHavenConstants.SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
             return false;
         }
     }
@@ -2206,7 +2211,7 @@ public sealed class ModBuilder : IAsyncDisposable
     {
         try
         {
-            Log.Info($"Composing '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file...", Paths.CacheDir);
+            Log.Info($"Composing '{SpaceHavenConstants.SPACEHAVEN_JAR}' file...", Paths.CacheDir);
             ComposeSpaceHavenJar.Start();
 
             // Select files to add to template JAR:
@@ -2218,15 +2223,8 @@ public sealed class ModBuilder : IAsyncDisposable
 
             ComposeSpaceHavenJar.SetNormalized(0.85);
 
-            // Calculate hash of modified JAR:
-            string hash = await XxHash64Calculator.ComputeFromFileAsync(Paths.CacheJarPath, Log, CT);
-            if (!await IOUtils.TryWriteAllTextAsync(Paths.CacheModifiedJarHashPath, hash, Log, CT))
-                return false;
-
             // Copy original JAR hash file:
-            if (!await IOUtils.TryCopyFileAsync(Paths.TemplateJarHashPath, Paths.BuildJarHashPath, true, Log, CT))
-                return false;
-            if (!await IOUtils.TryCopyFileAsync(Paths.BuildJarHashPath, Paths.CacheJarHashPath, true, Log, CT))
+            if (!await IOUtils.TryCopyFileAsync(Paths.TemplateJarHashPath, Paths.CacheJarHashPath, true, Log, CT))
                 return false;
 
             ComposeSpaceHavenJar.SetNormalized(0.90);
@@ -2257,13 +2255,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Done.
             ComposeSpaceHavenJar?.Complete();
-            Log.Success($"'{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' is ready", Paths.CacheDir);
+            Log.Success($"'{SpaceHavenConstants.SPACEHAVEN_JAR}' is ready", Paths.CacheDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log.Error($"Unable to compose final '{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
+            Log.Error($"Unable to compose final '{SpaceHavenConstants.SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
             return false;
         }
     }
@@ -2310,7 +2308,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Relative Paths:
                 string modDir = mod.Dir.AsStdPath();
-                
+
                 modInfo.Dir = modDir;
                 if (!m.BasePaths.ClassicModsDir.IsNullOrWhiteSpace())
                     modInfo.Dir = modInfo.Dir.Replace(m.BasePaths.ClassicModsDir, "[ClassicMods]", StringComparison.OrdinalIgnoreCase);

@@ -1,108 +1,26 @@
-﻿using SH.Framework.Extensions;
+﻿using ICSharpCode.SharpZipLib.Zip;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
-using ICSharpCode.SharpZipLib.Zip;
+using SH.Modding;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading;
-using SH.Content;
-using SH.Modding;
-using SH.Content.Enums;
+using System.Threading.Tasks;
 
 namespace SH.Launcher.Core.Services;
 
-public sealed class JarRepositoryService
+public sealed class ExportService
 {
     private readonly ILogger Log;
 
-    public JarRepositoryService(ILogger log)
+    public ExportService(ILogger log)
     {
         Log = log ?? new VoidLogger();
     }
-
-    public async Task<VersionInfo> TryReadVersionAsync(string jarPath) =>
-        await Task.Run(() => TryReadVersionInternalAsync(jarPath));
-    private async Task<VersionInfo> TryReadVersionInternalAsync(string jarPath)
-    {
-        string parent = null;
-        try { parent = Path.GetDirectoryName(jarPath); } catch { }
-
-        try
-        {
-            if (!IOUtils.FileExists(jarPath))
-            {
-                Log.Error($@"Could not find ""{jarPath}""", parent);
-                return null;
-            }
-
-            using ZipFile zin = new(jarPath);
-            ZipEntry entry = zin.GetEntry(SpaceHavenConstants.VERSION_TXT);
-            if (entry == null)
-            {
-                Log.Error($@"Could not find {SpaceHavenConstants.VERSION_TXT} inside: ""{jarPath}""", parent);
-                return null;
-            }
-
-            await using Stream stream = zin.GetInputStream(entry);
-            using StreamReader reader = new(stream);
-            string versionStr = (await reader.ReadToEndAsync()).Replace("\r", string.Empty).Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Trim()).JoinToString("");
-            return new VersionInfo(versionStr);
-        }
-        catch (Exception ex)
-        {
-            Log?.Error(ex, parent);
-            return null;
-        }
-    }
-
-    public async Task<EGamePlatform?> TryReadGamePlatformAsync(string jarPath) =>
-    await Task.Run(() => TryReadGamePlatformInternalAsync(jarPath));
-    private async Task<EGamePlatform?> TryReadGamePlatformInternalAsync(string jarPath)
-    {
-        string parent = null;
-        try { parent = Path.GetDirectoryName(jarPath); } catch { }
-
-        try
-        {
-            if (!IOUtils.FileExists(jarPath))
-            {
-                Log.Error($@"Could not find ""{jarPath}""", parent);
-                return null;
-            }
-
-            using ZipFile zin = new(jarPath);
-            string entryName = "META-INF/MANIFEST.MF";
-            ZipEntry entry = zin.GetEntry(entryName);
-            if (entry == null)
-            {
-                Log.Error($@"Could not find ""{entryName}"" inside: ""{jarPath}""", parent);
-                return null;
-            }
-
-            await using Stream stream = zin.GetInputStream(entry);
-            using StreamReader reader = new(stream);
-            string manifest = await reader.ReadToEndAsync();
-
-            bool isGOG = manifest.Contains("SpacehavenGOG", StringComparison.OrdinalIgnoreCase);
-            bool isSteam = manifest.Contains("SpacehavenSteam", StringComparison.OrdinalIgnoreCase);
-
-            if (isGOG && !isSteam)
-                return EGamePlatform.GOG;
-            if (!isGOG && isSteam)
-                return EGamePlatform.Steam;
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Log?.Error(ex, parent);
-            return null;
-        }
-    }
-
 
     public async Task<bool> TryExportLibraryAsync(string jarPath, string outputDirectory, CancellationToken ct, IProgressInfo progress) =>
         await Task.Run(() => TryExportLibraryInternalAsync(jarPath, outputDirectory, ct, progress));
@@ -316,6 +234,4 @@ public sealed class JarRepositoryService
             Log.Info($@"{fileCount} file(s) exported", outputDirectory);
         }
     }
-
-
 }

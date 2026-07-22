@@ -341,7 +341,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 runGame.Complete();
                 State.IsSpaceHavenRunning = true;
 
-                GameLauncherService launcherSvc = new(Paths.Data, Log);
+                GameLaunchService launcherSvc = new(Paths.Data, Log);
 
                 // Run and await Space Haven:
                 if (await launcherSvc.TryLaunchModifiedGameAsync(
@@ -503,7 +503,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     // Export ORIGINAL Library:
                     Log.Info($@"Extracting ORIGINAL library...", exportOriginalFilesDir);
-                    JarRepositoryService repo = new(Log);
+                    ExportService repo = new(Log);
                     if (!await repo.TryExportLibraryAsync(originalJarPath, exportOriginalFilesDir, ct, extractOriginalFiles))
                     {
                         Log.Error($@"Unable to extract ORIGINAL library", exportDir);
@@ -557,7 +557,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 {
                     // Export MODIFIED Library:
                     Log.Info($@"Exporting MODIFIED library...", exportModifiedFilesDir);
-                    JarRepositoryService repo = new(Log);
+                    ExportService repo = new(Log);
                     if (!await repo.TryExportLibraryAsync(modifiedJarPath, exportModifiedFilesDir, ct, extractModifiedFiles))
                     {
                         Log.Error($@"Unable to export MODIFIED library", exportDir);

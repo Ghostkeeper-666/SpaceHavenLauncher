@@ -16,12 +16,12 @@ using System.Threading.Tasks;
 
 namespace SH.Launcher.Core.Services;
 
-public sealed class GameLauncherService
+public sealed class GameLaunchService
 {
     private readonly PathData Paths;
     private readonly ILogger Log;
 
-    public GameLauncherService(PathData paths, ILogger log)
+    public GameLaunchService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Log = log ?? new VoidLogger();
@@ -134,7 +134,7 @@ public sealed class GameLauncherService
 
             // Log:
             Log.Debug($@"Cache Directory: ""{Paths.CacheDir}""");
-            Log.Debug($@"{ModdingConstants.MODIFIED_SPACEHAVEN_JAR}: ""{Paths.CacheModifiedJarHashPath}""");
+            Log.Debug($@"{SpaceHavenConstants.SPACEHAVEN_JAR}: ""{Paths.CacheJarPath}""");
             Log.Debug($@"{ModdingConstants.MODS_JSON}: ""{Paths.CacheModsJsonPath}""");
             Log.Debug($@"JVM Variable for path to {ModdingConstants.MODS_JSON} file: {ModdingConstants.JVM_VAR_MODS_JSON}");
             

@@ -242,12 +242,12 @@ public sealed class ModData
         {
             if (UniqueName.Contains("Bikini Babes", StringComparison.OrdinalIgnoreCase))
                 Author = "Gravelyn";
-            else if (UniqueName.Contains("CustomizerPlus"))
+            else if (UniqueName.Contains("Customizer+"))
                 Author = "r4v4g3 (r0xx0r3r)";
             else
             {
                 Author = string.Empty;
-                log?.Warn($@"Missing mod author in mod ""{UniqueName}""");
+                log?.Warn($@"[{UniqueName}] Missing mod author");
             }
         }
 

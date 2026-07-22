@@ -45,7 +45,7 @@ public sealed class PathData
 
     public string LearningDir => AppDir.CombineAsOSPath("Learning");
 
-    public string AppLogPath => WorkDir.CombineAsOSPath("appLog.txt");
+    public string AppLogPath => WorkDir.CombineAsOSPath("log.txt");
     public string LauncherAgentLogPath => CacheDir.CombineAsOSPath("LauncherAgent.log");
 
     public string ModListPath => WorkDir.CombineAsOSPath("mods.xml");
@@ -79,7 +79,6 @@ public sealed class PathData
         }
     }
     public string SpaceHavenJarPath => SpaceHavenJarDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
-    public string SpaceHavenModifiedJarPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
     public string SpaceHavenConfigJsonPath => SpaceHavenJarDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
     public string SpaceHavenModsJsonPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
     public string SpaceHavenAspectJPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.ASPECTJ);
@@ -88,7 +87,7 @@ public sealed class PathData
 
     public string BackupDir => WorkDir.CombineAsOSPath(ModdingConstants.BACKUP);
     public string BackupJarPath => BackupDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
-    public string BackupJarHashPath => BackupDir.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string BackupJarHashPath => BackupDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
     public string BackupConfigJsonPath => BackupDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
 
 
@@ -105,20 +104,19 @@ public sealed class PathData
     public string TemplateStageVersionPath => TemplateStageDir.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
     public string TemplateExtraCreditsTxtPath => TemplateStageDir.CombineAsOSPath(SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
-    public string TemplateJarPath => TemplateDir.CombineAsOSPath(ModdingConstants.TEMPLATE_SPACEHAVEN_JAR);
-    public string TemplateJarHashPath => TemplateDir.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
+    public string TemplateJarPath => TemplateDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
+    public string TemplateJarHashPath => TemplateDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
     public string TemplateConfigJsonPath => TemplateDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
 
 
 
     public string BuildDir => WorkDir.CombineAsOSPath(ModdingConstants.BUILD);
 
-    public string BuildJarHashPath => BuildDir.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string BuildXmlHashPath => BuildDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH_TXT);
-    public string BuildJavaHashPath => BuildDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH_TXT);
+    public string BuildXmlHashPath => BuildDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH);
+    public string BuildJavaHashPath => BuildDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH);
 
     public string BuildLogsDir => BuildDir.CombineAsOSPath("logs");
-    public string BuildLogPath => BuildDir.CombineAsOSPath("BuildLog.txt");
+    public string BuildLogPath => BuildDir.CombineAsOSPath("buildLog.txt");
 
     public string BuildTexturesDir => BuildDir.CombineAsOSPath("textures");
     public string BuildAudioDir => BuildDir.CombineAsOSPath("audio");
@@ -142,11 +140,11 @@ public sealed class PathData
     public string BuildStageExtraCreditsTxtPath => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.EXTRA_CREDITS_TXT);
 
     public string CacheDir => WorkDir.CombineAsOSPath("cache");
-    public string CacheJarPath => CacheDir.CombineAsOSPath(ModdingConstants.MODIFIED_SPACEHAVEN_JAR);
-    public string CacheJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.ORIGINAL_JAR_HASH_TXT);
-    public string CacheModifiedJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.MODIFIED_JAR_HASH_TXT);
-    public string CacheXmlHashPath => CacheDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH_TXT);
-    public string CacheJavaHashPath => CacheDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH_TXT);
+    public string CacheJarPath => CacheDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
+    public string CacheJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
+    public string CacheModifiedJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
+    public string CacheXmlHashPath => CacheDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH);
+    public string CacheJavaHashPath => CacheDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH);
     public string CacheConfigJsonPath => CacheDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
     public string CacheModsJsonPath => CacheDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
 

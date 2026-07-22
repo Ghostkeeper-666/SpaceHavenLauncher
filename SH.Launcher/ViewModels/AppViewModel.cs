@@ -437,30 +437,61 @@ public partial class AppViewModel : ObservableObject
             AddIndirectReferences(mod, child); // add children
     }
 
-    public async Task InitializeAsync(bool forceReset)
+    public async Task<bool> InitializeAsync(bool forceReset)
     {
+        // Skip while processing other stuff:
         if (IsProcessing && !IsInitializing)
-            return;
+            return true;
 
         // Semaphore:
         await Semaphore.WaitAsync();
         try
         {
+            Log.Warn($"Starting a {(forceReset ? "FULL" : "QUICK")} initialization...");
+
             using CancellationTokenSource cts = new();
             InitializationCTS = cts;
             CancellationToken ct = cts.Token;
 
             InitializationState = EControlState.Standby; // required to trigger events on the next line:
             InitializationState = EControlState.Running;
-            if (await InitializeInternalAsync(forceReset, ct))
-                InitializationState = EControlState.Ready;
-            else
-                InitializationState = EControlState.Error;
+            if (!await InitializeInternalAsync(forceReset, ct))
+            {
+                if (forceReset)
+                {
+                    InitializationState = EControlState.Error;
+                    return false;
+                }
+
+                // Try to force a reset first:
+                Log.Warn("Retrying a FULL initialization...");
+                if (!await InitializeInternalAsync(true, ct))
+                {
+                    Log.Error("Initialization has failed");
+                    InitializationState = EControlState.Error;
+                    return false;
+                }
+            }
+
+            // LOAD MODS:
+            if (!await TryReloadModsAsync(ct))
+                return false;
+
+            // Done.
+            Log.Success($"Initialization is complete", Paths.WorkDir);
+            InitializationState = EControlState.Ready;
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            Log.Warn($"Initialization was cancelled");
+            return false;
         }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
             InitializationState = EControlState.Error;
+            return false;
         }
         finally
         {
@@ -476,102 +507,27 @@ public partial class AppViewModel : ObservableObject
             InitializeProgress.Reset();
             InitializeProgress.Start();
 
-            if (forceReset)
-            {
-                Log.Info($"Resetting {SpaceHavenLauncher.Name} files...");
-                await IOUtils.TryDeleteDirContentAsync(Paths.Data.TemplateDir, Log, ct);
-                await IOUtils.TryDeleteDirContentAsync(Paths.Data.BuildDir, Log, ct);
-                await IOUtils.TryDeleteDirContentAsync(Paths.Data.CacheDir, Log, ct);
-            }
-
-            DeploymentService svc = new(Paths.Data, Log);
-
-            // BACKUP:
-            Log.Debug($@"Performing backup of original files...", Paths.Data.BackupDir);
-            if (!await svc.TryBackupOriginalAsync(InitializationCTS.Token, BackupProgress))
-            {
-                Log.Error("Unable to backup original JAR file", Paths.Data.BackupDir);
-                return false;
-            }
-            BackupProgress?.Complete();
-            Log.Success($"Original files backup is complete");
-
-            // TEMPLATE:
-            Log.Debug($@"Preparing template files...", Paths.Data.TemplateDir);
-            if (!await Task.Run(() => svc.TryPrepareTemplateAsync(InitializationCTS.Token, TemplateProgress)))
-            {
-                Log.Error("Unable to prepare template JAR file", Paths.Data.TemplateDir);
-                return false;
-            }
-
-            Log.Debug($@"Reading game platform...", Paths.Data.TemplateDir);
-            JarRepositoryService jarSvc = new(Log);
-            EGamePlatform? gamePlatform = await Task.Run(() => jarSvc.TryReadGamePlatformAsync(Paths.Data.BackupJarPath));
-            if (gamePlatform == null || !gamePlatform.HasValue)
-            {
-                Log.Error("Unable to read game platform from template JAR file", Paths.Data.TemplateDir);
-                return false;
-            }
-            GamePlatform = gamePlatform.Value;
-
-            TemplateProgress?.Complete();
-            Log.Success($"Template files are ready");
-
-            Log.Debug($@"Reading java arguments from config.json file...", Paths.Data.TemplateDir);
-            ConfigJsonFile configJson = await ConfigJsonFile.TryLoadAsync(Paths.Data.TemplateConfigJsonPath, Log, ct);
-            if (configJson == null)
-            {
-                Log.Error("Unable to read config.json", Paths.Data.TemplateDir);
-                return false;
-            }
-
-            TemplateJavaVMArgs = configJson.VMArgs.JoinToString(" ");
-            AppSettings.JavaVMArgs = TemplateJavaVMArgs; // force update
-
-            TemplateJavaMainClass = configJson.MainClass;
-            AppSettings.JavaMainClass = TemplateJavaMainClass; // force update
-
-            TemplateProgress?.Complete();
-            Log.Success($"Template files are ready");
-
-            // CACHE:
-            Log.Debug($@"Reading version...", Paths.Data.TemplateDir);
-            VersionParserService versionParser = new();
-            if (!await State.TryReadSpaceHavenVersion(Log, InitializationCTS.Token))
-            {
-                Log.Error($"Unable to read {SpaceHavenConstants.SpaceHavenName} version from template files", Paths.Data.TemplateDir);
+            InitializationService svc = new(Paths.Data, Log, BackupProgress, TemplateProgress, CacheProgress);
+            InitializationData initializationData = await svc.InitializeAsync(forceReset, ct);
+            if(initializationData == null)
                 return false;
 
-            }
-            Log.Success($"Detected {SpaceHavenConstants.SpaceHavenName} version {State.SpaceHavenVersion}");
+            GamePlatform = initializationData.GamePlatform;
 
-            Log.Debug($@"Validating mod cache...", Paths.Data.CacheDir);
-            if (!await Task.Run(() => svc.TryValidateModifiedCacheAsync(InitializationCTS.Token, CacheProgress)))
-            {
-                Log.Error("Validation of mod cache has failed", Paths.Data.CacheDir);
-                return false;
-            }
-            CacheProgress?.Complete();
-            Log.Success($"Cached files are validated");
+            TemplateJavaVMArgs = initializationData.VMArgs;
+            if(forceReset || AppSettings.JavaVMArgs.IsNullOrWhiteSpace())
+                AppSettings.JavaVMArgs = initializationData.VMArgs;
 
-            // LOAD MODS:
-            Log.Debug($@"Loading mods...");
-            if (!await TryReloadModsAsync(ct, LoadModsProgress))
-            {
-                Log.Error("Unable to all load mods");
-                return false;
-            }
-            LoadModsProgress?.Complete();
+            TemplateJavaMainClass = initializationData.MainClass;
+            if(forceReset || AppSettings.JavaMainClass.IsNullOrWhiteSpace())
+                AppSettings.JavaMainClass = initializationData.MainClass;
+
+            SpaceHavenVersion = initializationData.SpaceHavenVersion;
 
             // Done.
-            Log.Success($"{SpaceHavenLauncher.Name} initialization is complete", Paths.WorkDir);
             return true;
         }
-        catch (OperationCanceledException)
-        {
-            Log.Error($"{SpaceHavenLauncher.Name} initialization was cancelled");
-            return false;
-        }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
@@ -579,17 +535,18 @@ public partial class AppViewModel : ObservableObject
         }
     }
 
-    private async Task<bool> TryReloadModsAsync(CancellationToken ct, IProgressInfo progress)
+    private async Task<bool> TryReloadModsAsync(CancellationToken ct)
     {
         try
         {
-            progress?.Start();
+            LoadModsProgress.Reset();
+            LoadModsProgress.Start();
 
-            // Clear mod items:
+
+            // Clear:
+            Log.Debug("Resetting mods...");
             Mods.Clear();
             ModPages.Clear();
-
-            // Prepare the list of items to remove, then remove, otherwise we get an exception:
             List<LeftPaneItemViewModel> leftPaneItemsToRemove = LeftPaneItems.Where(item => item.Type == EPageType.Mod).ToList();
             foreach (LeftPaneItemViewModel item in leftPaneItemsToRemove)
             {
@@ -597,15 +554,19 @@ public partial class AppViewModel : ObservableObject
                 FilteredLeftPaneItems.Remove(item);
             }
 
+
             // Load mods, then sort them:
+            Log.Debug("Loading mods...");
             ModRepositoryService modRepoSvc = new(Paths.Data, Log);
             ModValuesRepositoryService valuesRepoSvc = new(Paths.Data, Log);
-            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, progress);
+            OrderedDictionary<string, ModData> mods = await modRepoSvc.TryLoadMods(ct, LoadModsProgress);
             if (mods == null)
                 return false;
             mods = await valuesRepoSvc.TryLoadModSortingAsync(mods, ct);
 
+
             // Load mod values:
+            Log.Debug("Reading mod variable values...");
             foreach (ModData mod in mods.Values)
             {
                 if (await valuesRepoSvc.TryLoadCurrentModValuesAsync(mod, ct))
@@ -624,7 +585,9 @@ public partial class AppViewModel : ObservableObject
                 }
             }
 
+
             // Now add the loaded mods:
+            Log.Debug("Adding loaded mods...");
             foreach (ModData modData in mods.Values)
             {
                 ct.ThrowIfCancellationRequested();
@@ -637,13 +600,17 @@ public partial class AppViewModel : ObservableObject
             }
             FilteredLeftPaneItems = new(LeftPaneItems);
 
+
             // Update mod conflicts:
+            Log.Debug("Refreshing mod page data...");
             UpdateModIds();
             UpdateModConflicts();
             UpdateModDependencies();
 
+
             // Done.
-            progress?.Complete();
+            Log.Debug("Mods loaded");
+            LoadModsProgress.Complete();
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -698,21 +665,7 @@ public partial class AppViewModel : ObservableObject
         });
     }
 
-    public async Task<bool> TryReadSpaceHavenVersion(ILogger log, CancellationToken ct)
-    {
-        try
-        {
-            VersionParserService svc = new();
-            SpaceHavenVersion = await svc.TryReadVersion(Paths.Data.TemplateStageVersionPath, log, ct);
-            return SpaceHavenVersion != null;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
+
 
 
 }

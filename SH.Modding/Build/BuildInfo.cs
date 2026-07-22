@@ -53,6 +53,9 @@ internal sealed class BuildInfo : IAsyncDisposable
             ModList.Add(new Mod(BuildSettings, ModList.Count, mod, this, Log));
     }
 
+    /// <summary>
+    /// Computes hash from inputs! 
+    /// </summary>
     public async Task<bool> ComputeHash()
     {
         try
@@ -75,6 +78,8 @@ internal sealed class BuildInfo : IAsyncDisposable
             };
             string appHash = XxHash64Calculator.ComputeFromString(appData.JoinToString("\n"), Log) ?? string.Empty;
 
+            string jarHash = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
+
             // --- XML ---
             CT.ThrowIfCancellationRequested();
             {
@@ -85,7 +90,7 @@ internal sealed class BuildInfo : IAsyncDisposable
                 xmlHashes["App"] = appHash;
 
                 // JAR:
-                xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
+                xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = jarHash;
 
                 // Mods:
                 string xmlModsHashData = ModList.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.UniqueName}={mod.XmlHash}", "\n") ?? string.Empty;
@@ -104,6 +109,9 @@ internal sealed class BuildInfo : IAsyncDisposable
 
                 // App:
                 javaHashes["App"] = appHash;
+
+                // JAR:
+                javaHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = jarHash;
 
                 // Mods:
                 string javaModsHashData = ModList.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.UniqueName}={mod.JavaHash}", "\n") ?? string.Empty;

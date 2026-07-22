@@ -103,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             bool success = true;
             success &= await InitializePathSettings(ct);
-            State.Log.SetPath(IOUtils.CombineAsOSPath(Paths.Data.WorkDir, "log.txt"));
+            State.Log.SetPath(IOUtils.CombineAsOSPath(Paths.Data.AppLogPath));
 
             success &= await InitializeAppSettings(ct);
             return success;
