@@ -136,12 +136,12 @@ public partial class SystemCoreViewModel : ViewModelBase
 
         JavaVMArgs_ForeColor =
             AppSettings.JavaVMArgs.IsNullOrWhiteSpace() ? Brushes.OrangeRed :
-            AppSettings.JavaVMArgs.Equals(State.TemplateJavaVMArgs) ? Brushes.LightCyan :
+            AppSettings.JavaVMArgs.Equals(State.DefaultJavaVMArgs) ? Brushes.LightCyan :
             Brushes.Gold;
 
         JavaMainClass_ForeColor =
             AppSettings.JavaMainClass.IsNullOrWhiteSpace() ? Brushes.OrangeRed :
-            AppSettings.JavaMainClass.Equals(State.TemplateJavaMainClass) ? Brushes.LightCyan :
+            AppSettings.JavaMainClass.Equals(State.DefaultJavaMainClass) ? Brushes.LightCyan :
             Brushes.Gold;
     }
 

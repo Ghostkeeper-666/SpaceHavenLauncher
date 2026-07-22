@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Content.Enums;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
@@ -20,6 +21,9 @@ public partial class AppSettingsViewModel : ObservableObject
     private volatile bool IsUpdating;
 
     private AppSettingsData Data;
+
+    // PREVIOUS APP VERSION
+    public VersionInfo PreviousAppVersion => Data?.PreviousAppVersion ?? new VersionInfo("6.6.6");
 
     // MONITOR:
     [ObservableProperty]

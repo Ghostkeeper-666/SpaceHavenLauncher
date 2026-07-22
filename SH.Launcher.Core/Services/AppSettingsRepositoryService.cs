@@ -62,6 +62,9 @@ public sealed class AppSettingsRepositoryService
 
 
             // Read fields:
+            data.PreviousAppVersion =
+                new VersionInfo(root.Element(nameof(AppSettingsData.PreviousAppVersion))?.Value);
+
             data.MonitorIndex =
                 int.TryParse(root.Element(nameof(AppSettingsData.MonitorIndex))?.Value ?? string.Empty, out int monitorIndex) ? monitorIndex : data.MonitorIndex;
 
@@ -127,7 +130,7 @@ public sealed class AppSettingsRepositoryService
             doc.Add(root);
 
             // Write fields:
-
+            root.Add(new XElement(nameof(AppSettingsData.PreviousAppVersion), SpaceHavenLauncher.Version?.ToString() ?? string.Empty));
             root.Add(new XElement(nameof(AppSettingsData.MonitorIndex), data.MonitorIndex));
             root.Add(new XElement(nameof(AppSettingsData.IsLeftPaneCollapsed), data.IsLeftPaneCollapsed));
             root.Add(new XElement(nameof(AppSettingsData.LogVerbosity), data.LogVerbosity));

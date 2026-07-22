@@ -6,7 +6,9 @@ namespace SH.Framework.IO;
 
 public sealed class VersionInfo : IComparable<VersionInfo>, IComparable
 {
-    private readonly string Value;
+    public string RawValue { get; }
+    private string Value { get; }
+
     private readonly List<string> Items = new();
 
     public string Major => Items.Count > 0 ? Items[0] ?? "0" : "0";
@@ -14,22 +16,28 @@ public sealed class VersionInfo : IComparable<VersionInfo>, IComparable
     public string Build => Items.Count > 2 ? Items[2] ?? "0" : "0";
     public string Release => Items.Count > 3 ? Items[3] ?? "0" : "0";
 
-    public VersionInfo(string str)
+    public VersionInfo(string rawVersion)
     {
-        str = str?.Trim()?.TrimStart('v')?.Trim('.', ' ');
-        if (str.IsNullOrWhiteSpace())
-            str = "0";
-        string[] splitted = str.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        rawVersion = rawVersion?.Trim()?.TrimStart('v')?.Trim('.', ' ', '-');
+        if (rawVersion.IsNullOrWhiteSpace())
+            rawVersion = "0.0.0";
+        RawValue = rawVersion;
+
+        string[] splitted = rawVersion.Split('.', StringSplitOptions.RemoveEmptyEntries);
         if (splitted.Length <= 0)
         {
+            Items.Add("0");
+            Items.Add("0");
             Items.Add("0");
             return;
         }
         for (int i = 0; i < splitted.Length; ++i)
         {
-            string v = splitted[i].TrimStart('0');
-            if (v.IsNullOrWhiteSpace())
+            string v = splitted[i].Trim().Replace(" ", "-").Trim('-');
+            if (v.Length <= 0)
                 v = "0";
+            else if (!char.IsDigit(v[0]))
+                v = $"0-{v}";
             Items.Add(v);
         }
         Value = Items.JoinToString(".");
@@ -71,6 +79,42 @@ public sealed class VersionInfo : IComparable<VersionInfo>, IComparable
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
         return left.CompareTo(right) >= 0;
+    }
+
+    public static bool operator ==(VersionInfo left, VersionInfo right)
+    {
+        if(left is null)
+        {
+             if(right is null)
+                return true;
+             else
+                return false;
+        }
+        else // left is not null
+        {
+             if(right is null)
+                return false;
+             else
+                return left.CompareTo(right) == 0;
+        }
+    }
+
+    public static bool operator !=(VersionInfo left, VersionInfo right)
+    {
+        if(left is null)
+        {
+             if(right is null)
+                return false;
+             else
+                return true;
+        }
+        else // left is not null
+        {
+             if(right is null)
+                return true;
+             else
+                return left.CompareTo(right) != 0;
+        }
     }
 
     public bool IsEqualTo(VersionInfo other) =>
@@ -150,5 +194,5 @@ public sealed class VersionInfo : IComparable<VersionInfo>, IComparable
         return CompareTo(other);
     }
 
-    public override string ToString() => Value;
+    public override string ToString() => RawValue;
 }

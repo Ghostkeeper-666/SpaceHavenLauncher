@@ -1,4 +1,5 @@
 ﻿using SH.Content.Enums;
+using SH.Framework.IO;
 
 namespace SH.Launcher.Core.Models;
 
@@ -9,6 +10,7 @@ public sealed class AppSettingsData
 {
     public static AppSettingsData GetDefault() => new()
     {
+        PreviousAppVersion = SpaceHavenLauncher.Version,
         MonitorIndex = 0,
         IsLeftPaneCollapsed = false,
         LogVerbosity = ELogVerbosity.Normal,
@@ -26,6 +28,7 @@ public sealed class AppSettingsData
 
     public AppSettingsData() { }
 
+    public VersionInfo PreviousAppVersion { get; internal set; }
     public int MonitorIndex { get; set; }
     public bool IsLeftPaneCollapsed { get; set; }
     public ELogVerbosity LogVerbosity { get; set; }

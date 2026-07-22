@@ -7,8 +7,8 @@ public sealed class InitializationData
 {
     public VersionInfo SpaceHavenVersion { get; internal set; }
     public EGamePlatform GamePlatform { get; internal set; }
-    public string MainClass { get; internal set; }
-    public string VMArgs { get; internal set; }
+    public string JavaMainClass { get; internal set; }
+    public string JavaVMArgs { get; internal set; }
 
     public bool BackupChanged { get; internal set; }
     public bool TemplateChanged { get; internal set; }

@@ -3,7 +3,6 @@ using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Modding;
 using SH.Modding.Models;
 using System;
@@ -65,14 +64,15 @@ public sealed class GameLaunchService
 
             // Simple check for classpath in the provided VM args, just to warn:
             // If the user wants to do this, it's not our problem...
+            vmArgs ??= string.Empty;
             if (vmArgs.Contains("-cp", StringComparison.OrdinalIgnoreCase) ||
                 vmArgs.Contains("-classpath", StringComparison.OrdinalIgnoreCase) ||
                 vmArgs.Contains("--class-path", StringComparison.OrdinalIgnoreCase))
-                Log.Warn("The provided vmArgs contain class paths. This attempt will most probably not work correctly!");
+                Log.Warn("The provided VMArgs contain class paths. This attempt will probably fail...");
 
+
+            // First of all, the Launcher's args:
             List<string> args = [];
-
-            // First Launcher args:
             args.Add($@"""-Daj.weaving.verbose=true""");
             args.Add($@"""-Dorg.aspectj.weaver.showWeaveInfo=true""");
             args.Add($@"""-XshowSettings:properties""");
@@ -81,9 +81,9 @@ public sealed class GameLaunchService
             // The first java agent must be the LauncherAgent:
             args.Add($@"""-javaagent:{IOUtils.CombineAsOSPath(Paths.CacheDir, "LauncherAgent.jar")}""");
 
-            // Now add the vmArgs from original config.json OR advanced-user-customized vmArgs
-            // Any customized argument must be quoted and escaped correctly by the user
-            // If the advanced user passes -javaagent arguments, they have a higher priority over the AOP agent
+            // Now add advanced-user-customized vmArgs or the default VMArgs:
+            if(vmArgs.IsNullOrWhiteSpace())
+                vmArgs = SpaceHavenConstants.GetDefaultVMArgs(OS.Type).Select(arg => $@"""{arg}""").JoinToString(" ");
             args.Add(vmArgs);
 
             // Now add the AOP agent after everything else and just before the class path:
@@ -109,7 +109,6 @@ public sealed class GameLaunchService
                 }
             }
             args.Add(mainClass);
-
 
             // Clear any previously existing LauncherAgent log:
             await IOUtils.TryDeleteFileAsync(Paths.LauncherAgentLogPath, Log, ct);
@@ -137,7 +136,7 @@ public sealed class GameLaunchService
             Log.Debug($@"{SpaceHavenConstants.SPACEHAVEN_JAR}: ""{Paths.CacheJarPath}""");
             Log.Debug($@"{ModdingConstants.MODS_JSON}: ""{Paths.CacheModsJsonPath}""");
             Log.Debug($@"JVM Variable for path to {ModdingConstants.MODS_JSON} file: {ModdingConstants.JVM_VAR_MODS_JSON}");
-            
+
             string text = $"Starting {SpaceHavenConstants.SpaceHavenName}";
             string dashedLine = new('=', text.Length);
             StringBuilder sb = new();
@@ -155,8 +154,30 @@ public sealed class GameLaunchService
                 StartInfo = info,
             };
 
-            process.OutputDataReceived += (_, e) => Log.Debug($"[java.exe]  ERROR: {e?.Data}");
-            process.ErrorDataReceived += (_, e) => Log.Debug($"[java.exe]  {e?.Data}");
+            process.OutputDataReceived += (_, e) =>
+            {
+                try
+                {
+                    string msg = e?.Data ?? string.Empty;
+                    if (msg.IsNullOrEmpty())
+                        return;
+
+                    if (msg.StartsWith("ERROR:") || msg.StartsWith("[ERROR]") || msg.StartsWith("[FAILURE]"))
+                        Log.Error($"[JVM]  {msg}");
+
+                    if (msg.StartsWith("WARN:") || msg.StartsWith("WARNING:") || msg.StartsWith("[WARNING]"))
+                        Log.Warn($"[JVM]  {msg}");
+
+                    if (msg.StartsWith("INFO:") || msg.StartsWith("[INFO]") || msg.StartsWith("[INFORMATION]"))
+                        Log.Info($"[JVM]  {msg}");
+
+                    Log.Debug($"[JVM]  {msg}");
+                }
+                catch { }
+            };
+
+            process.ErrorDataReceived += (_, e) =>
+                Log.Error($"[JVM-ERR]  {e?.Data}");
 
             if (!process.Start())
             {
@@ -186,7 +207,7 @@ public sealed class GameLaunchService
         catch (Exception ex)
         {
             Log.Error(ex);
-            if(!ct.IsCancellationRequested)
+            if (!ct.IsCancellationRequested)
                 await Task.Delay(200, default);
             return false;
         }
@@ -196,14 +217,14 @@ public sealed class GameLaunchService
     {
         try
         {
-            if(text.IsNullOrWhiteSpace())
+            if (text.IsNullOrWhiteSpace())
                 return;
             LogMessage[] msgs =
                 text.Replace("\r", string.Empty)
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Select(text => new LogMessage(text.Contains("ERROR", StringComparison.Ordinal) ? ELogLevel.Error : ELogLevel.Debug, text.TrimEnd()))
                 .ToArray();
-            foreach(LogMessage msg in msgs)
+            foreach (LogMessage msg in msgs)
                 Log.Add(msg);
         }
         catch { }

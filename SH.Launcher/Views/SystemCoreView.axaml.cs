@@ -532,10 +532,10 @@ public partial class SystemCoreView : UserControl
         await (DataContext as SystemCoreViewModel)?.CollectDebuggingInformation();
 
     private void Reset_JavaVMArgs(object sender, RoutedEventArgs e) =>
-        AppSettings.JavaVMArgs = State.TemplateJavaVMArgs;
+        AppSettings.JavaVMArgs = State.DefaultJavaVMArgs;
 
     private void Reset_JavaMainClass(object sender, RoutedEventArgs e) =>
-        AppSettings.JavaMainClass = State.TemplateJavaMainClass;
+        AppSettings.JavaMainClass = State.DefaultJavaMainClass;
 
     private void Copy_JavaVMArgs(object sender, RoutedEventArgs e) =>
         State.CopyToClipboardAsync(AppSettings.JavaVMArgs);

@@ -1,5 +1,5 @@
 ﻿using SH.Content;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace SH.Modding;
 
@@ -39,8 +39,7 @@ public static class ModdingConstants
 
     public static readonly string JVM_VAR_MODS_JSON = "SpaceHavenLauncher.ModsJson";
 
-    public static IReadOnlyList<string> PathsForModding => new string[]
-    {
+    public static ImmutableArray<string> PathsForModding => ImmutableArray.Create(
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.HAVEN}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.TEXTS}",
         $"{SpaceHavenConstants.LIBRARY}/{SpaceHavenConstants.AUDIO}",
@@ -53,5 +52,5 @@ public static class ModdingConstants
         $"{SpaceHavenConstants.EXTRA_CREDITS_TXT}",
         $"{SpaceHavenConstants.META_INF}/{SpaceHavenConstants.MANIFEST_MF}",
         $".cim"
-    };
+    );
 }

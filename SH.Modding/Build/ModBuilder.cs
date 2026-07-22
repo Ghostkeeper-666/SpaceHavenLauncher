@@ -1,7 +1,6 @@
 ﻿using SH.Content;
 using SH.Content.Enums;
 using SH.Content.Xml;
-using SH.Framework.Cryptography;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
@@ -10,6 +9,7 @@ using SH.Modding.Models;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -248,6 +248,7 @@ public sealed class ModBuilder : IAsyncDisposable
         try
         {
             Log.Info($"Starting mod build...", Paths.BuildDir);
+            Stopwatch totalTime = Stopwatch.StartNew();
 
             Build = new BuildInfo(BuildSettings, Log);
 
@@ -292,7 +293,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // All builds skipped?
             if (!NeedsJavaBuild && !NeedsXmlBuild)
             {
-                Log.Success($"Mod build was skipped", Paths.BuildDir);
+                Log.Success($"Mod build was VALIDATED and SKIPPED in {(int)totalTime.Elapsed.TotalSeconds}s", Paths.BuildDir);
                 return true;
             }
 
@@ -435,7 +436,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 XmlBuild.Complete();
 
             // Done.
-            Log.Success($"Mod build has completed", Paths.BuildDir);
+            Log.Success($"Mod build has COMPLETED in {(int)totalTime.Elapsed.TotalSeconds}s", Paths.BuildDir);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -1466,12 +1467,10 @@ public sealed class ModBuilder : IAsyncDisposable
 
     private async Task<bool> TryComposeTexturesAsync()
     {
-
-
-
-
         try
         {
+            int progress;
+
             Log.Info($@"Composing TEXTURES...", Paths.BuildTexturesDir);
             ComposeTextures.Start();
 
@@ -1539,8 +1538,9 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-                Log.Info("Compose Textures: Loading Predefined Sprite Sheets...");
+                Log.Info("Compose Textures: Loading Predefined Sprite Sheets (0%) -> This may take some time...");
                 ComposeTextures_LoadPredefinedSpriteSheets.Start();
+                progress = 0;
 
                 // Spritesheet global keys must be sequential:
                 Dictionary<XElement, int> spriteSheetGlobalIds =
@@ -1603,17 +1603,25 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // progress:
                     lock (ComposeTextures_LoadPredefinedSpriteSheets)
+                    {
                         ComposeTextures_LoadPredefinedSpriteSheets.IncrementNormalized(1.0 / modifiedSpriteSheetNodes.Count);
+                        int newProgress = 10 * (int)(ComposeTextures_LoadPredefinedSpriteSheets.NormalizedValue * 10.0);
+                        if (newProgress > progress)
+                            Log.Info($@"Compose Textures: Loading Predefined Sprite Sheets ({progress = newProgress}%)");
+                    }
                 });
                 ComposeTextures_LoadPredefinedSpriteSheets.Complete();
+                if (progress != 100)
+                    Log.Info($@"Compose Textures: Loading Predefined Sprite Sheets (100%)");
 
                 CT.ThrowIfCancellationRequested();
 
 
 
 
-                Log.Info("Compose Textures: Loading Predefined Sprites...");
+                Log.Info("Compose Textures: Loading Predefined Sprites (0%) -> This may take some time...");
                 ComposeTextures_LoadPredefinedSprites.Start();
+                progress = 0;
 
                 // Sprite global names must be sequential:
                 Dictionary<XElement, int> spriteSheetGlobalNames =
@@ -1729,9 +1737,16 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // progress:
                     lock (ComposeTextures_LoadPredefinedSprites)
+                    {
                         ComposeTextures_LoadPredefinedSprites.IncrementNormalized(1.0 / modifiedSpriteNodes.Count);
+                        int newProgress = 10 * (int)(ComposeTextures_LoadPredefinedSprites.NormalizedValue * 10.0);
+                        if (newProgress > progress)
+                            Log.Info($@"Compose Textures: Loading Predefined Sprites ({progress = newProgress}%)");
+                    }
                 });
                 ComposeTextures_LoadPredefinedSprites.Complete();
+                if (progress != 100)
+                    Log.Info($@"Compose Textures: Loading Predefined Sprites (100%)");
 
 
 
@@ -1762,8 +1777,9 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-                Log.Info("Compose Textures: Writing Predefined Sprite Sheets...");
+                Log.Info("Compose Textures: Writing Predefined Sprite Sheets (0%) -> This may take some time...");
                 ComposeTextures_WritePredefinedSpriteSheets.Start();
+                progress = 0;
 
                 // Render spritesheets
                 await Parallel.ForEachAsync(predefinedAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
@@ -1792,9 +1808,18 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     // progress:
                     lock (ComposeTextures_WritePredefinedSpriteSheets)
+                    {
                         ComposeTextures_WritePredefinedSpriteSheets.IncrementNormalized(1.0 / predefinedAtlas.SpriteSheets.Count);
+                        int newProgress = 10 * (int)(ComposeTextures_WritePredefinedSpriteSheets.NormalizedValue * 10.0);
+                        if (newProgress > progress)
+                            Log.Info($@"Compose Textures: Writing Predefined Sprite Sheets ({progress = newProgress}%)");
+                    }
                 });
                 ComposeTextures_WritePredefinedSpriteSheets.Complete();
+                if (progress != 100)
+                    Log.Info($@"Compose Textures: Writing Predefined Sprite Sheets (100%)");
+
+
             }
             finally
             {

@@ -133,9 +133,9 @@ public partial class AppViewModel : ObservableObject
     [ObservableProperty]
     private EGamePlatform _GamePlatform;
     [ObservableProperty]
-    private string _TemplateJavaVMArgs;
+    private string _DefaultJavaVMArgs;
     [ObservableProperty]
-    private string _TemplateJavaMainClass;
+    private string _DefaultJavaMainClass;
 
     public IProgressInfo BackupProgress { get; } = new ProgressInfo(nameof(BackupProgress));
     public IProgressInfo TemplateProgress { get; } = new ProgressInfo(nameof(TemplateProgress));
@@ -514,13 +514,13 @@ public partial class AppViewModel : ObservableObject
 
             GamePlatform = initializationData.GamePlatform;
 
-            TemplateJavaVMArgs = initializationData.VMArgs;
+            DefaultJavaVMArgs = initializationData.JavaVMArgs;
             if(forceReset || AppSettings.JavaVMArgs.IsNullOrWhiteSpace())
-                AppSettings.JavaVMArgs = initializationData.VMArgs;
+                AppSettings.JavaVMArgs = initializationData.JavaVMArgs;
 
-            TemplateJavaMainClass = initializationData.MainClass;
+            DefaultJavaMainClass = initializationData.JavaMainClass;
             if(forceReset || AppSettings.JavaMainClass.IsNullOrWhiteSpace())
-                AppSettings.JavaMainClass = initializationData.MainClass;
+                AppSettings.JavaMainClass = initializationData.JavaMainClass;
 
             SpaceHavenVersion = initializationData.SpaceHavenVersion;
 

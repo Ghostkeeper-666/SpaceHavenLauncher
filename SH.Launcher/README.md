@@ -115,9 +115,9 @@ When launching a modified game, SHL performs a modded build:
 - The modded game is started using the game's shipped JRE
 - Current AOP libraries: aspectjweaver-1.9.19.jar and aspectj-1.9.19.jar
 - For advanced users: "vmArgs" can be manually configured in System Core tab
-- The modded game is started by directly calling java.exe
+- The modded game is started by directly calling the JRE shipped with the game
 - The modded JAR files are attached through the LauncherAgent JAVA agent
-- Real-time logging of java.exe is performed, just set log verbosity to VERBOSE in System Core tab
+- Real-time logging of JVM output: set log verbosity to VERBOSE in System Core tab
 - Make sure you understand the JAVA technologies available in the version included with the game before creating advanced JAVA mods
 
 

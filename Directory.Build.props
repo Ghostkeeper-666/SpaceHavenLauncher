@@ -5,8 +5,9 @@
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
 
-    <!-- fallback for local builds -->
-    <Version Condition="'$(Version)' == ''">6.6.6</Version>
+    <!-- version for local builds -->
+    <LocalVersion>$([System.DateTime]::Now.ToString('yyyy.MMdd.HHmm'))</LocalVersion>
+    <Version Condition="'$(Version)' == ''">$(LocalVersion)</Version>
   </PropertyGroup>
 
 </Project>

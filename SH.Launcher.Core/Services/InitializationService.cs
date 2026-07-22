@@ -74,6 +74,12 @@ public sealed class InitializationService
                 return null;
 
 
+            // SPACE HAVEN VERSION:
+            data.SpaceHavenVersion = await TryReadVersionAsync(ct);
+            if (data.SpaceHavenVersion == null)
+                return null;
+
+
             // GAME PLATFORM:
             EGamePlatform? gamePlatform = await TryReadGamePlatformAsync(ct);
             if (gamePlatform == null || !gamePlatform.HasValue)
@@ -81,19 +87,12 @@ public sealed class InitializationService
             data.GamePlatform = gamePlatform.Value;
 
 
-            // JAVA VMArgs / Main Class:
-            Log.Debug($@"Reading JAVA arguments from config.json...", Paths.TemplateDir);
-            ConfigJsonFile configJson = await ConfigJsonFile.TryLoadAsync(Paths.TemplateConfigJsonPath, Log, ct);
-            if (configJson == null)
-                return null;
-            data.VMArgs = configJson.VMArgs.JoinToString(" ");
-            data.MainClass = configJson.MainClass;
+            // JAVA Main Class:
+            data.JavaMainClass = SpaceHavenConstants.GetDefaultMainClass(data.GamePlatform);
 
 
-            // SPACE HAVEN VERSION:
-            data.SpaceHavenVersion = await TryReadVersionAsync(ct);
-            if (data.SpaceHavenVersion == null)
-                return null;
+            // JAVA VMArgs:
+            data.JavaVMArgs = SpaceHavenConstants.GetDefaultVMArgs(OS.Type).JoinToString(" ");
 
 
             // Done.
@@ -280,7 +279,7 @@ public sealed class InitializationService
                     return true;
                 }
             }
-            
+
             // Reset Cache:
             Log.Debug("Resetting cache...");
 

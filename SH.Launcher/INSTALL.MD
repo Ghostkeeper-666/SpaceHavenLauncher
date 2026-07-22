@@ -22,7 +22,7 @@ Space Haven Launcher (SHL) was designed as a replacement for the old Mod Loader
 - Additional modding capabilities
 - Real-time, detailed, and reliable logging
 - Navigation to files and locations referenced by log entries
-- Real-time logging of java.exe output
+- Real-time logging of JVM output
 - Intermediate build files (textures, XML files, per-mod logs)
 - Optional automatic game launch after building
 - Customizable mod page background and text colors

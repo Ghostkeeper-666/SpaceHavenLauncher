@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Content;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
@@ -75,6 +76,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (await InitializeSettings(ct))
         {
+            bool isNewAppVersion = State.AppSettings.PreviousAppVersion != SpaceHavenLauncher.Version;
+            if(isNewAppVersion)
+                Log.Warn($"NEW VERSION DETECTED: Space Haven Launcher {SpaceHavenLauncher.Version}  (previously: {State.AppSettings.PreviousAppVersion})");
+
             State.CurrentPage = IsNewInstall ? State.LearningComputerPage : State.NavigationConsolePage;
 
             // Move app to the previously used monitor:
@@ -92,7 +97,14 @@ public partial class MainWindowViewModel : ViewModelBase
             catch (Exception ex) { Log?.Debug(ex); }
 #endif
             // Also automatically initialize:
-            await State.InitializeAsync(false);
+            await State.InitializeAsync(forceReset: isNewAppVersion);
+            
+            // Reset JAVA arguments for each new version:
+            if(isNewAppVersion)
+            {
+                State.AppSettings.JavaMainClass = State.DefaultJavaMainClass;
+                State.AppSettings.JavaVMArgs = State.DefaultJavaVMArgs;
+            }
         }
         await FadeOutLogo();
     }
