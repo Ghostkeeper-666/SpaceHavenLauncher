@@ -79,7 +79,6 @@ public sealed class PathData
         }
     }
     public string SpaceHavenJarPath => SpaceHavenJarDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
-    public string SpaceHavenConfigJsonPath => SpaceHavenJarDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
     public string SpaceHavenModsJsonPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
     public string SpaceHavenAspectJPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.ASPECTJ);
     public string SpaceHavenAspectJWeaverPath => SpaceHavenJarDir.CombineAsOSPath(ModdingConstants.ASPECTJWEAVER);
@@ -88,7 +87,6 @@ public sealed class PathData
     public string BackupDir => WorkDir.CombineAsOSPath(ModdingConstants.BACKUP);
     public string BackupJarPath => BackupDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
     public string BackupJarHashPath => BackupDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
-    public string BackupConfigJsonPath => BackupDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
 
 
 
@@ -106,7 +104,6 @@ public sealed class PathData
 
     public string TemplateJarPath => TemplateDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
     public string TemplateJarHashPath => TemplateDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
-    public string TemplateConfigJsonPath => TemplateDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
 
 
 
@@ -145,7 +142,6 @@ public sealed class PathData
     public string CacheModifiedJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
     public string CacheXmlHashPath => CacheDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH);
     public string CacheJavaHashPath => CacheDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH);
-    public string CacheConfigJsonPath => CacheDir.CombineAsOSPath(SpaceHavenConstants.CONFIG_JSON);
     public string CacheModsJsonPath => CacheDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
 
     public string CacheFilesDir => CacheDir.CombineAsOSPath(ModdingConstants.STAGE);

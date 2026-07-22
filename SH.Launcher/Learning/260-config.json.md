@@ -25,26 +25,4 @@ The **Space Haven**'s original **config.json** file looks like this:
 }
 ```
 
-A **Space Haven Launcher**'s modified **config.json** file looks like this:
-
-```
-{
-    "classPath": [
-        "aspectjweaver-1.9.19.jar",
-        "aspectj-1.9.19.jar",
-        "modifiedspacehaven.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3730262305/AutoPriorityManager.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3718678068/AutoTraderMod.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3727772146/CrewChatter.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3729980436/CustomizerPlus-1.0.0.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3722400658/EchoesThroughHaven.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3735271660/FogGeneratorBehaviour-0.2.7.jar",
-        "C:/Program Files (x86)/Steam/steamapps/workshop/content/979110/3735271572/FarmingExpandedBehaviour-0.1.0.jar",
-    ],
-    "mainClass": "fi.bugbyte.spacehaven.steam.SpacehavenSteam",
-    "vmArgs": [
-        "-javaagent:./aspectjweaver-1.9.19.jar",
-        "-Xmx4G"
-    ]
-}
-```
+**Space Haven Launcher** does **NOT** use **config.json**, it runs the game by directly calling the JRE

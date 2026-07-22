@@ -39,15 +39,10 @@ public sealed class DebugService
         if (IOUtils.DirExists(Paths.ModValuesDir))
             AddMany(Paths.ModValuesDir.GetFiles(ESearchOption.TopDir));
 
-        // Some backup files:
-        Add(Paths.BackupConfigJsonPath);
-
         // Some template files:
-        Add(Paths.TemplateConfigJsonPath);
         Add(Paths.TemplateStageVersionPath);
 
         // Some cache files:
-        Add(Paths.CacheConfigJsonPath);
         Add(Paths.CacheModsJsonPath);
         Add(Paths.LauncherAgentLogPath);
 

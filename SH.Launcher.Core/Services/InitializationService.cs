@@ -118,17 +118,13 @@ public sealed class InitializationService
             BackupProgress.SetNormalized(0.10);
 
             // Update Backup:
-            if (IOUtils.FileExists(Paths.BackupConfigJsonPath) && IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath))
+            if (IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath))
             {
                 string backupJarHash = await IOUtils.TryReadAllTextAsync(Paths.BackupJarHashPath, Log, ct);
                 BackupProgress.SetNormalized(0.20);
-                string gameConfigJson = await IOUtils.TryReadAllTextAsync(Paths.SpaceHavenConfigJsonPath, Log, ct);
-                BackupProgress.SetNormalized(0.30);
-                string backupConfigJson = await IOUtils.TryReadAllTextAsync(Paths.BackupConfigJsonPath, Log, ct);
-                BackupProgress.SetNormalized(0.40);
 
                 // Reuse files:
-                if (gameJarHash == backupJarHash && gameConfigJson == backupConfigJson)
+                if (gameJarHash == backupJarHash)
                 {
                     Log.Success($"Backup was reused");
                     BackupProgress.Complete();
@@ -149,11 +145,6 @@ public sealed class InitializationService
 
             // Copy spacehaven.jar:
             if (!await IOUtils.TryCopyFileAsync(Paths.SpaceHavenJarPath, Paths.BackupJarPath, true, Log, ct))
-                return false;
-            BackupProgress.SetNormalized(0.90);
-
-            // Copy config.json:
-            if (!await IOUtils.TryCopyFileAsync(Paths.SpaceHavenConfigJsonPath, Paths.BackupConfigJsonPath, true, Log, ct))
                 return false;
             BackupProgress.SetNormalized(0.95);
 
@@ -191,17 +182,13 @@ public sealed class InitializationService
             TemplateProgress.SetNormalized(0.10);
 
             // Try to reuse existing template:
-            if (IOUtils.FileExists(Paths.BackupConfigJsonPath) && IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath) &&
-                IOUtils.FileExists(Paths.TemplateConfigJsonPath) && IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath))
+            if (IOUtils.FileExists(Paths.BackupJarPath) && IOUtils.FileExists(Paths.BackupJarHashPath) &&
+                IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath))
             {
                 string templateJarHash = await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, ct);
                 TemplateProgress.SetNormalized(0.20);
-                string backupConfigJson = await IOUtils.TryReadAllTextAsync(Paths.BackupConfigJsonPath, Log, ct);
-                TemplateProgress.SetNormalized(0.30);
-                string templateConfigJson = await IOUtils.TryReadAllTextAsync(Paths.TemplateConfigJsonPath, Log, ct);
-                TemplateProgress.SetNormalized(0.40);
 
-                if (!data.BackupChanged && backupJarHash == templateJarHash && backupConfigJson == templateConfigJson)
+                if (!data.BackupChanged && backupJarHash == templateJarHash)
                 {
                     Log.Success($"Template was reused");
                     TemplateProgress.Complete();
@@ -222,11 +209,6 @@ public sealed class InitializationService
 
             // Build template:
             if (!await TryBuildTemplateJarAsync(ct))
-                return false;
-            TemplateProgress.SetNormalized(0.90);
-
-            // Copy config.json file:
-            if (!await IOUtils.TryCopyFileAsync(Paths.BackupConfigJsonPath, Paths.TemplateConfigJsonPath, true, Log, ct))
                 return false;
             TemplateProgress.SetNormalized(0.95);
 
@@ -258,20 +240,16 @@ public sealed class InitializationService
             CacheProgress.Start();
 
             // Try to reuse existing modified:
-            if (IOUtils.FileExists(Paths.TemplateConfigJsonPath) && IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath) &&
-                IOUtils.FileExists(Paths.CacheConfigJsonPath) && IOUtils.FileExists(Paths.CacheJarPath) && IOUtils.FileExists(Paths.CacheJarHashPath))
+            if (IOUtils.FileExists(Paths.TemplateJarPath) && IOUtils.FileExists(Paths.TemplateJarHashPath) &&
+                IOUtils.FileExists(Paths.CacheJarPath) && IOUtils.FileExists(Paths.CacheJarHashPath))
             {
                 string templateJarHash = await IOUtils.TryReadAllTextAsync(Paths.TemplateJarHashPath, Log, ct);
                 CacheProgress.SetNormalized(0.10);
                 string cacheJarHash = await IOUtils.TryReadAllTextAsync(Paths.CacheJarHashPath, Log, ct);
                 CacheProgress.SetNormalized(0.20);
-                string templateConfigJson = await IOUtils.TryReadAllTextAsync(Paths.TemplateConfigJsonPath, Log, ct);
-                CacheProgress.SetNormalized(0.30);
-                string cacheConfigJson = await IOUtils.TryReadAllTextAsync(Paths.CacheConfigJsonPath, Log, ct);
-                CacheProgress.SetNormalized(0.40);
 
                 // Reuse:
-                if (!data.BackupChanged && !data.TemplateChanged && templateJarHash == cacheJarHash && templateConfigJson == cacheConfigJson)
+                if (!data.BackupChanged && !data.TemplateChanged && templateJarHash == cacheJarHash)
                 {
                     Log.Success($"Cache was reused");
                     CacheProgress.Complete();

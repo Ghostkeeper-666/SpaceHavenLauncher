@@ -168,16 +168,16 @@ public sealed class GameLaunchService
                     if (msg.StartsWith("WARN:") || msg.StartsWith("WARNING:") || msg.StartsWith("[WARNING]"))
                         Log.Warn($"[JVM]  {msg}");
 
-                    if (msg.StartsWith("INFO:") || msg.StartsWith("[INFO]") || msg.StartsWith("[INFORMATION]"))
-                        Log.Info($"[JVM]  {msg}");
+                    if (msg.StartsWith("DEBUG:") || msg.StartsWith("[DEBUG]"))
+                        Log.Debug($"[JVM]  {msg}");
 
-                    Log.Debug($"[JVM]  {msg}");
+                    Log.Info($"[JVM]  {msg}");
                 }
                 catch { }
             };
 
             process.ErrorDataReceived += (_, e) =>
-                Log.Error($"[JVM-ERR]  {e?.Data}");
+                Log.Debug($"[JVM]  {e?.Data}");
 
             if (!process.Start())
             {

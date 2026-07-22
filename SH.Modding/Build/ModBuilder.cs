@@ -55,7 +55,6 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo ComposeCredits;
     private IProgressInfo WriteSpaceHavenXml;
     private IProgressInfo ComposeSpaceHavenJar;
-    private IProgressInfo DeployConfigJson;
     private IProgressInfo ComposeModsJson;
 
     private IProgressInfo ComposeTextures_LoadPredefinedSpriteSheets;
@@ -219,11 +218,6 @@ public sealed class ModBuilder : IAsyncDisposable
             ComposeSpaceHavenJar.ProgressChanged += ResetBuildStage_ProgressChanged;
             XmlBuild.AddChild(ComposeSpaceHavenJar, 1500);
             JavaBuild.AddChild(ComposeSpaceHavenJar, 1500);
-
-            DeployConfigJson = new ProgressInfo("Deploy config.json") { Max = 10 };
-            DeployConfigJson.ProgressChanged += ResetBuildStage_ProgressChanged;
-            XmlBuild.AddChild(DeployConfigJson, 1);
-            JavaBuild.AddChild(DeployConfigJson, 1);
 
             ComposeModsJson = new ProgressInfo("Compose mods.json") { Max = 10 };
             ComposeModsJson.ProgressChanged += ResetBuildStage_ProgressChanged;
@@ -415,12 +409,6 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await TryWriteSpaceHavenJarAsync())
                     return false;
 
-                // Deploy config.json:
-                DeployConfigJson.Start();
-                if (!await IOUtils.TryCopyFileAsync(Paths.TemplateConfigJsonPath, Paths.CacheConfigJsonPath, true, Log, CT))
-                    return false;
-                DeployConfigJson.Complete();
-
                 // Create mods.json:
                 if (!await TryComposeModsJsonAsync())
                     return false;
@@ -483,7 +471,6 @@ public sealed class ModBuilder : IAsyncDisposable
             ComposeCredits?.Dispose();
             WriteSpaceHavenXml?.Dispose();
             ComposeSpaceHavenJar?.Dispose();
-            DeployConfigJson?.Dispose();
             ComposeModsJson?.Dispose();
 
             ComposeTextures?.RemoveAll();
@@ -2374,7 +2361,7 @@ public sealed class ModBuilder : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            Log?.Error($"Unable to create {SpaceHavenConstants.CONFIG_JSON}: {ex}", Paths.CacheDir);
+            Log?.Error($"Unable to create {ModdingConstants.MODS_JSON}: {ex}", Paths.CacheDir);
             return false;
         }
     }
