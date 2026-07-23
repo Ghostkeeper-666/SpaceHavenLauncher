@@ -242,11 +242,11 @@ public sealed class AnimationRenderer
 
         if (colorMask != SKColors.White)
         {
-            for (int y = 0; y < sprite.SKBitmap.Height; y++)
+            for (int y = 0; y < sprite.SKBitmap.Height; ++y)
             {
                 ct.ThrowIfCancellationRequested();
 
-                for (int x = 0; x < sprite.SKBitmap.Width; x++)
+                for (int x = 0; x < sprite.SKBitmap.Width; ++x)
                 {
                     SKColor pixel = sprite.SKBitmap.GetPixel(x, y);
 
@@ -374,12 +374,11 @@ public sealed class AnimationRenderer
     private static SKBitmap Crop(SKBitmap src, SKRectI bounds)
     {
         SKBitmap dst = new(bounds.Width, bounds.Height);
-
-        using SKCanvas canvas = new(dst);
-        canvas.Clear(SKColors.Transparent);
-
-        canvas.DrawBitmap(src, -bounds.Left, -bounds.Top);
-
+        using (SKCanvas canvas = new(dst))
+        {
+            canvas.Clear(SKColors.Transparent);
+            canvas.DrawBitmap(src, -bounds.Left, -bounds.Top);
+        }
         return dst;
     }
 }

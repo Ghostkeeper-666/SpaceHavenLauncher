@@ -10,68 +10,8 @@ using System.Threading.Tasks;
 
 namespace SH.Modding.Build;
 
-internal sealed class Sprite : IEquatable<Sprite>, IDisposable
+internal sealed class Sprite : IDisposable
 {
-    public Sprite(string localName, int localId, SpriteSheet spriteSheet, int width, int height, int x, int y)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
-        ArgumentNullException.ThrowIfNull(spriteSheet);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(width, 0, nameof(width));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(height, 0, nameof(height));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(width, 0, nameof(x));
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(height, 0, nameof(y));
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(x, spriteSheet.Width, nameof(x));
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(y, spriteSheet.Height, nameof(y));
-
-        Width = width;
-        Height = height;
-        Area = Width * Height;
-        PixelData = new byte[4 * Area];
-
-        LocalName = localName;
-        LocalId = localId;
-        AbsoluteFilePath = null;
-
-        SpriteSheet = spriteSheet;
-        X = x;
-        Y = y;
-    }
-
-    public Sprite(string localName, int localId, string absoluteFilePath)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(absoluteFilePath);
-
-        LocalName = localName;
-        LocalId = localId;
-        AbsoluteFilePath = absoluteFilePath.AsOSPath();
-
-        // Read image pixel data from file:
-        Image = SKBitmap.Decode(absoluteFilePath);
-        PixelData = new byte[Image.ByteCount];
-        Marshal.Copy(Image.GetPixels(), PixelData, 0, PixelData.Length);
-
-        Width = Image.Width;
-        Height = Image.Height;
-        Area = Width * Height;
-    }
-
-    public bool TryRenderFromSpriteSheet(ILogger log = null)
-    {
-        try
-        {
-            int rowSize = Width * 4;
-            for (int row = 0; row < Height; ++row)
-                Buffer.BlockCopy(SpriteSheet.PixelData, (Y + row) * SpriteSheet.Width * 4 + X * 4, PixelData, row * Width * 4, rowSize);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
     public SpriteSheet SpriteSheet { get; set; }
 
     public string GlobalName { get; set; }
@@ -88,31 +28,82 @@ internal sealed class Sprite : IEquatable<Sprite>, IDisposable
 
     public int Area { get; }
 
-    public string FileName => AbsoluteFilePath.GetFileNameWithoutExtension();
-    public string AbsoluteFilePath { get; }
+    public string FileName => AbsoluteFilePath?.GetFileNameWithoutExtension();
+    public string AbsoluteFilePath { get; private set; }
 
-    public byte[] PixelData { get; private set; }
-    public SKBitmap Image { get; private set; }
+    public override string ToString() => LocalName;
 
-    [Obsolete("Use TryExportToPngAsync() instead!")]
-    public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
+
+    public Sprite(string localName, int localId, SpriteSheet spriteSheet, int width, int height, int x, int y)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
+        ArgumentNullException.ThrowIfNull(spriteSheet);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(width, 0, nameof(width));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(height, 0, nameof(height));
+        ArgumentOutOfRangeException.ThrowIfLessThan(x, 0, nameof(x));
+        ArgumentOutOfRangeException.ThrowIfLessThan(y, 0, nameof(y));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(x + width, spriteSheet.Width, nameof(width));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(y + height, spriteSheet.Height, nameof(height));
+
+        LocalName = localName;
+        LocalId = localId;
+        Width = width;
+        Height = height;
+        Area = Width * Height;
+        AbsoluteFilePath = null;
+        SpriteSheet = spriteSheet;
+        X = x;
+        Y = y;
+    }
+
+    public Sprite(string localName, int localId, string absoluteFilePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(localName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(absoluteFilePath);
+
+        AbsoluteFilePath = absoluteFilePath.AsOSPath();
+        using SKCodec codec = SKCodec.Create(AbsoluteFilePath)
+            ?? throw new InvalidDataException($"Unable to decode image '{AbsoluteFilePath}'.");
+
+        LocalName = localName;
+        LocalId = localId;
+        Width = codec.Info.Width;
+        Height = codec.Info.Height;
+        Area = Width * Height;
+    }
+
+    public async Task<bool> TryRenderFromSpriteSheetToPngAsync(string absolutePath, ILogger log = null, CancellationToken ct = default)
     {
         try
         {
-            string dir = path.GetParentDirAsOSPath();
+            ArgumentNullException.ThrowIfNull(SpriteSheet);
+
+            AbsoluteFilePath = absolutePath.AsOSPath();
+            string dir = AbsoluteFilePath.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
 
-            ct.ThrowIfCancellationRequested();
+            int rowSize = Width * 4;
+            byte[] pixelData = new byte[rowSize * Height];
+            for (int row = 0; row < Height; ++row)
+                Buffer.BlockCopy(SpriteSheet.PixelData, (Y + row) * SpriteSheet.Width * 4 + X * 4, pixelData, row * rowSize, rowSize);
 
-            using SKImage image = SKImage.FromBitmap(Image);
-            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using FileStream stream = File.OpenWrite(path);
-
-            ct.ThrowIfCancellationRequested();
-
-            data.SaveTo(stream);
-            return true;
+            GCHandle handle = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
+            try
+            {
+                using SKBitmap bitmap = new();
+                if (!bitmap.InstallPixels(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul), handle.AddrOfPinnedObject(), rowSize))
+                    return false;
+                using SKImage image = SKImage.FromBitmap(bitmap);
+                using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+                await using FileStream fs = new(AbsoluteFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+                await fs.WriteAsync(data.ToArray(), ct).ConfigureAwait(false);
+                return true;
+            }
+            finally
+            {
+                handle.Free();
+            }
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -122,71 +113,17 @@ internal sealed class Sprite : IEquatable<Sprite>, IDisposable
         }
     }
 
-    public async Task<bool> TryExportToPngAsync(string path, ILogger log, CancellationToken ct)
-    {
-        try
-        {
-            string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
-                return false;
-
-            using SKImage image = SKImage.FromBitmap(Image);
-            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-            await using FileStream stream = new(
-                path,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                65536,
-                useAsync: true);
-
-            await stream.WriteAsync(data.ToArray(), ct);
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
-    public bool Equals(Sprite other)
-    {
-        if (other is null)
-            return false;
-        if (Width != other.Width || Height != other.Height)
-            return false;
-        return PixelData.AsSpan().SequenceEqual(other.PixelData);
-    }
-
-    public override bool Equals(object obj) =>
-        obj is Sprite other && Equals(other);
-
-    public override string ToString() => LocalName.ToString();
-
-    public override int GetHashCode()
-    {
-        HashCode hash = new();
-        hash.Add(Width);
-        hash.Add(Height);
-        foreach (byte b in PixelData)
-            hash.Add(b);
-        return hash.ToHashCode();
-    }
 
 
     #region IDisposable
-    public volatile bool IsDisposed;
+    private int _disposed;
+    public bool IsDisposed => _disposed != 0;
     public void Dispose()
     {
-        if (IsDisposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
-        IsDisposed = true;
-        PixelData = null;
-        try { Image?.Dispose(); } catch { }
-        Image = null;
+        SpriteSheet = null;
+        AbsoluteFilePath = null;
     }
     #endregion
 }

@@ -1,5 +1,5 @@
-﻿using SH.Framework.Logging;
-using SH.Content.Xml.Textures;
+﻿using SH.Content.Xml.Textures;
+using SH.Framework.Logging;
 using SkiaSharp;
 using System;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SH.Content.Art;
 
-public sealed class Sprite : IEquatable<Sprite>
+public sealed class Sprite : IEquatable<Sprite>, IDisposable
 {
     public Sprite(SpriteSheet cim, TextureRegionXml region)
     {
@@ -18,9 +18,10 @@ public sealed class Sprite : IEquatable<Sprite>
         PixelData = new byte[4 * Width * Height];
     }
 
-    public SpriteSheet SpriteSheet { get; }
-    public TextureRegionXml Region { get; }
-    public byte[] PixelData { get; }
+    public SpriteSheet SpriteSheet { get; private set; }
+    public TextureRegionXml Region { get; private set; }
+    public byte[] PixelData { get; private set; }
+    public SKBitmap SKBitmap { get; private set; }
 
     public int Name => Region.Name;
     public int Id => Region.Id;
@@ -31,8 +32,6 @@ public sealed class Sprite : IEquatable<Sprite>
     public int CroppedWidth => Region.Width; // TODO
     public int Height => Region.Height;
     public int CroppedHeight => Region.Height; // TODO
-
-    public SKBitmap SKBitmap { get; private set; }
 
 
     public bool TryReadPixelData(ILogger log)
@@ -67,15 +66,14 @@ public sealed class Sprite : IEquatable<Sprite>
         try
         {
             ct.ThrowIfCancellationRequested();
-            using SKImage image = SKImage.FromBitmap(SKBitmap);
-            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using FileStream stream = File.OpenWrite(path);
-            ct.ThrowIfCancellationRequested();
-            await Task.Run(() => data.SaveTo(stream), ct);
+            using (SKImage image = SKImage.FromBitmap(SKBitmap))
+            using (SKData data = image.Encode(SKEncodedImageFormat.Png, 100))
+            using (FileStream stream = File.OpenWrite(path))
+                await Task.Run(() => data.SaveTo(stream), ct);
             return true;
         }
         catch (OperationCanceledException) { throw; }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             log?.Error(ex);
             return false;
@@ -125,4 +123,19 @@ public sealed class Sprite : IEquatable<Sprite>
     public override string ToString() => Name.ToString();
 
     public override int GetHashCode() => Name.GetHashCode();
+
+    #region IDisposable
+    public volatile bool IsDisposed;
+    public void Dispose()
+    {
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+        SpriteSheet = null;
+        Region = null;
+        PixelData = null;
+        SKBitmap?.Dispose();
+        SKBitmap = null;
+    }
+    #endregion
 }

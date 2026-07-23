@@ -24,21 +24,21 @@ internal sealed class BuildInfo : IAsyncDisposable
         Log = new LoggerCollection(log, FileLogger);
     }
 
-    private ILogger Log { get; }
-    private BuildSettings BuildSettings { get; }
+    private ILogger Log;
+    private BuildSettings BuildSettings;
     private PathData Paths => BuildSettings.Paths;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
-    private FileLogger FileLogger { get; }
+    private FileLogger FileLogger;
 
     public IReadOnlyList<Mod> Mods => ModList;
-    private readonly List<Mod> ModList = [];
+    private List<Mod> ModList = [];
 
     public bool HasXmlMods => ModList.Any(mod => mod.IsXmlMod);
     public bool HasJavaMods => ModList.Any(mod => mod.IsJavaMod);
 
-    public SortedDictionary<EXmlFileType, XmlFile> XmlFile { get; } = [];
-    public SortedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; } = [];
+    public SortedDictionary<EXmlFileType, XmlFile> XmlFile { get; private set; } = [];
+    public SortedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; private set; } = [];
     public int LastOriginalSpriteId { get; private set; }
 
     public string XmlHash { get; private set; }
@@ -50,7 +50,7 @@ internal sealed class BuildInfo : IAsyncDisposable
     public void AddMods(IEnumerable<ModData> mods)
     {
         foreach (ModData mod in mods)
-            ModList.Add(new Mod(BuildSettings, ModList.Count, mod, this, Log));
+            ModList.Add(new Mod(BuildSettings, ModList.Count, mod, Log));
     }
 
     /// <summary>
@@ -290,14 +290,38 @@ internal sealed class BuildInfo : IAsyncDisposable
 
     #region IAsyncDisposable
     public volatile bool IsDisposed;
+    public void Dispose()
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
     public async ValueTask DisposeAsync()
     {
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (Mod mod in ModList)
+
+        BuildSettings = null;
+
+        foreach (Mod mod in ModList ?? [])
             try { await mod.DisposeAsync(); } catch { }
-        try { await FileLogger.DisposeAsync(); } catch { }
+        ModList.Clear();
+        ModList = null;
+
+        UsedIds.Clear();
+        UsedIds = null;
+
+        XmlFile.Clear();
+        XmlFile = null;
+
+        JavaHashes = null;
+        XmlHashes = null;
+
+        try { await FileLogger.DisposeAsync(); }
+        catch { }
+        FileLogger = null;
+
+        try { await Log.DisposeAsync(); } catch { }
+        Log = null;
     }
     #endregion IAsyncDisposable
 }

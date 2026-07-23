@@ -17,11 +17,10 @@ namespace SH.Modding.Build;
 
 internal sealed class Mod : IAsyncDisposable
 {
-    public Mod(BuildSettings buildSettings, int buildSeqNum, ModData mod, BuildInfo build, ILogger log)
+    public Mod(BuildSettings buildSettings, int buildSeqNum, ModData mod, ILogger log)
     {
         BuildSettings = buildSettings ?? throw new ArgumentNullException(nameof(buildSettings));
         Data = mod ?? throw new ArgumentNullException(nameof(mod));
-        Build = build ?? throw new ArgumentNullException(nameof(build));
         BuildSeqNum = buildSeqNum;
         FullFileLogger = new FileLogger(FullLogPath);
         ErrorFileLogger = new FileLogger(ErrorLogPath);
@@ -29,9 +28,8 @@ internal sealed class Mod : IAsyncDisposable
         Log = new LoggerCollection(log, FullFileLogger, ErrorFileLogger) { Prefix = $"[{UniqueName}] " };
     }
 
-    private readonly BuildSettings BuildSettings;
+    private BuildSettings BuildSettings;
     private PathData Paths => BuildSettings.Paths;
-    private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
     private CancellationToken CT => BuildSettings.CT;
 
     public string UniqueName => Data.UniqueName;
@@ -69,14 +67,12 @@ internal sealed class Mod : IAsyncDisposable
     public string BuildName => $"[{BuildSeqNum}] {Data.UniqueName}";
     public int BuildSeqNum { get; }
 
-    private ModData Data { get; }
-    public ILogger Log { get; }
-    private FileLogger FullFileLogger { get; }
-    private FileLogger ErrorFileLogger { get; }
-    public BuildInfo Build { get; }
-    public SortedDictionary<string, Var> Variables { get; } = [];
-
-    public SortedDictionary<string, Audio> Audio { get; } = [];
+    private ModData Data;
+    public ILogger Log { get; private set; }
+    private FileLogger FullFileLogger;
+    private FileLogger ErrorFileLogger;
+    public SortedDictionary<string, Var> Variables { get; private set; } = [];
+    public SortedDictionary<string, Audio> Audio { get; private set; } = [];
 
     public bool IsXmlMod => HasAudio || HasSprites || HasSpriteSheets || HasLibraryXml || HasPatchXml;
     public bool IsJavaMod => HasJar;
@@ -166,25 +162,27 @@ internal sealed class Mod : IAsyncDisposable
                 resourceFilePaths.AddRange(SpritePaths);
                 resourceFilePaths.Sort();
 
-                ArrayPool<byte> arrayPool = new(1024, 32);
-                await Parallel.ForEachAsync(resourceFilePaths, BuildSettings.ParallelOptions, async (path, ct) =>
+                using (ArrayPool<byte> arrayPool = new(1024, 32))
                 {
-                    if (!IOUtils.FileExists(path))
-                        return;
-                    byte[] buffer = arrayPool.Get();
+                    await Parallel.ForEachAsync(resourceFilePaths, BuildSettings.ParallelOptions, async (path, ct) =>
+                    {
+                        if (!IOUtils.FileExists(path))
+                            return;
+                        byte[] buffer = arrayPool.Get();
 
-                    if (!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
-                        return; // file not exists
+                        if (!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
+                            return; // file not exists
 
-                    Array.Clear(buffer, 0, buffer.Length);
-                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
-                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
-                    string relativePath = path.Substring(Dir.Length + 1);
-                    await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log, ct);
-                    lock (xmlHashes)
-                        xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
-                    arrayPool.Return(buffer);
-                });
+                        Array.Clear(buffer, 0, buffer.Length);
+                        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
+                        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
+                        string relativePath = path.Substring(Dir.Length + 1);
+                        await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log, ct);
+                        lock (xmlHashes)
+                            xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
+                        arrayPool.Return(buffer);
+                    });
+                }
 
                 CT.ThrowIfCancellationRequested();
 
@@ -429,8 +427,23 @@ internal sealed class Mod : IAsyncDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
+        Data = null;
+        BuildSettings = null;
+
+        Variables?.Clear();
+        Variables = null;
+
+        Audio?.Clear();
+        Audio = null;
+
         try { await FullFileLogger.DisposeAsync(); } catch { }
+        FullFileLogger = null;
+
         try { await ErrorFileLogger.DisposeAsync(); } catch { }
+        ErrorFileLogger = null;
+
+        try { await Log.DisposeAsync(); } catch { }
+        Log = null;
     }
     #endregion
 

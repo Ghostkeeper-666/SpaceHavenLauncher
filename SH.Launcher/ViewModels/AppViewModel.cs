@@ -6,7 +6,6 @@ using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using SH.Content;
 using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -16,7 +15,6 @@ using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.ViewModels.Enums;
 using SH.Modding;
-using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -509,17 +507,17 @@ public partial class AppViewModel : ObservableObject
 
             InitializationService svc = new(Paths.Data, Log, BackupProgress, TemplateProgress, CacheProgress);
             InitializationData initializationData = await svc.InitializeAsync(forceReset, ct);
-            if(initializationData == null)
+            if (initializationData == null)
                 return false;
 
             GamePlatform = initializationData.GamePlatform;
 
             DefaultJavaVMArgs = initializationData.JavaVMArgs;
-            if(forceReset || AppSettings.JavaVMArgs.IsNullOrWhiteSpace())
+            if (forceReset || AppSettings.JavaVMArgs.IsNullOrWhiteSpace())
                 AppSettings.JavaVMArgs = initializationData.JavaVMArgs;
 
             DefaultJavaMainClass = initializationData.JavaMainClass;
-            if(forceReset || AppSettings.JavaMainClass.IsNullOrWhiteSpace())
+            if (forceReset || AppSettings.JavaMainClass.IsNullOrWhiteSpace())
                 AppSettings.JavaMainClass = initializationData.JavaMainClass;
 
             SpaceHavenVersion = initializationData.SpaceHavenVersion;

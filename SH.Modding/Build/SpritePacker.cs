@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SH.Modding.Build;
 
-internal sealed class SpritePacker
+internal sealed class SpritePacker : IDisposable
 {
     private static readonly Comparer<SpriteRectangle> AreaDescending =
         Comparer<SpriteRectangle>.Create(static (a, b) => b.Area.CompareTo(a.Area));
@@ -16,8 +16,8 @@ internal sealed class SpritePacker
     private readonly int MaxWidth;
     private readonly int MaxHeight;
 
-    private readonly List<SpriteRectangle> Slots;
-    private readonly SpriteRectangle[] Working;
+    private List<SpriteRectangle> Slots;
+    private SpriteRectangle[] Working;
 
     public SpritePacker(int width, int height, int maxRectangles)
     {
@@ -194,4 +194,23 @@ internal sealed class SpritePacker
 
     private static int SlotSortKey(in SpriteRectangle rectangle) =>
         Math.Max(rectangle.X, rectangle.Y);
+
+
+    #region IDisposable
+    public volatile bool IsDisposed;
+    public void Dispose()
+    {
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+
+        Working = null;
+
+        Slots?.Clear();
+        Slots = null;
+
+        Rectangles?.Clear();
+        Rectangles = null;
+    }
+    #endregion
 }

@@ -19,7 +19,7 @@ namespace SH.Launcher.Core.Services;
 
 public sealed class DebugService
 {
-    private readonly LoggerCollection Log;
+    private readonly ILogger Log;
     private readonly PathData Paths;
 
     private readonly List<string> FilePaths = [];
@@ -75,7 +75,7 @@ public sealed class DebugService
     public DebugService(PathData paths, ILogger log)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
-        Log = new LoggerCollection(log);
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryGenerateDebugFileAsync(CancellationToken ct, IProgressInfo progress) =>

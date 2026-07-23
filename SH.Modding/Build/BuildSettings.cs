@@ -38,7 +38,7 @@ public sealed class BuildSettings : IDisposable
     public EGamePlatform GamePlatform { get; set; }
 
     public bool SkipRebuilding { get; set; }
-    public List<ModData> Mods { get; } = [];
+    public List<ModData> Mods { get; private set; } = [];
 
     public IProgressInfo InitializationProgress { get; set; }
     public IProgressInfo XmlBuildProgress { get; set; }
@@ -47,17 +47,18 @@ public sealed class BuildSettings : IDisposable
     public PathData Paths { get; }
 
     private CancellationToken ExternalCT { get; }
-    private CancellationTokenSource InternalCTS { get; }
-    private CancellationTokenSource LinkedCTS { get; }
-    internal ParallelOptions ParallelOptions { get; }
-    internal CancellationToken CT => ParallelOptions.CancellationToken;
+    private CancellationTokenSource InternalCTS;
+    private CancellationTokenSource LinkedCTS;
 
+    internal ParallelOptions ParallelOptions;
+    internal CancellationToken CT => ParallelOptions?.CancellationToken ?? default;
 
-    internal bool BuildFailure { get; private set; }
+    public bool HasFailed => Failed;
+    private volatile bool Failed;
     internal void Fail()
     {
-        BuildFailure = true;
-        try { InternalCTS.Cancel(); } catch { }
+        Failed = true;
+        try { InternalCTS?.Cancel(); } catch { }
     }
 
     #region IDisposable
@@ -67,7 +68,21 @@ public sealed class BuildSettings : IDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
+
+        InitializationProgress = null;
+        XmlBuildProgress = null;
+        JavaBuildProgress = null;
+
+        ParallelOptions = null;
+
         InternalCTS?.Dispose();
+        InternalCTS = null;
+
+        LinkedCTS?.Dispose();
+        LinkedCTS = null;
+
+        Mods?.Clear();
+        Mods = null;
     }
     #endregion
 }

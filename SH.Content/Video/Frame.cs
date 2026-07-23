@@ -16,7 +16,7 @@ public sealed class Frame : IDisposable
 
     public void Dispose()
     {
-        Image.Dispose();
+        Image?.Dispose();
         Image = null;
     }
 }

@@ -59,11 +59,13 @@ public sealed class FrameBasedAnimationRenderer
     {
         ct.ThrowIfCancellationRequested();
         SKBitmap bmp = new(width, height);
-        using SKCanvas canvas = new(bmp);
-        canvas.Clear(SKColors.Transparent);
-        Matrix3x2 canvasMatrix = Compose(bmp.Width / 2, bmp.Height / 2, 1, 1, 0);
-        ct.ThrowIfCancellationRequested();
-        await RenderAnimationAsync($"A[{animation.Name}]--F[{frameId}]", canvas, animation, frameId, canvasMatrix, ct);
+        using (SKCanvas canvas = new(bmp))
+        {
+            canvas.Clear(SKColors.Transparent);
+            Matrix3x2 canvasMatrix = Compose(bmp.Width / 2, bmp.Height / 2, 1, 1, 0);
+            ct.ThrowIfCancellationRequested();
+            await RenderAnimationAsync($"A[{animation.Name}]--F[{frameId}]", canvas, animation, frameId, canvasMatrix, ct);
+        }
         return bmp;
     }
 

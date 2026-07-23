@@ -4,7 +4,6 @@ using SH.Framework.Logging;
 using SkiaSharp;
 using System;
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,11 +57,14 @@ public static class WebpExporter
                 ct.ThrowIfCancellationRequested();
                 log?.Debug($"Exporting frame {++frameId} of {clip.Frames.Length}...");
                 SKBitmap src = scale == 1.0 ? frame.Image : Scale(frame.Image, width, height);
-                using SKBitmap converted = new(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
-                src.CopyTo(converted);
                 int timestamp = (int)(frame.Timestamp.TotalMilliseconds / playbackSpeed);
-                if (timestamp < prevTimestamp) timestamp = prevTimestamp + 1;
-                encoder.AddFrame(converted.Bytes, timestampMs: timestamp, quality: 100);
+                using (SKBitmap converted = new(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul)))
+                {
+                    src.CopyTo(converted);
+                    if (timestamp < prevTimestamp)
+                        timestamp = prevTimestamp + 1;
+                    encoder.AddFrame(converted.Bytes, timestampMs: timestamp, quality: 100);
+                }
                 prevTimestamp = timestamp;
             }
             byte[] animatedWebP = encoder.Assemble();
@@ -76,7 +78,7 @@ public static class WebpExporter
 
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

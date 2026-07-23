@@ -146,12 +146,11 @@ public sealed class GifExporterOld
     private static SKBitmap CropBitmap(SKBitmap src, SKRectI bounds)
     {
         SKBitmap dst = new(bounds.Width, bounds.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-
-        using SKCanvas canvas = new(dst);
-
-        // shift image so bounding box aligns to (0,0)
-        canvas.DrawBitmap(src, -bounds.Left, -bounds.Top);
-
+        using (SKCanvas canvas = new(dst))
+        {
+            // shift image so bounding box aligns to (0,0)
+            canvas.DrawBitmap(src, -bounds.Left, -bounds.Top);
+        }
         return dst;
     }
 

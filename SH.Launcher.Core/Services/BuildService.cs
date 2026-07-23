@@ -1,37 +1,38 @@
 ﻿using SH.Framework.Logging;
 using SH.Modding.Build;
 using System;
-using System.Runtime;
 using System.Threading.Tasks;
 
 namespace SH.Launcher.Core.Services;
 
 public sealed class BuildService
 {
-    private readonly LoggerCollection Log;
+    private readonly ILogger Log;
 
     public BuildService(ILogger log)
     {
-        Log = new LoggerCollection(log);
+        Log = log ?? new VoidLogger();
     }
 
     public async Task<bool> TryBuildAsync(BuildSettings settings)
     {
+        bool success = await Task.Run(() => TryBuildInternalAsync(settings));
+
+        // Force Garbage Collection:
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: false);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: false);
+
+        return success;
+    }
+    public async Task<bool> TryBuildInternalAsync(BuildSettings settings)
+    {
         try
         {
             // Build scoped:
-            {
-                await using ModBuilder builder = new(settings, Log);
-                if (!await Task.Run(() => builder.TryBuildAsync()))
-                    return false;
-            }
-
-            // Force Garbage Collection:
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-            GC.WaitForPendingFinalizers();
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            await using ModBuilder builder = new(settings, Log);
+            if (!await builder.TryBuildAsync())
+                return false;
 
             // Done.
             return true;

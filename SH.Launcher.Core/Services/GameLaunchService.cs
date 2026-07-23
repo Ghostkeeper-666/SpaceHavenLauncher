@@ -51,6 +51,10 @@ public sealed class GameLaunchService
     {
         try
         {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: false);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: false);
+
             modJars ??= [];
             bool hasJavaMods = modJars.Any();
 

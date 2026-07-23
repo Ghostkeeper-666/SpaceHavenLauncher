@@ -9,10 +9,4 @@
     <ProjectReference Include="..\SH.Framework\SH.Framework.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="test.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

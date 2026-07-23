@@ -11,7 +11,7 @@ internal sealed class SpriteAtlas : IDisposable
 {
     public string Name { get; }
     public IReadOnlyList<SpriteSheet> SpriteSheets => SpriteSheetList;
-    private readonly List<SpriteSheet> SpriteSheetList = [];
+    private List<SpriteSheet> SpriteSheetList = [];
     public int SpriteSheetSize { get; set; } = 2048;
     public int SpriteSpacing { get; set; } = 4;
 
@@ -170,8 +170,10 @@ internal sealed class SpriteAtlas : IDisposable
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (SpriteSheet ss in SpriteSheetList)
+        foreach (SpriteSheet ss in SpriteSheetList ?? [])
             ss?.Dispose();
+        SpriteSheetList?.Clear();
+        SpriteSheetList = null;
     }
     #endregion
 }

@@ -30,9 +30,9 @@ public sealed class InitializationService
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Log = log ?? new VoidLogger();
-        BackupProgress = backupProgress ?? throw new ArgumentNullException(nameof(backupProgress));
-        TemplateProgress = templateProgress ?? throw new ArgumentNullException(nameof(templateProgress));
-        CacheProgress = cacheProgress ?? throw new ArgumentNullException(nameof(cacheProgress));
+        BackupProgress = backupProgress ?? new VoidProgressInfo();
+        TemplateProgress = templateProgress ?? new VoidProgressInfo();
+        CacheProgress = cacheProgress ?? new VoidProgressInfo();
     }
 
     public async Task<InitializationData> InitializeAsync(bool forceReset, CancellationToken ct) => await Task.Run(() =>

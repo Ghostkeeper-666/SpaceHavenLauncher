@@ -10,7 +10,7 @@ public sealed class LoggerCollection : ILogger
     public event EventHandler<LogMessage> OnMessage;
 
 
-    private readonly List<ILogger> Children = [];
+    private List<ILogger> Children = [];
 
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) => Warn($"Log level has changed to '{LogLevel = logLevel}'");
@@ -44,6 +44,9 @@ public sealed class LoggerCollection : ILogger
             return;
         Children.Remove(log);
     }
+
+    public void RemoveAll() =>
+        Children.Clear();
 
     public void Add(LogMessage m)
     {
@@ -160,8 +163,8 @@ public sealed class LoggerCollection : ILogger
         if (IsDisposed)
             return;
         IsDisposed = true;
-        foreach (ILogger log in Children)
-            try { await log.DisposeAsync(); } catch { }
+        Children.Clear();
+        Children = null;
     }
     #endregion
 }

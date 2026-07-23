@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,95 +16,90 @@ namespace SH.Modding.Build;
 
 internal sealed class SpriteSheet : IDisposable
 {
-    /// <summary>
-    /// Constructor for calculated spritesheets
-    /// </summary>
     public SpriteSheet(int localId, int width, int height, int maxSprites, int spriteSpacing, SpriteAtlas atlas)
     {
         Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
         LocalId = localId;
-
         Width = width;
         Height = height;
         PixelFormat = 4;
         PixelData = new byte[PixelFormat * Width * Height];
         SpriteSpacing = spriteSpacing;
-
-        // Packing of sprite images is required:
         Packer = new(Width, Height, maxSprites);
     }
 
-    /// <summary>
-    /// Constructor for predefined spritesheets
-    /// </summary>
-    public SpriteSheet(int localID, string imagePath, SpriteAtlas atlas)
+    public SpriteSheet(int localId, string imagePath, SpriteAtlas atlas)
     {
         Atlas = atlas ?? throw new ArgumentNullException(nameof(atlas));
-        LocalId = localID;
+        LocalId = localId;
+        Packer = null;
 
         if (imagePath.EndsWith(".cim", StringComparison.OrdinalIgnoreCase))
         {
-            // Load from CIM file:
-            static int readInt32BigEndian(Stream stream)
+            static int ReadInt32BigEndian(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[4];
                 stream.ReadExactly(buffer);
                 return BinaryPrimitives.ReadInt32BigEndian(buffer);
             }
-            using (FileStream fs = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, false))
-            using (ZLibStream zs = new(fs, CompressionMode.Decompress))
-            {
-                Width = readInt32BigEndian(zs);
-                Height = readInt32BigEndian(zs);
-                PixelFormat = readInt32BigEndian(zs);
-                if (PixelFormat != 4)
-                    throw new Exception($"Expected pixel format = 4, read pixel format = {PixelFormat}");
-                PixelData = new byte[PixelFormat * Width * Height];
-                zs.ReadExactly(PixelData);
-            }
+            using FileStream fs = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+            using ZLibStream zs = new(fs, CompressionMode.Decompress);
+            Width = ReadInt32BigEndian(zs);
+            Height = ReadInt32BigEndian(zs);
+            PixelFormat = ReadInt32BigEndian(zs);
+            if (PixelFormat != 4)
+                throw new InvalidDataException($"Expected pixel format = 4, read pixel format = {PixelFormat}");
+            PixelData = new byte[PixelFormat * Width * Height];
+            zs.ReadExactly(PixelData);
         }
         else
         {
-            // Load from image file:
-            using (SKBitmap bitmap = SKBitmap.Decode(imagePath) ?? throw new InvalidOperationException($@"Failed to decode image ""{imagePath}"""))
+            using FileStream fs = new(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+            using SKCodec codec = SKCodec.Create(fs) ?? throw new InvalidDataException($"Unable to decode image '{imagePath}'.");
+            Width = codec.Info.Width;
+            Height = codec.Info.Height;
+            PixelFormat = 4;
+            PixelData = new byte[PixelFormat * Width * Height];
+            GCHandle handle = GCHandle.Alloc(PixelData, GCHandleType.Pinned);
+            try
             {
-                Width = bitmap.Width;
-                Height = bitmap.Height;
-                PixelFormat = 4; // RGBA8888
-                PixelData = new byte[PixelFormat * Width * Height];
-                Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
+                SKImageInfo info = new(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+                SKCodecResult result = codec.GetPixels(info, handle.AddrOfPinnedObject());
+                if (result != SKCodecResult.Success)
+                    throw new InvalidDataException($"Unable to decode image '{imagePath}'.");
+            }
+            finally
+            {
+                handle.Free();
             }
         }
-
-        // No packing of sprite images allowed:
-        Packer = null;
     }
 
-    public SpriteAtlas Atlas { get; }
+    public SpriteAtlas Atlas { get; private set; }
     public int GlobalId { get; set; } = int.MinValue;
     public int LocalId { get; }
     public int Width { get; private set; }
     public int Height { get; private set; }
     public int PixelFormat { get; }
-
     public byte[] PixelData { get; private set; }
+
     internal SpritePacker Packer { get; private set; }
-
     internal bool IsPredefined => Packer == null;
-    internal bool IsRendered => Packer != null;
-
+    internal bool IsRendered { get; private set; }
 
     public IReadOnlyList<Sprite> Sprites => SpriteList;
     private List<Sprite> SpriteList = [];
-    public int Count => SpriteList.Count;
 
+    public int Count => SpriteList.Count;
     public int SpriteSpacing { get; set; }
 
-    public OrderedDictionary<string, Sprite> SpritesByName { get; } = [];
-    public OrderedDictionary<string, Sprite> SpritesById { get; } = [];
+    public OrderedDictionary<string, Sprite> SpritesByName { get; private set; } = [];
+    public OrderedDictionary<string, Sprite> SpritesById { get; private set; } = [];
 
     public void Add(Sprite sprite)
     {
+        ArgumentNullException.ThrowIfNull(sprite);
+
         SpriteList.Add(sprite);
         sprite.SpriteSheet = this;
     }
@@ -112,67 +108,56 @@ internal sealed class SpriteSheet : IDisposable
     {
         SpriteList.Clear();
         PixelData = new byte[PixelFormat * Width * Height];
+        IsRendered = false;
     }
 
     public void Resize(int width, int height)
     {
         if (width == Width && height == Height)
             return;
+
         Width = width;
         Height = height;
         PixelData = new byte[PixelFormat * Width * Height];
-        Packer = new(Width, Height, Packer.MaxRectangles);
+        Packer = Packer == null ? null : new(Width, Height, Packer.MaxRectangles);
+        IsRendered = false;
     }
 
-    public bool TryRenderFromSprites(ILogger log = null)
+    public bool TryRenderFromSprites(ILogger log, CancellationToken ct)
     {
         try
         {
-            using SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
-            using SKCanvas canvas = new(bitmap);
-            foreach (Sprite sprite in SpriteList)
-                canvas.DrawBitmap(sprite.Image, sprite.X, sprite.Y);
+            Sprite largestSprite = SpriteList.MaxBy(x => x.Area);
+            if (largestSprite == null)
+                return false;
 
-            Marshal.Copy(bitmap.GetPixels(), PixelData, 0, PixelData.Length);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
-
-    public bool TryExportToCim(string path, ILogger log = null)
-    {
-        try
-        {
-            using FileStream fs = new(
-                path,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 81920,
-                useAsync: false);
-
-            using ZLibStream zs = new(fs, CompressionLevel.SmallestSize, leaveOpen: false);
-
-            static void writeInt32BigEndian(Stream s, int value)
+            byte[] decodeBuffer = new byte[largestSprite.Area * PixelFormat];
+            GCHandle handle = GCHandle.Alloc(decodeBuffer, GCHandleType.Pinned);
+            try
             {
-                Span<byte> buffer = stackalloc byte[4];
-                BinaryPrimitives.WriteInt32BigEndian(buffer, value);
-                s.Write(buffer);
+                IntPtr buffer = handle.AddrOfPinnedObject();
+                foreach (Sprite sprite in SpriteList)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    using FileStream fs = new(sprite.AbsoluteFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
+                    using SKCodec codec = SKCodec.Create(fs) ?? throw new InvalidDataException($"Unable to decode sprite '{sprite.AbsoluteFilePath}'.");
+                    SKImageInfo info = new(sprite.Width, sprite.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+                    SKCodecResult result = codec.GetPixels(info, buffer);
+                    if (result != SKCodecResult.Success)
+                        throw new InvalidDataException($"Unable to decode sprite '{sprite.AbsoluteFilePath}'.");
+                    int rowSize = sprite.Width * PixelFormat;
+                    for (int row = 0; row < sprite.Height; row++)
+                        Buffer.BlockCopy(decodeBuffer, row * rowSize, PixelData, ((sprite.Y + row) * Width + sprite.X) * PixelFormat, rowSize);
+                }
             }
-
-            writeInt32BigEndian(zs, Width);
-            writeInt32BigEndian(zs, Height);
-            writeInt32BigEndian(zs, 4);
-            zs.Write(PixelData, 0, PixelData.Length);
-            zs.Flush();
-
+            finally
+            {
+                handle.Free();
+            }
+            IsRendered = true;
             return true;
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -184,95 +169,19 @@ internal sealed class SpriteSheet : IDisposable
     {
         try
         {
-            await using FileStream fs = new(
-                path,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 81920,
-                useAsync: true);
-
-            await using ZLibStream zs = new(fs, CompressionLevel.SmallestSize, leaveOpen: false);
-
-            // Build the full payload in memory (header + pixel data)
-            byte[] header = new byte[12]; // 3 × 4 bytes
-            {
-                Span<byte> width = header.AsSpan(0, 4);
-                BinaryPrimitives.WriteInt32BigEndian(width, Width);
-            }
-            {
-                Span<byte> height = header.AsSpan(4, 4);
-                BinaryPrimitives.WriteInt32BigEndian(height, Height);
-            }
-            {
-                Span<byte> buffer = header.AsSpan(8, 4);
-                BinaryPrimitives.WriteInt32BigEndian(buffer, 4);
-            }
-
-            using MemoryStream ms = new(header.Length + PixelData.Length);
-            ms.Write(header, 0, header.Length);
-            ms.Write(PixelData, 0, PixelData.Length);
-            ms.Position = 0;
-
-            await ms.CopyToAsync(zs, ct).ConfigureAwait(false);
-            await zs.FlushAsync(ct).ConfigureAwait(false);
-
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex);
-            return false;
-        }
-    }
-
-    public async Task<bool> TryExportAllSpritesToPngAsync(string exportDir, ILogger log, CancellationToken ct)
-    {
-        try
-        {
-            exportDir = exportDir.CombineAsOSPath(LocalId.ToString());
-            if (!IOUtils.TryCreateDir(exportDir, log))
+            if (!IsPredefined && !IsRendered && !TryRenderFromSprites(log, ct))
                 return false;
-
-            foreach (Sprite sprite in SpritesByName.Values)
-            {
-                string exportPath = exportDir.CombineAsOSPath($"{sprite.LocalId}.png");
-                await sprite.TryExportToPngAsync(exportPath, log, ct);
-            }
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            log?.Error(ex, exportDir);
-            return false;
-        }
-    }
-
-    [Obsolete("Use TryExportToPngAsync() instead!")]
-    public bool TryExportToPng(string path, ILogger log, CancellationToken ct)
-    {
-        try
-        {
             string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
-
-            ct.ThrowIfCancellationRequested();
-
-            SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
-            Marshal.Copy(PixelData, 0, bitmap.GetPixels(), PixelData.Length);
-
-            ct.ThrowIfCancellationRequested();
-
-            using SKImage image = SKImage.FromBitmap(bitmap);
-            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-            using FileStream stream = File.OpenWrite(path);
-
-            ct.ThrowIfCancellationRequested();
-
-            data.SaveTo(stream);
+            await using FileStream fs = new(path, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+            await using ZLibStream zs = new(fs, CompressionLevel.Fastest);
+            byte[] header = new byte[12];
+            BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(0, 4), Width);
+            BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4, 4), Height);
+            BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(8, 4), PixelFormat);
+            await zs.WriteAsync(header, ct).ConfigureAwait(false);
+            await zs.WriteAsync(PixelData, ct).ConfigureAwait(false);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -287,23 +196,16 @@ internal sealed class SpriteSheet : IDisposable
     {
         try
         {
+            if (!IsPredefined && !IsRendered && !TryRenderFromSprites(log, ct))
+                return false;
             string dir = path.GetParentDirAsOSPath();
             if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, log))
                 return false;
-
-            SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+            using SKBitmap bitmap = new(new SKImageInfo(Width, Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
             Marshal.Copy(PixelData, 0, bitmap.GetPixels(), PixelData.Length);
             using SKData data = bitmap.Encode(SKEncodedImageFormat.Png, 100);
-
-            await using FileStream stream = new(
-                path,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                65536,
-                useAsync: true);
-
-            await stream.WriteAsync(data.ToArray(), ct);
+            await using FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
+            await stream.WriteAsync(data.ToArray(), ct).ConfigureAwait(false);
             return true;
         }
         catch (OperationCanceledException) { throw; }
@@ -318,17 +220,31 @@ internal sealed class SpriteSheet : IDisposable
 
     #region IDisposable
     public volatile bool IsDisposed;
+
     public void Dispose()
     {
         if (IsDisposed)
             return;
+
         IsDisposed = true;
+
+        Atlas = null;
         PixelData = null;
-        Packer = null;
-        foreach (Sprite sprite in SpriteList)
+
+        SpritesByName?.Clear();
+        SpritesByName = null;
+
+        SpritesById?.Clear();
+        SpritesById = null;
+
+        foreach (Sprite sprite in SpriteList ?? [])
             sprite?.Dispose();
+
+        SpriteList?.Clear();
         SpriteList = null;
+
+        Packer?.Dispose();
+        Packer = null;
     }
     #endregion
 }
-

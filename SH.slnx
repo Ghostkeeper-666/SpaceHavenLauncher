@@ -20,6 +20,7 @@
     <Project Path="SH.Framework.Test/SH.Framework.Test.csproj">
       <Build Project="false" />
     </Project>
+    <Project Path="SH.Launcher.Test/SH.Launcher.Test.csproj" Id="f9738d77-89b0-4325-9f88-92cc749733a1" />
   </Folder>
   <Project Path="SH.Content/SH.Content.csproj" />
   <Project Path="SH.Framework/SH.Framework.csproj" />

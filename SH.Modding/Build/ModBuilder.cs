@@ -6,6 +6,7 @@ using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Modding.Models;
+using SkiaSharp;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -24,8 +25,7 @@ public sealed class ModBuilder : IAsyncDisposable
     private readonly BuildSettings BuildSettings;
     private PathData Paths => BuildSettings.Paths;
 
-    private readonly LoggerCollection Log;
-    private FileLogger FileLogger;
+    private readonly ILogger Log;
 
     private BuildInfo Build;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
@@ -74,7 +74,7 @@ public sealed class ModBuilder : IAsyncDisposable
     public ModBuilder(BuildSettings settings, ILogger log)
     {
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
-        Log = new LoggerCollection(log);
+        Log = log ?? new VoidLogger();
     }
 
 
@@ -87,7 +87,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private void ResetBuildStage_ProgressChanged(object sender, ProgressEventArgs e)
+    private void OnProgressChanged(object sender, ProgressEventArgs e)
     {
         //try
         //{
@@ -110,12 +110,12 @@ public sealed class ModBuilder : IAsyncDisposable
         {
             // STARTUP:
             ResetBuildStage = new ProgressInfo("Reset Build Stage") { Max = 10 };
-            ResetBuildStage.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ResetBuildStage.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ResetBuildStage, 175);
             JavaBuild.AddChild(ResetBuildStage, 175);
 
             LoadSpaceHavenXml = new ProgressInfo("Load Space Haven XML") { Max = 10 };
-            LoadSpaceHavenXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            LoadSpaceHavenXml.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(LoadSpaceHavenXml, 1000);
             JavaBuild.AddChild(LoadSpaceHavenXml, 1000);
 
@@ -123,55 +123,55 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // JAVA BUILD:
             DeployJavaHash = new ProgressInfo("Deploy JAVA Hash") { Max = 10 };
-            DeployJavaHash.ProgressChanged += ResetBuildStage_ProgressChanged;
+            DeployJavaHash.ProgressChanged += OnProgressChanged;
             JavaBuild.AddChild(DeployJavaHash, 1);
 
 
 
             // XML BUILD:
             ResetXmlBuild = new ProgressInfo("Reset XML Build") { Max = 10 };
-            ResetXmlBuild.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ResetXmlBuild.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ResetXmlBuild, 1);
 
             LoadModsXml = new ProgressInfo("Load Mods XML") { Max = 10 };
-            LoadModsXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            LoadModsXml.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(LoadModsXml, 1);
 
             MergeXml = new ProgressInfo("Merge XML") { Max = 10 };
-            MergeXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            MergeXml.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(MergeXml, 20);
 
             PatchXml = new ProgressInfo("Patch XML") { Max = 10 };
-            PatchXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            PatchXml.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(PatchXml, 25);
 
             ComposeAudio = new ProgressInfo("Compose Audio") { Max = 10 };
-            ComposeAudio.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeAudio.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ComposeAudio, 1);
 
             ComposeTextures_LoadPredefinedSpriteSheets = new ProgressInfo("Compose Textures: Load Predefined Sprite Sheets");
-            ComposeTextures_LoadPredefinedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_LoadPredefinedSpriteSheets.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_LoadPredefinedSprites = new ProgressInfo("Compose Textures: Load Predefined Sprites");
-            ComposeTextures_LoadPredefinedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_LoadPredefinedSprites.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_WritePredefinedSpriteSheets = new ProgressInfo("Compose Textures: Write Predefined Sprite Sheets");
-            ComposeTextures_WritePredefinedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_WritePredefinedSpriteSheets.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_ReadReferencedSprites = new ProgressInfo("Compose Textures: Read Referenced Sprites");
-            ComposeTextures_ReadReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_ReadReferencedSprites.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_LoadReferencedSprites = new ProgressInfo("Compose Textures: Load Referenced Sprites");
-            ComposeTextures_LoadReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_LoadReferencedSprites.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_PackReferencedSprites = new ProgressInfo("Compose Textures: Pack Referenced Sprites");
-            ComposeTextures_PackReferencedSprites.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_PackReferencedSprites.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_WriteReferencedSpriteSheets = new ProgressInfo("Compose Textures: Write Referenced Sprite Sheets");
-            ComposeTextures_WriteReferencedSpriteSheets.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_WriteReferencedSpriteSheets.ProgressChanged += OnProgressChanged;
 
             ComposeTextures_ComposeTexturesXml = new ProgressInfo("Compose Textures: Compose textures.xml");
-            ComposeTextures_ComposeTexturesXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures_ComposeTexturesXml.ProgressChanged += OnProgressChanged;
 
             ComposeTextures = new ProgressInfo("Compose Textures",
             [
@@ -185,42 +185,42 @@ public sealed class ModBuilder : IAsyncDisposable
                 (ComposeTextures_ComposeTexturesXml, 400),
             ])
             { Max = 10 };
-            ComposeTextures.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeTextures.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ComposeTextures, 27000);
 
             FixTexts = new ProgressInfo("Fix Texts") { Max = 10 };
-            FixTexts.ProgressChanged += ResetBuildStage_ProgressChanged;
+            FixTexts.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(FixTexts, 110);
 
             DeployXmlHash = new ProgressInfo("Deploy Xml Hash") { Max = 10 };
-            DeployXmlHash.ProgressChanged += ResetBuildStage_ProgressChanged;
+            DeployXmlHash.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(DeployXmlHash, 1);
 
 
 
             // DEPLOYMENT:
             WriteVersionInfo = new ProgressInfo("Write Version Info") { Max = 10 };
-            WriteVersionInfo.ProgressChanged += ResetBuildStage_ProgressChanged;
+            WriteVersionInfo.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(WriteVersionInfo, 1);
             JavaBuild.AddChild(WriteVersionInfo, 1);
 
             ComposeCredits = new ProgressInfo("Compose Credits") { Max = 10 };
-            ComposeCredits.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeCredits.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ComposeCredits, 2);
             JavaBuild.AddChild(ComposeCredits, 2);
 
             WriteSpaceHavenXml = new ProgressInfo("Write Space Haven XML") { Max = 10 };
-            WriteSpaceHavenXml.ProgressChanged += ResetBuildStage_ProgressChanged;
+            WriteSpaceHavenXml.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(WriteSpaceHavenXml, 1000);
             JavaBuild.AddChild(WriteSpaceHavenXml, 1000);
 
             ComposeSpaceHavenJar = new ProgressInfo("Compose spacehaven.jar") { Max = 10 };
-            ComposeSpaceHavenJar.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeSpaceHavenJar.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ComposeSpaceHavenJar, 1500);
             JavaBuild.AddChild(ComposeSpaceHavenJar, 1500);
 
             ComposeModsJson = new ProgressInfo("Compose mods.json") { Max = 10 };
-            ComposeModsJson.ProgressChanged += ResetBuildStage_ProgressChanged;
+            ComposeModsJson.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ComposeModsJson, 25);
             JavaBuild.AddChild(ComposeModsJson, 25);
 
@@ -434,56 +434,6 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Error($"Build has failed", Paths.BuildDir);
             return false;
         }
-        finally
-        {
-            if (Build != null)
-            {
-                try { await Build.DisposeAsync(); } catch { }
-                Build = null;
-            }
-
-            if (FileLogger != null)
-            {
-                try
-                {
-                    await FileLogger.DisposeAsync();
-                    Log.RemoveLogger(FileLogger);
-                }
-                catch { }
-                FileLogger = null;
-            }
-
-            Initialization?.RemoveAll(); // owned by caller, do not dispose!
-            JavaBuild?.RemoveAll(); // owned by caller, do not dispose!
-            XmlBuild?.RemoveAll(); // owned by caller, do not dispose!
-
-            ResetBuildStage?.Dispose();
-            LoadSpaceHavenXml?.Dispose();
-            ResetXmlBuild?.Dispose();
-            LoadModsXml?.Dispose();
-            MergeXml?.Dispose();
-            PatchXml?.Dispose();
-            ComposeAudio?.Dispose();
-            FixTexts?.Dispose();
-            DeployXmlHash?.Dispose();
-            DeployJavaHash?.Dispose();
-            WriteVersionInfo?.Dispose();
-            ComposeCredits?.Dispose();
-            WriteSpaceHavenXml?.Dispose();
-            ComposeSpaceHavenJar?.Dispose();
-            ComposeModsJson?.Dispose();
-
-            ComposeTextures?.RemoveAll();
-            ComposeTextures?.Dispose();
-            ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
-            ComposeTextures_LoadPredefinedSprites?.Dispose();
-            ComposeTextures_WritePredefinedSpriteSheets?.Dispose();
-            ComposeTextures_ReadReferencedSprites?.Dispose();
-            ComposeTextures_LoadReferencedSprites?.Dispose();
-            ComposeTextures_PackReferencedSprites?.Dispose();
-            ComposeTextures_WriteReferencedSpriteSheets?.Dispose();
-            ComposeTextures_ComposeTexturesXml?.Dispose();
-        }
     }
 
 
@@ -569,6 +519,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Info("Mod build initialization is complete", Paths.BuildDir);
             return true;
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to initialize mod build: {ex}", Paths.BuildDir);
@@ -1772,26 +1723,18 @@ public sealed class ModBuilder : IAsyncDisposable
                 await Parallel.ForEachAsync(predefinedAtlas.SpriteSheets, ParallelOptions, async (spriteSheet, ct) =>
                 //await Parallel.ForEachAsync(predefinedAtlas.SpriteSheets, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async (spriteSheet, ct) =>
                 {
-                    if (spriteSheet.IsRendered)
+                    if (!spriteSheet.IsPredefined && !spriteSheet.IsRendered)
                     {
-                        spriteSheet.TryRenderFromSprites(Log);
-                        string pngFilename = $"{spriteSheet.GlobalId}.png";
+                        spriteSheet.TryRenderFromSprites(Log, ct);
 
                         // Save rendered spritesheets as PNG file, for debugging:
-                        if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, pngFilename), Log, ct))
-                        {
-                            Fail();
-                            return;
-                        }
+                        //if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, $"{spriteSheet.GlobalId}.png"), Log, ct))
+                        //    Fail();
                     }
 
                     // Save as CIM file to build stage directory:
-                    string cimFilename = $"{spriteSheet.GlobalId}.cim";
-                    if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, cimFilename), Log, ct))
-                    {
+                    if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, $"{spriteSheet.GlobalId}.cim"), Log, ct))
                         Fail();
-                        return;
-                    }
 
                     // progress:
                     lock (ComposeTextures_WritePredefinedSpriteSheets)
@@ -2049,7 +1992,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     {
                         Log.Debug($"Generating sprite sheet {spriteSheet.GlobalId}...", Paths.BuildTexturesDir);
 
-                        if (!spriteSheet.TryRenderFromSprites(Log))
+                        if (!spriteSheet.TryRenderFromSprites(Log, ct))
                         {
                             Log.Error($@"Unable to generate sprite sheet '{spriteSheet.LocalId}'");
                             Fail();
@@ -2058,10 +2001,12 @@ public sealed class ModBuilder : IAsyncDisposable
                         string cimFilename = $"{spriteSheet.GlobalId}.cim";
 
                         // Export to CIM to build stage directory:
-                        await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, cimFilename), Log, ct);
+                        if (!await spriteSheet.TryExportToCimAsync(IOUtils.CombineAsOSPath(Paths.BuildStageLibraryDir, $"{spriteSheet.GlobalId}.cim"), Log, ct))
+                            Fail();
 
                         // Export to PNG, for debugging:
-                        await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, $"{spriteSheet.GlobalId}.png"), Log, ct);
+                        //if (!await spriteSheet.TryExportToPngAsync(IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, $"{spriteSheet.GlobalId}.png"), Log, ct))
+                        //    Fail();
                     }
                     finally
                     {
@@ -2418,8 +2363,47 @@ public sealed class ModBuilder : IAsyncDisposable
         IsDisposed = true;
         try
         {
-            if (FileLogger != null)
-                await FileLogger.DisposeAsync();
+            try { await Build.DisposeAsync(); } catch { }
+            Build = null;
+
+            Initialization?.RemoveAll(); // owned by caller, do not dispose!
+            JavaBuild?.RemoveAll(); // owned by caller, do not dispose!
+            XmlBuild?.RemoveAll(); // owned by caller, do not dispose!
+
+            ResetBuildStage?.Dispose();
+            LoadSpaceHavenXml?.Dispose();
+            ResetXmlBuild?.Dispose();
+            LoadModsXml?.Dispose();
+            MergeXml?.Dispose();
+            PatchXml?.Dispose();
+            ComposeAudio?.Dispose();
+            FixTexts?.Dispose();
+            DeployXmlHash?.Dispose();
+            DeployJavaHash?.Dispose();
+            WriteVersionInfo?.Dispose();
+            ComposeCredits?.Dispose();
+            WriteSpaceHavenXml?.Dispose();
+            ComposeSpaceHavenJar?.Dispose();
+            ComposeModsJson?.Dispose();
+
+            ComposeTextures?.RemoveAll();
+            ComposeTextures?.Dispose();
+            ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
+            ComposeTextures_LoadPredefinedSprites?.Dispose();
+            ComposeTextures_WritePredefinedSpriteSheets?.Dispose();
+            ComposeTextures_ReadReferencedSprites?.Dispose();
+            ComposeTextures_LoadReferencedSprites?.Dispose();
+            ComposeTextures_PackReferencedSprites?.Dispose();
+            ComposeTextures_WriteReferencedSpriteSheets?.Dispose();
+            ComposeTextures_ComposeTexturesXml?.Dispose();
+
+            SKGraphics.PurgeResourceCache();
+            SKGraphics.PurgeFontCache();
+            SKGraphics.PurgeAllCaches();
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         }
         catch { }
     }
