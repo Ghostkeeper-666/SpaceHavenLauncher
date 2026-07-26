@@ -1,9 +1,12 @@
-﻿using SH.Framework.Logging;
+﻿using SH.Content;
+using SH.Framework.IO;
+using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Modding;
 using SH.Modding.Build;
 using SH.Modding.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -11,23 +14,40 @@ using System.Threading.Tasks;
 
 namespace SH.Launcher.Console;
 
-public static class ConsoleMode
+public sealed class SpaceHavenLauncherConsole
 {
-    private static void OnLogMessage(object sender, LogMessage e) =>
-        System.Console.WriteLine($"{$"[{e.Level.ToString().ToUpperInvariant()}]".PadRight(12)}{e?.Text}");
-
-    public static int Run(string[] args) =>
-        RunAsync(args).GetAwaiter().GetResult();
-
-    public static async Task<int> RunAsync(string[] args)
+    #region static
+    public static readonly string LogPath;
+    static SpaceHavenLauncherConsole()
     {
-        CancellationToken ct = default;
+        LogPath = IOUtils.CombineAsOSPath(SpaceHavenLauncher.WorkDir, "consoleLog.txt");
+    }
+    #endregion
+
+    public BatchLogger Log;
+
+    public SpaceHavenLauncherConsole()
+    {
+        Log = new(TimeSpan.FromMilliseconds(200));
+    }
+
+
+    public int Run(string[] args) =>
+        RunAsync(args, null).GetAwaiter().GetResult();
+
+    public async Task<int> RunAsync(string[] args, CancellationTokenSource cts) =>
+        await Task.Run(async () => await RunInternalAsync(args, cts));
+
+    public async Task<int> RunInternalAsync(string[] args, CancellationTokenSource cts)
+    {
+        args ??= [];
+        cts ??= new CancellationTokenSource();
+        CancellationToken ct = cts.Token;
 
         // Log:
-        Logger Log = new();
-        Log.SetLogLevel(ELogLevel.Info);
-        Log.OnMessage += OnLogMessage;
-
+        Log.Success("===========================================");
+        Log.Success("=== Space Haven Launcher (Console Mode) ===");
+        Log.Success("===========================================");
 
         // Path settings:
         PathSettingsRepositoryService pathSvc = new(Log);
@@ -45,17 +65,22 @@ public static class ConsoleMode
 
         // App settings:
         AppSettingsRepositoryService appSvc = new(paths, Log);
-        AppSettingsData data = await appSvc.TryLoadOrCreateAsync(ct);
-        if (data == null)
+        AppSettingsData appSettingsData = await appSvc.TryLoadOrCreateAsync(ct);
+        if (appSettingsData == null)
         {
             Log.Error($@"Unable to load or create application settings => please check for write permissions on ""{paths.WorkDir}""");
-            data = AppSettingsData.GetDefault();
+            appSettingsData = AppSettingsData.GetDefault();
         }
+        Log.SetLogLevel(appSettingsData.LogVerbosity.ToLogLevel());
+
+
+        // Update to curent version:
+        await appSvc.TrySaveAsync(appSettingsData, ct);
 
 
         // Initialize:
         InitializationService initSvc = new(paths, Log, null, null, null);
-        InitializationData initializationData = await initSvc.InitializeAsync(true, ct);
+        InitializationData initializationData = await initSvc.InitializeAsync(false, ct);
         if (initializationData == null)
             return -10;
 
@@ -99,9 +124,9 @@ public static class ConsoleMode
             SpaceHavenDir = paths.SpaceHavenDir,
             SpaceHavenJarDir = paths.SpaceHavenJarDir,
             GamePlatform = initializationData.GamePlatform,
-            SkipRebuilding = false,
+            SkipRebuilding = appSettingsData.SkipRebuilding,
         };
-        settings.Mods.AddRange(mods.Values); // all mods
+        settings.Mods.AddRange(mods.Values.Where(m => m.IsEnabled));
         BuildService builderSvc = new(Log);
         if (!await builderSvc.TryBuildAsync(settings))
             return -30;
@@ -109,15 +134,33 @@ public static class ConsoleMode
 
         // Run Space Haven:
         GameLaunchService launcherSvc = new(paths, Log);
-        if (!await launcherSvc.TryLaunchModifiedGameAsync(
+
+        // Run and await Space Haven:
+        Task<bool> spaceHaven =
+            launcherSvc.TryLaunchModifiedGameAsync(
             initializationData.GamePlatform,
             initializationData.JavaMainClass,
             initializationData.JavaVMArgs,
             mods.Values.Where(m => m.IsJavaMod).SelectMany(m => m.JarPaths),
             paths.CacheJarPath,
-            ct))
-            return -40;
+            ct);
 
+        List<Task> tasks = [spaceHaven];
+        if (appSettingsData.CloseAppAutomaticallyOnLaunch)
+            tasks.Add(Task.Delay(3000));
+
+        // Run:
+        await Task.WhenAny(tasks);
+
+        // Check result:
+        if (!spaceHaven.IsCompleted)
+            return 0; // happens ony when Task.Delay() finishes first!
+        if (!spaceHaven.Result)
+        {
+            Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", paths.SpaceHavenDir);
+            return -40;
+        }
+        Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", paths.SpaceHavenDir);
 
         // Done.
         Log.Success("Press any key to EXIT");

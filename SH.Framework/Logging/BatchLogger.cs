@@ -1,19 +1,16 @@
-﻿using SH.Framework.Extensions;
-using SH.Framework.IO;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace SH.Framework.Logging;
 
-public sealed class FileLogger : ILogger
+public sealed class BatchLogger : ILogger
 {
-    public FileLogger(string path)
+    public BatchLogger(TimeSpan interval)
     {
-        SetPath(path);
+        Interval = interval;
 
         Messages = Channel.CreateUnbounded<LogMessage>(new UnboundedChannelOptions
         {
@@ -25,48 +22,20 @@ public sealed class FileLogger : ILogger
         LogTask = Task.Run(LoopAsync);
     }
 
+    public TimeSpan Interval { get; set; }
+
+    public event EventHandler<IReadOnlyList<LogMessage>> OnMessages;
 
     public event EventHandler<LogMessage> OnMessage;
 
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) =>
-        Info($"{nameof(FileLogger)} level = '{LogLevel = logLevel}'");
+        Info($"{nameof(BatchLogger)} level = '{LogLevel = logLevel}'");
     public IReadOnlyList<(string, string)> Replacements { get; set; }
 
     public string Prefix { get; set; }
     public string Suffix { get; set; }
     public string LogPath { get; private set; }
-
-    public void SetPath(string path)
-    {
-        try
-        {
-            path = !string.IsNullOrWhiteSpace(path) ? path : null;
-            if (path == null)
-            {
-                LogPath = null;
-                return;
-            }
-
-            string dir = path.GetParentDirAsOSPath();
-            if (!dir.IsNullOrWhiteSpace() && !IOUtils.TryCreateDir(dir, out string error))
-                throw new Exception(error);
-
-            if (!IOUtils.TryWriteAllText(path, string.Empty, out string writeError))
-                throw new Exception(writeError);
-
-            LogPath = path;
-        }
-        catch (Exception ex1)
-        {
-            try { Error(ex1); }
-            catch (Exception ex2)
-            {
-                System.Diagnostics.Debug.WriteLine(ex1);
-                System.Diagnostics.Debug.WriteLine(ex2);
-            }
-        }
-    }
 
     private readonly Task LogTask;
     private readonly Channel<LogMessage> Messages;
@@ -148,9 +117,9 @@ public sealed class FileLogger : ILogger
         if (Suffix != null)
             m.Suffix = Suffix;
         IReadOnlyList<(string, string)> replacements = Replacements;
-        if(replacements?.Count > 0)
-            foreach((string value, string token) in Replacements)
-                if(m.RawText.Contains(value))
+        if (replacements?.Count > 0)
+            foreach ((string value, string token) in Replacements)
+                if (m.RawText.Contains(value))
                     m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
         if (!Messages.Writer.TryWrite(m))
             return;
@@ -169,16 +138,24 @@ public sealed class FileLogger : ILogger
             {
                 // Dequeue all
                 batch.Add(message);
+
+                await Task.Delay(Interval, CTS.Token);
+
                 while (Messages.Reader.TryRead(out LogMessage extra))
                     batch.Add(extra);
 
-                // Hold until a path is defined
-                string path;
-                while ((path = LogPath) == null)
-                    await Task.Delay(100);
-
-                // Write
-                await WriteAsync(batch, path);
+                if (batch.Count > 0)
+                {
+                    try
+                    {
+                        OnMessages?.Invoke(this, new List<LogMessage>(batch));
+                        if (OnMessage != null)
+                            foreach (LogMessage m in batch)
+                                OnMessage?.Invoke(this, m);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
+                }
                 batch.Clear();
             }
         }
@@ -186,16 +163,15 @@ public sealed class FileLogger : ILogger
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
-    private async Task WriteAsync(List<LogMessage> messages, string path)
+    private void PublishBatchAsync(List<LogMessage> messages)
     {
-        if (messages == null || messages.Count <= 0)
-            return;
         try
         {
-            StringBuilder sb = new(messages.Count * 256);
-            foreach (LogMessage m in messages)
-                sb.AppendLine(m.ToString());
-            await IOUtils.TryAppendAllTextAsync(path, sb.ToString(), null, CTS.Token);
+            OnMessages?.Invoke(this, messages);
+
+            if (OnMessage != null)
+                foreach (LogMessage m in messages)
+                    OnMessage?.Invoke(this, m);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }

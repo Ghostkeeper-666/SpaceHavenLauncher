@@ -1,0 +1,33 @@
+<Window
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+mc:Ignorable="d" d:DesignWidth="1080" d:DesignHeight="640"
+xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+xmlns:vm="using:SH.Launcher.ViewModels"
+x:Class="SH.Launcher.Views.ConsoleWindow"
+x:DataType="vm:ConsoleWindowViewModel"
+
+RequestedThemeVariant="Dark"
+Icon="/Assets/Icons/SpaceHavenLauncher.ico"
+Title="{Binding Title}"
+MinWidth="1080"
+MinHeight="640"
+HorizontalAlignment="Stretch"
+>
+    <ae:TextEditor
+        x:Name="TextEditor"
+        FontFamily="Cascadia Mono, Consolas, Menlo, monospace"
+        ScrollViewer.AllowAutoHide="False"
+        HorizontalScrollBarVisibility="Auto"
+        VerticalScrollBarVisibility="Auto"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        IsReadOnly="True"
+        WordWrap="False"
+        ShowLineNumbers="True"
+        LineNumbersMargin="0 0 20 0"
+        LineNumbersForeground="#7f7f7f"
+    />
+</Window>

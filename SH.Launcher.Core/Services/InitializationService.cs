@@ -126,7 +126,7 @@ public sealed class InitializationService
                 // Reuse files:
                 if (gameJarHash == backupJarHash)
                 {
-                    Log.Success($"Backup was reused");
+                    Log.Info($"Backup was reused");
                     BackupProgress.Complete();
                     data.BackupChanged = false;
                     return true;
@@ -153,7 +153,7 @@ public sealed class InitializationService
                 return false;
 
             // Done.
-            Log.Success($"Backup was reset");
+            Log.Info($"Backup was reset");
             BackupProgress.Complete();
             data.BackupChanged = true;
             return true;
@@ -190,7 +190,7 @@ public sealed class InitializationService
 
                 if (!data.BackupChanged && backupJarHash == templateJarHash)
                 {
-                    Log.Success($"Template was reused");
+                    Log.Info($"Template was reused");
                     TemplateProgress.Complete();
                     data.TemplateChanged = false;
                     return true;
@@ -217,7 +217,7 @@ public sealed class InitializationService
                 return false;
 
             // Done.
-            Log.Success($"Template was reset");
+            Log.Info($"Template was reset");
             TemplateProgress.Complete();
             data.TemplateChanged = true;
             return true;
@@ -251,7 +251,7 @@ public sealed class InitializationService
                 // Reuse:
                 if (!data.BackupChanged && !data.TemplateChanged && templateJarHash == cacheJarHash)
                 {
-                    Log.Success($"Cache was reused");
+                    Log.Info($"Cache was reused");
                     CacheProgress.Complete();
                     data.CacheChanged = false;
                     return true;
@@ -268,7 +268,7 @@ public sealed class InitializationService
                 return false;
 
             // Done.
-            Log.Success($"Cache was reset");
+            Log.Info($"Cache was reset");
             CacheProgress.Complete();
             data.CacheChanged = true;
             return true;

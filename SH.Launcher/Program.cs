@@ -1,7 +1,5 @@
 ﻿using Avalonia;
-using SH.Launcher.Console;
 using System;
-using System.Linq;
 
 namespace SH.Launcher;
 
@@ -15,15 +13,7 @@ internal sealed class Program
     {
         try
         {
-            if (args.Any(arg => arg.Equals("-console", StringComparison.OrdinalIgnoreCase)))
-            {
-                #warning TODO: create an avalonia console window and show it instead of the MainWindow!
-                return ConsoleMode.Run(args);
-            }
-            else
-            {
-                return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-            }
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)
         {
@@ -38,7 +28,7 @@ internal sealed class Program
         .Configure<App>()
         .UsePlatformDetect()
 #if DEBUG
-        .WithDeveloperTools()
+        //.WithDeveloperTools()
 #endif
         .WithInterFont()
         .LogToTrace();

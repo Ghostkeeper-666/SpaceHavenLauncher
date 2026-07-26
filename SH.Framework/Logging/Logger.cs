@@ -9,7 +9,8 @@ public sealed class Logger : ILogger
     public Logger() { }
 
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
-    public void SetLogLevel(ELogLevel logLevel) => Warn($"Log level has changed to '{LogLevel = logLevel}'");
+    public void SetLogLevel(ELogLevel logLevel) =>
+        Info($"{nameof(Logger)} level = '{LogLevel = logLevel}'");
     public IReadOnlyList<(string, string)> Replacements { get; set; }
 
     public string Prefix { get; set; }

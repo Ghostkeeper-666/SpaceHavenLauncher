@@ -377,12 +377,13 @@ public sealed class ModBuilder : IAsyncDisposable
 
                 // Save all XML files to build stage:
                 WriteSpaceHavenXml.Start();
-                foreach (XmlFile xmlFile in Build.XmlFile.Values)
+                await Parallel.ForEachAsync(Build.XmlFile.Values, BuildSettings.ParallelOptions, async (xmlFile, ct) =>
                 {
-                    if (!await xmlFile.TrySaveAsync(Log, CT))
-                        return false;
-                    WriteSpaceHavenXml.IncrementNormalized(1.0 / Build.XmlFile.Count);
-                }
+                    if (!await xmlFile.TrySaveAsync(Log, ct))
+                        throw new StopException("Unable to save game XML files", Paths.CacheDir, CTS);
+                    lock(WriteSpaceHavenXml)
+                        WriteSpaceHavenXml.IncrementNormalized(1.0 / Build.XmlFile.Count);
+                });
                 WriteSpaceHavenXml.Complete();
 
                 // Create/Deploy the modified spacehaven.jar:

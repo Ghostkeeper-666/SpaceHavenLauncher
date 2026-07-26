@@ -51,12 +51,15 @@ public partial class AppSettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _ModPageSplitterHeight;
 
-    // BUILD:
+    // BUILD / LAUNCH:
+    [ObservableProperty]
+    private bool _SkipRebuilding;
+
     [ObservableProperty]
     private bool _StartSpaceHavenAutomatically;
 
     [ObservableProperty]
-    private bool _SkipRebuilding;
+    private bool _CloseAppAutomaticallyOnLaunch;
 
     // EXPORT:
     [ObservableProperty]
@@ -107,8 +110,9 @@ public partial class AppSettingsViewModel : ObservableObject
             ModPageSplitterHeight = data.ModPageSplitterHeight;
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
-            StartSpaceHavenAutomatically = data.StartSpaceHavenAutomatically;
             SkipRebuilding = data.SkipRebuilding;
+            StartSpaceHavenAutomatically = data.StartSpaceHavenAutomatically;
+            CloseAppAutomaticallyOnLaunch = data.CloseAppAutomaticallyOnLaunch;
             ExportXmlAnnotationLanguage = data.ExportXmlAnnotationLanguage;
             ExportTextures = data.ExportTextures;
             ExportOption = data.ExportOption;
@@ -153,11 +157,14 @@ public partial class AppSettingsViewModel : ObservableObject
                     Data?.BackgroundDarkness = BackgroundDarkness;
                     BackgroundTransparencyText = BackgroundDarkness >= 1.0 ? $"Background: OFF" : $"Background: {(1.0 - BackgroundDarkness):0%}";
                     break;
+                case nameof(SkipRebuilding):
+                    Data?.SkipRebuilding = SkipRebuilding;
+                    break;
                 case nameof(StartSpaceHavenAutomatically):
                     Data?.StartSpaceHavenAutomatically = StartSpaceHavenAutomatically;
                     break;
-                case nameof(SkipRebuilding):
-                    Data?.SkipRebuilding = SkipRebuilding;
+                case nameof(CloseAppAutomaticallyOnLaunch):
+                    Data?.CloseAppAutomaticallyOnLaunch = CloseAppAutomaticallyOnLaunch;
                     break;
                 case nameof(ExportXmlAnnotationLanguage):
                     Data?.ExportXmlAnnotationLanguage = ExportXmlAnnotationLanguage;

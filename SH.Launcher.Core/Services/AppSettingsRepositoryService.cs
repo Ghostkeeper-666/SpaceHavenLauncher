@@ -83,11 +83,14 @@ public sealed class AppSettingsRepositoryService
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
 
+            data.SkipRebuilding =
+                bool.TryParse(root.Element(nameof(AppSettingsData.SkipRebuilding))?.Value ?? string.Empty, out bool skipRebuilding) ? skipRebuilding : data.SkipRebuilding;
+
             data.StartSpaceHavenAutomatically =
                 bool.TryParse(root.Element(nameof(AppSettingsData.StartSpaceHavenAutomatically))?.Value ?? string.Empty, out bool startSpaceHavenAutomatically) ? startSpaceHavenAutomatically : data.StartSpaceHavenAutomatically;
 
-            data.SkipRebuilding =
-                bool.TryParse(root.Element(nameof(AppSettingsData.SkipRebuilding))?.Value ?? string.Empty, out bool skipRebuilding) ? skipRebuilding : data.SkipRebuilding;
+            data.CloseAppAutomaticallyOnLaunch =
+                bool.TryParse(root.Element(nameof(AppSettingsData.CloseAppAutomaticallyOnLaunch))?.Value ?? string.Empty, out bool closeAppAutomaticallyOnLaunch) ? closeAppAutomaticallyOnLaunch : data.CloseAppAutomaticallyOnLaunch;
 
             data.ExportXmlAnnotationLanguage =
                 Enum.TryParse(root.Element(nameof(AppSettingsData.ExportXmlAnnotationLanguage))?.Value ?? string.Empty, out ELanguage language) ? language : data.ExportXmlAnnotationLanguage;
@@ -137,8 +140,9 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
-            root.Add(new XElement(nameof(AppSettingsData.StartSpaceHavenAutomatically), data.StartSpaceHavenAutomatically));
             root.Add(new XElement(nameof(AppSettingsData.SkipRebuilding), data.SkipRebuilding));
+            root.Add(new XElement(nameof(AppSettingsData.StartSpaceHavenAutomatically), data.StartSpaceHavenAutomatically));
+            root.Add(new XElement(nameof(AppSettingsData.CloseAppAutomaticallyOnLaunch), data.CloseAppAutomaticallyOnLaunch));
             root.Add(new XElement(nameof(AppSettingsData.ExportXmlAnnotationLanguage), data.ExportXmlAnnotationLanguage));
             root.Add(new XElement(nameof(AppSettingsData.ExportTextures), data.ExportTextures));
             root.Add(new XElement(nameof(AppSettingsData.ExportOption), data.ExportOption));

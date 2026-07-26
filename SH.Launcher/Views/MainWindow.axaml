@@ -398,8 +398,9 @@ HorizontalAlignment="Stretch"
           Background="Transparent"
           ItemsSource="{Binding State.FilteredLeftPaneItems}"
           SelectedItem="{Binding State.SelectedLeftPaneItem}"
-          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-          ScrollViewer.VerticalScrollBarVisibility="Auto" >
+          ScrollViewer.AllowAutoHide="False"
+          ScrollViewer.VerticalScrollBarVisibility="Visible"
+          ScrollViewer.HorizontalScrollBarVisibility="Hidden">
 
             <ListBox.Styles>
               <Style Selector="ListBoxItem" >

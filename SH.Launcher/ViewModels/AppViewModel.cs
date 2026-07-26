@@ -6,7 +6,6 @@ using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using SH.Content;
 using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -154,6 +153,7 @@ public partial class AppViewModel : ObservableObject
 
     private EControlState _InitializationState = EControlState.Standby;
 
+    public IClassicDesktopStyleApplicationLifetime Lifetime = Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
 
     public AppViewModel()

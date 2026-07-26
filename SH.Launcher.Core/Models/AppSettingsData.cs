@@ -18,8 +18,9 @@ public sealed class AppSettingsData
         ModPageSplitterHeight = 380,
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
-        StartSpaceHavenAutomatically = true,
         SkipRebuilding = true,
+        StartSpaceHavenAutomatically = true,
+        CloseAppAutomaticallyOnLaunch = false,
         ExportXmlAnnotationLanguage = ELanguage.EN,
         ExportTextures = true,
         ExportOption = EExportOption.Both,
@@ -37,6 +38,7 @@ public sealed class AppSettingsData
     public bool IsBackgroundEnabled { get; set; }
     public double BackgroundDarkness { get; set; }
     public bool StartSpaceHavenAutomatically { get; set; }
+    public bool CloseAppAutomaticallyOnLaunch { get; set; }
     public bool SkipRebuilding { get; set; }
     public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }

@@ -365,7 +365,8 @@ internal sealed class Mod : IAsyncDisposable
                 if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                     throw new StopException($@"Unable to write evaluated PATCH XML file ""{evaluatedPath}""", BuildPatchDir, BuildSettings.InternalCTS);
 
-                dict[path] = xmlFile;
+                lock(dict)
+                    dict[path] = xmlFile;
             });
 
             // Done.

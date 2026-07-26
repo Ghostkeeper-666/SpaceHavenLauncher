@@ -37,6 +37,8 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        AppViewModel.State.Log.SetLogLevel(ELogLevel.Info);
+
         InitializeComponent();
 
         Log.OnMessage += OnLog;

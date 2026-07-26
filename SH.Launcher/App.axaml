@@ -121,6 +121,15 @@ RequestedThemeVariant="Dark" >
       <Setter Property="ShowOnDisabled" Value="True"/>
     </Style>
 
+
+    <!-- AvaloniaEdit -->
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
+
+    <!-- ScrollViewer -->
+    <Style Selector="ScrollViewer">
+        <Setter Property="AllowAutoHide" Value="False" />
+    </Style>
+
   </Application.Styles>
 
 </Application>

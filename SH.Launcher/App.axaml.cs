@@ -2,35 +2,47 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using SH.Framework.Logging;
 using SH.Launcher.ViewModels;
 using SH.Launcher.Views;
+using System;
+using System.Linq;
 
 namespace SH.Launcher;
 
 public partial class App : Application
 {
-    public override void Initialize()
-    {
+    public override void Initialize() =>
         AvaloniaXamlLoader.Load(this);
-    }
 
     public override void OnFrameworkInitializationCompleted()
     {
-        AppViewModel.State.Log.SetLogLevel(ELogLevel.Info);
-
         ToolTip.ShowDelayProperty.OverrideDefaultValue<TopLevel>(1);
         ToolTip.BetweenShowDelayProperty.OverrideDefaultValue<TopLevel>(1);
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
         {
-            desktop.MainWindow = new MainWindow
+            if (lifetime?.Args?.Any(arg => arg.Equals("-console", StringComparison.OrdinalIgnoreCase)) ?? false)
             {
+                // Console mode:
+                lifetime.MainWindow = new ConsoleWindow()
+                {
+                    DataContext = new ConsoleWindowViewModel(),
 #if DEBUG
-                WindowState = WindowState.Maximized,
+                    WindowState = WindowState.Maximized,
 #endif
-                DataContext = new MainWindowViewModel(),
-            };
+                };
+            }
+            else
+            {
+                // Windowed mode:
+                lifetime.MainWindow = new MainWindow()
+                {
+                    DataContext = new MainWindowViewModel(),
+#if DEBUG
+                    WindowState = WindowState.Maximized,
+#endif
+                };
+            }
         }
 
         base.OnFrameworkInitializationCompleted();

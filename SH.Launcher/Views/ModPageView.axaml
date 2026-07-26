@@ -50,8 +50,9 @@ x:DataType="vm:ModPageViewModel"
     Grid.Row="0"
     Grid.Column="1"
     Background="Transparent"
+    AllowAutoHide="False"
     VerticalScrollBarVisibility="Auto"
-    HorizontalScrollBarVisibility="Disabled"
+    HorizontalScrollBarVisibility="Auto"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch" >
       <Grid
@@ -967,6 +968,7 @@ x:DataType="vm:ModPageViewModel"
       HorizontalGridLinesBrush="DarkSlateGray"
       VerticalGridLinesBrush="DarkSlateGray"
 
+      ScrollViewer.AllowAutoHide="False"
       HorizontalScrollBarVisibility="Auto"
       VerticalScrollBarVisibility="Auto"
 

@@ -19,7 +19,6 @@ using SH.Modding.Build;
 using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -144,29 +143,33 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             CentralScreen.LeftLeverState = EControlState.Ready;
 
             // LAUNCH GAME
-            if (AppSettings.StartSpaceHavenAutomatically)
+            runGame.Complete();
+
+            StringBuilder sb = new($"Jumping to {SpaceHavenConstants.SpaceHavenName}\n");
+            string dashedLine = $"{new('=', sb.Length - 1)}";
+            sb.Insert(0, $"{dashedLine}\n");
+            sb.Append(dashedLine);
+            Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
+
+            // Run and await Space Haven:
+            await Task.Yield();
+            State.IsSpaceHavenRunning = true;
+
+            Task<bool> spaceHaven = OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token);
+            List<Task> tasks = [spaceHaven];
+            if (AppSettings.CloseAppAutomaticallyOnLaunch)
+                tasks.Add(Task.Delay(3000));
+
+            // Run:
+            await Task.WhenAny(tasks);
+
+            if (spaceHaven.IsCompleted)
             {
-                runGame.Complete();
-
-                StringBuilder sb = new($"Jumping to {SpaceHavenConstants.SpaceHavenName}\n");
-                string dashedLine = $"{new('=', sb.Length - 1)}";
-                sb.Insert(0, $"{dashedLine}\n");
-                sb.Append(dashedLine);
-                Log.Success(sb.ToString(), Paths.Data.SpaceHavenDir);
-
-                // Run and await Space Haven:
-                await Task.Yield();
-                State.IsSpaceHavenRunning = true;
-                if (await OS.TryStartApplication(Paths.Data.SpaceHavenPath, Log, State.LaunchCTS.Token))
+                if (spaceHaven.Result)
                     Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
                 else Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
-                await Task.Yield();
             }
-            else
-            {
-                Log.Warn("Space Haven was not started automatically, as defined by System Core settings", "app://SystemCore");
-                await Task.Delay(500);
-            }
+            else State.Lifetime.Shutdown(0); // happens ony when Task.Delay() finishes first!
 
             // Done.
             CentralScreen.LeftLeverState = EControlState.Standby;
@@ -345,16 +348,29 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 GameLaunchService launcherSvc = new(Paths.Data, Log);
 
                 // Run and await Space Haven:
-                if (await launcherSvc.TryLaunchModifiedGameAsync(
-                    State.GamePlatform,
-                    State.AppSettings.JavaMainClass,
-                    State.AppSettings.JavaVMArgs,
-                    mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarPaths),
-                    Paths.Data.CacheJarPath,
-                    ct))
-                    Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
-                else
-                    Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
+                Task<bool> spaceHaven =
+                    launcherSvc.TryLaunchModifiedGameAsync(
+                        State.GamePlatform,
+                        State.AppSettings.JavaMainClass,
+                        State.AppSettings.JavaVMArgs,
+                        mods.Where(m => m.IsJavaMod).SelectMany(m => m.JarPaths),
+                        Paths.Data.CacheJarPath,
+                        ct);
+
+                List<Task> tasks = [spaceHaven];
+                if (AppSettings.CloseAppAutomaticallyOnLaunch)
+                    tasks.Add(Task.Delay(3000));
+
+                // Run:
+                await Task.WhenAny(tasks);
+
+                if (spaceHaven.IsCompleted)
+                {
+                    if (spaceHaven.Result)
+                        Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", Paths.SpaceHavenDir);
+                    else Log.Error($"{SpaceHavenConstants.SpaceHavenName} has completed with errors", Paths.SpaceHavenDir);
+                }
+                else State.Lifetime.Shutdown(0); // happens ony when Task.Delay() finishes first!
             }
             else
             {

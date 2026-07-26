@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -8,15 +7,9 @@ using Avalonia.Media;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using SH.Framework.Extensions;
-using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Launcher.ViewModels;
-using SH.Launcher.ViewModels.Enums;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace SH.Launcher.Views;
