@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ public sealed class VoidLogger : ILogger
 
     public ELogLevel LogLevel => ELogLevel.None;
     public void SetLogLevel(ELogLevel logLevel) { }
+    public IReadOnlyList<(string, string)> Replacements { get; set; }
 
     public string Prefix { get; set; }
     public string Suffix { get; set; }

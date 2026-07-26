@@ -16,6 +16,7 @@ using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using SH.Modding;
 using SH.Modding.Build;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

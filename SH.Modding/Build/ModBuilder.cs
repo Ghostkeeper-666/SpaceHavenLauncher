@@ -5,10 +5,10 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Framework.Tasks;
 using SH.Modding.Models;
 using SkiaSharp;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -29,6 +29,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
     private BuildInfo Build;
     private ParallelOptions ParallelOptions => BuildSettings.ParallelOptions;
+    private CancellationTokenSource CTS => BuildSettings.InternalCTS;
     private CancellationToken CT => BuildSettings.CT;
 
     public bool needsNewJar { get; private set; }
@@ -43,7 +44,6 @@ public sealed class ModBuilder : IAsyncDisposable
     private IProgressInfo ResetBuildStage;
     private IProgressInfo LoadSpaceHavenXml;
     private IProgressInfo ResetXmlBuild;
-    private IProgressInfo LoadModsXml;
     private IProgressInfo MergeXml;
     private IProgressInfo PatchXml;
     private IProgressInfo ComposeAudio;
@@ -132,10 +132,6 @@ public sealed class ModBuilder : IAsyncDisposable
             ResetXmlBuild = new ProgressInfo("Reset XML Build") { Max = 10 };
             ResetXmlBuild.ProgressChanged += OnProgressChanged;
             XmlBuild.AddChild(ResetXmlBuild, 1);
-
-            LoadModsXml = new ProgressInfo("Load Mods XML") { Max = 10 };
-            LoadModsXml.ProgressChanged += OnProgressChanged;
-            XmlBuild.AddChild(LoadModsXml, 1);
 
             MergeXml = new ProgressInfo("Merge XML") { Max = 10 };
             MergeXml.ProgressChanged += OnProgressChanged;
@@ -317,6 +313,9 @@ public sealed class ModBuilder : IAsyncDisposable
                 ResetBuildStage.Complete();
             }
 
+
+
+
             // Space Haven XML:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
@@ -350,27 +349,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await TryResetXmlBuildDirectories())
                     return false;
 
-                // Read mod XML files, evaluating with previously loaded variable values:
-                await TryLoadModsXmlAsync();
-
-                // Merge XML:
-                if (!await TryMergeXmlAsync())
-                    return false;
-
-                // Patch XML:
-                if (!await TryPatchXmlAsync())
-                    return false;
-
-                // Merge Audio:
-                if (!await TryComposeAudioAsync())
-                    return false;
-
-                // Generate Textures:
-                if (!await TryComposeTexturesAsync())
-                    return false;
-
-                // Fix Text entries:
-                if (!await TryFixTextsAsync())
+                // Merge and Patch XML:
+                if (!await TryBuildXml())
                     return false;
 
                 // Deploy XML hash:
@@ -435,44 +415,6 @@ public sealed class ModBuilder : IAsyncDisposable
             return false;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private async Task TryLoadModsXmlAsync()
-    {
-        LoadModsXml.Start();
-        await Parallel.ForEachAsync(Build.Mods, ParallelOptions, async (mod, ct) =>
-        {
-            try
-            {
-                if (!await mod.TryLoadXmlFiles())
-                {
-                    Fail();
-                    return;
-                }
-            }
-            finally
-            {
-                lock (LoadModsXml)
-                    LoadModsXml?.IncrementNormalized(1.0 / Build.Mods.Count);
-            }
-        });
-        LoadModsXml.Complete();
-    }
-
-
-
 
 
 
@@ -673,65 +615,69 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    private async Task<bool> TryMergeXmlAsync()
+    private async Task<bool> TryBuildXml()
     {
         try
         {
-            Log.Info($@"Merging XML files...", Paths.BuildMergeDir);
+            Log.Info($@"Merging and patching XML files...", Paths.BuildDir);
             MergeXml.Start();
+            PatchXml.Start();
 
-            EXmlFileType[] supportedXmlMergeFileTypes =
+            EXmlFileType[] xmlFileTypes =
             [
-                EXmlFileType.SpaceHavenSettings,
-                EXmlFileType.Audio,
-                EXmlFileType.Textures,
-                EXmlFileType.Animations,
-                EXmlFileType.Texts,
                 EXmlFileType.Haven,
+                EXmlFileType.Animations,
+                EXmlFileType.Textures,
+                EXmlFileType.Texts,
+                EXmlFileType.Audio,
+                EXmlFileType.SpaceHavenSettings,
             ];
 
-            HashSet<XmlFile> mergedSpaceHavenXmlFiles = [];
+            SortedSet<EXmlFileType> completed = [];
 
-            foreach (Mod mod in Build.Mods)
+            // Only merge supported files!
+            await Parallel.ForEachAsync(xmlFileTypes, BuildSettings.ParallelOptions, async (targetXmlFileType, ct) =>
             {
-                CT.ThrowIfCancellationRequested();
+                ct.ThrowIfCancellationRequested();
 
-                try
+                
+                // Get target file:
+                if (!Build.XmlFile.TryGetValue(targetXmlFileType, out XmlFile spaceHavenXmlFile))
+                    throw new StopException($@"Unable to locate space haven target XML file of type '{targetXmlFileType}' in ""{Paths.BuildStageDir}""", Paths.BuildStageDir, CTS);
+
+
+                // For each mod, MERGE and PATCH:
+                foreach (Mod mod in Build.Mods)
                 {
+                    // Get mod-specific logger:
                     ILogger modLog = mod.Log;
 
-                    if (!mod.HasLibraryXml)
+
+                    // Get MERGE files:
+                    if(!await mod.TryLoadLibraryXmlFilesAsync(targetXmlFileType))
+                        throw new StopException($@"[{mod}] Unable to load mod LIBRARY XML files of type '{targetXmlFileType}'", mod.Dir, CTS);
+
+                    XmlFile[] mergeFiles =
+                        mod.LibraryXmlFiles[targetXmlFileType].Values
+                        .OrderBy(xmlFile => xmlFile.Path.AsStdPath().ToLowerInvariant())
+                        .ToArray();
+
+                    // MERGE
+                    if (mergeFiles.Length > 0)
                     {
-                        modLog.Debug($@"This mod has no XML library files", mod.Dir);
-                        continue;
-                    }
+                        ct.ThrowIfCancellationRequested();
 
-                    modLog.Debug($"Performing XML merge operations...", mod.Dir);
+                        // Create mod merge dir:
+                        if (!await IOUtils.TryCreateDirAsync(mod.BuildMergeDir, modLog, CT))
+                            throw new StopException($@"[{mod}] Unable to create directory: ""{mod.BuildMergeDir}""", Paths.BuildPatchDir, CTS);
 
-                    HashSet<XmlFile> mergedModXmlFiles = [];
-
-                    // Only merge supported files!
-                    foreach (EXmlFileType xmlFileType in supportedXmlMergeFileTypes)
-                    {
-                        CT.ThrowIfCancellationRequested();
-
-                        // Any such files in mod?
-                        XmlFile[] modXmlFiles = mod.XmlFiles[xmlFileType].Values.ToArray();
-                        if (modXmlFiles.Length <= 0)
-                            continue;
-
-                        // Get target file:
-                        if (!Build.XmlFile.TryGetValue(xmlFileType, out XmlFile spaceHavenXmlFile))
+                        // Merge each file:
+                        modLog.Debug($@"Performing {targetXmlFileType} XML merge operations...", mod.Dir);
+                        foreach (XmlFile modXmlFile in mergeFiles)
                         {
-                            modLog.Error($@"Unable to get target XML file of type '{xmlFileType}'", Paths.BuildStageDir);
-                            return false;
-                        }
+                            ct.ThrowIfCancellationRequested();
 
-                        // Merge with all mod library XML files:
-                        foreach (XmlFile modXmlFile in modXmlFiles)
-                        {
-                            CT.ThrowIfCancellationRequested();
-
+                            // Ignore?
                             if (modXmlFile.IsIgnored)
                             {
                                 modLog.Warn($@"Ignoring ""{modXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modXmlFile.Path);
@@ -739,17 +685,13 @@ public sealed class ModBuilder : IAsyncDisposable
                             }
 
                             // Merge by registered node type:
-                            foreach (NodeType nodeType in NodeType.RegisteredTypes.Values.Where(n => n.XmlFileType == xmlFileType))
+                            foreach (NodeType nodeType in NodeType.RegisteredTypes.Values.Where(n => n.XmlFileType == targetXmlFileType))
                             {
-                                CT.ThrowIfCancellationRequested();
+                                ct.ThrowIfCancellationRequested();
 
                                 // Get parent node:
-                                XElement parentNode = spaceHavenXmlFile.GetParentNode(nodeType);
-                                if (parentNode == null)
-                                {
-                                    modLog.Error($"Unable to find target parent node with xpath '{nodeType.ParentXPath}' for registered node type '{nodeType}'", spaceHavenXmlFile.Path);
-                                    return false;
-                                }
+                                XElement parentNode = spaceHavenXmlFile.GetParentNode(nodeType) ??
+                                    throw new StopException($@"[{mod}] Unable to find target parent node with xpath '{nodeType.ParentXPath}' for registered node type '{nodeType}'", spaceHavenXmlFile.Path, CTS);
 
                                 // List all nodes:
                                 List<XElement> nodes = modXmlFile.GetNodes(nodeType)?.ToList() ?? [];
@@ -758,12 +700,9 @@ public sealed class ModBuilder : IAsyncDisposable
 
                                 modLog.Debug($@"Merging {nodes.Count} node(s) of type '{nodeType}' from file ""{modXmlFile}""", modXmlFile.Path);
 
-                                mergedSpaceHavenXmlFiles.Add(spaceHavenXmlFile);
-                                mergedModXmlFiles.Add(modXmlFile);
-
                                 foreach (XElement node in nodes)
                                 {
-                                    CT.ThrowIfCancellationRequested();
+                                    ct.ThrowIfCancellationRequested();
 
                                     // Strip XML comments out:
                                     node.DescendantNodesAndSelf().OfType<XComment>().Remove();
@@ -793,7 +732,7 @@ public sealed class ModBuilder : IAsyncDisposable
                                     {
                                         foreach (XElement existingNode in existingNodes)
                                         {
-                                            CT.ThrowIfCancellationRequested();
+                                            ct.ThrowIfCancellationRequested();
 
                                             string existingKey = nodeType.KeyAttribute.IsNullOrWhiteSpace() ? null : existingNode.Attribute(nodeType.KeyAttribute)?.Value;
                                             string existingMod = existingNode.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
@@ -816,9 +755,10 @@ public sealed class ModBuilder : IAsyncDisposable
                                         }
                                     }
 
+
                                     // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                     node.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                    if (xmlFileType == EXmlFileType.Animations)
+                                    if (targetXmlFileType == EXmlFileType.Animations)
                                     {
                                         // Mark animations assetPos nodes:
                                         foreach (XElement assetPos in node.DescendantsAndSelf("assetPos"))
@@ -827,7 +767,7 @@ public sealed class ModBuilder : IAsyncDisposable
                                             assetPos.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
-                                    else if (xmlFileType == EXmlFileType.Audio)
+                                    else if (targetXmlFileType == EXmlFileType.Audio)
                                     {
                                         // Mark audio nodes:
                                         foreach (XElement a in node.DescendantsAndSelf("a"))
@@ -836,7 +776,7 @@ public sealed class ModBuilder : IAsyncDisposable
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
-                                    else if (xmlFileType == EXmlFileType.Textures)
+                                    else if (targetXmlFileType == EXmlFileType.Textures)
                                     {
                                         // Mark sprite sheet nodes:
                                         foreach (XElement a in node.DescendantsAndSelf("t"))
@@ -852,41 +792,271 @@ public sealed class ModBuilder : IAsyncDisposable
                                         }
                                     }
 
-                                    // Add new node:
+
+                                    // Add to parent node:
                                     parentNode.Add(new XElement(node));
                                 }
                             }
                         }
-
-                        // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
-                        // Save merged Space Haven XML file to mod merge directory:
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildMergeDir, spaceHavenXmlFile.RelativePath), Log, CT))
-                        //    return false;
                     }
-                }
-                finally
-                {
-                    // Done with this mod.
-                    MergeXml?.IncrementNormalized(1.0 / Build.Mods.Count);
-                }
-            }
 
-            // Save merged XML files to build merge directory:
-            foreach (XmlFile spaceHavenXmlFile in mergedSpaceHavenXmlFiles)
-            {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildMergeDir, spaceHavenXmlFile.RelativePath), Log, CT))
-                    return false;
-                // Update line numbers:
-                if (!await spaceHavenXmlFile.TryReparse(Log, CT))
-                    return false;
-            }
+
+                    // =========================================================================================
+
+
+                    // Get PATCH files:
+                    if(!await mod.TryLoadPatchXmlFilesAsync(targetXmlFileType))
+                        throw new StopException($@"[{mod}] Unable to load PATCH XML files of type '{targetXmlFileType}'", Paths.BuildPatchDir, CTS);
+
+                    XmlFile[] patchFiles =
+                        mod.PatchXmlFiles[targetXmlFileType].Values
+                        .OrderBy(xmlFile => xmlFile.Path.AsStdPath().ToLowerInvariant())
+                        .ToArray();
+
+                    // PATCH
+                    if (patchFiles.Length > 0)
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        // Create mod patch dir:
+                        if (!await IOUtils.TryCreateDirAsync(mod.BuildPatchDir, modLog, CT))
+                            throw new StopException($@"[{mod}] Unable to create directory: ""{mod.BuildPatchDir}""", Paths.BuildPatchDir, CTS);
+
+                        // Patch each file:
+                        modLog.Debug($@"Performing {targetXmlFileType} XML patch operations...", mod.BuildPatchDir);
+                        foreach (XmlFile modPatchXmlFile in patchFiles)
+                        {
+                            CT.ThrowIfCancellationRequested();
+
+                            // Ignore?
+                            if (modPatchXmlFile.IsIgnored)
+                            {
+                                modLog.Warn($@"Ignoring ""{modPatchXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modPatchXmlFile.Path);
+                                continue;
+                            }
+
+                            // Start patching:
+                            modLog.Debug($@"Executing patch operations from file ""{modPatchXmlFile}"" to the {spaceHavenXmlFile.FileName} file...", modPatchXmlFile.Path);
+
+                            // Strip XML comments out:
+                            modPatchXmlFile.Root.DescendantNodesAndSelf().OfType<XComment>().Remove();
+
+                            // Iterate over patch nodes:
+                            List<XElement> nodes = modPatchXmlFile.Root.Elements("Operation").ToList();
+                            modLog.Debug($@"Processing {nodes.Count} patch nodes from ""{modPatchXmlFile}""...", modPatchXmlFile.Path);
+                            foreach (XElement patchNode in nodes)
+                            {
+                                CT.ThrowIfCancellationRequested();
+
+                                // Parse patch operation:
+                                if (!XmlPatchOperation.TryCreate(modPatchXmlFile, mod.Variables, patchNode, out XmlPatchOperation patch, modLog))
+                                    throw new StopException($@"[{mod}] Unable to create patch operation, in file ""{modPatchXmlFile.RelativePath}"" line {patchNode.Line()}", Paths.BuildStageDir, CTS);
+
+                                // Skip if disabled by patch logic:
+                                if (!patch.IsEnabled)
+                                {
+                                    modLog.Info($@"Skipping DISABLED patch node {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+                                    continue;
+                                }
+
+                                // Validate XPATH unevaluated variables:
+                                if (patch.XPath.ContainsAny('{', '}'))
+                                    modLog.Warn($@"The evaluated XPATH '{patch.XPath}' could still contain undefined variables. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+
+                                // Execute XPATH:
+                                if (!spaceHavenXmlFile.TryRunXPath(patch.XPath, out List<XElement> targetNodes, modLog))
+                                    throw new StopException($@"[{mod}] Failed to execute the evaluated xpath='{patch.XPath}'. {Environment.NewLine}{patch}", modPatchXmlFile.Path, CTS);
+
+                                // No target nodes?
+                                if (targetNodes.Count <= 0)
+                                {
+                                    modLog.Warn($@"The evaluated XPATH returned ZERO RESULTS => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+                                    continue; // Nothing else to do...
+                                }
+
+                                // Too many target nodes?
+                                if (targetNodes.Count > 25)
+                                    modLog.Warn($@"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+
+
+                                // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                // (1) Attribute Operation
+                                if (patch.IsAttributePatchOperation)
+                                {
+                                    // Mark audio nodes:
+                                    if (targetXmlFileType == EXmlFileType.Audio)
+                                    {
+                                        foreach (XElement targetNode in targetNodes.Where(n => n.Name == "a"))
+                                        {
+                                            string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                            string targetAttribute = patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value;
+                                            if (targetAttribute == "filename" || targetAttribute == "mp3" || targetAttribute == "ogg")
+                                            {
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                            }
+                                        }
+                                    }
+
+                                    // Mark animations <assetPos> nodes which have the attribute 'filename':
+                                    else if (targetXmlFileType == EXmlFileType.Animations)
+                                    {
+                                        foreach (XElement targetNode in targetNodes.Where(n => n.Name == "assetPos"))
+                                        {
+                                            string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                            if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "filename")
+                                            {
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                            }
+                                        }
+                                    }
+
+                                    // Mark texture nodes:
+                                    else if (targetXmlFileType == EXmlFileType.Textures)
+                                    {
+                                        foreach (XElement targetNode in targetNodes.Where(n => n.Name == "t"))
+                                        {
+                                            string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                            if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "i")
+                                            {
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                            }
+                                        }
+                                        foreach (XElement targetNode in targetNodes.Where(n => n.Name == "re"))
+                                        {
+                                            string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                            if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "n")
+                                            {
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                                targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                // (2) Node Operation
+                                else if (patch.IsNodePatchOperation && patch.Operation != EPatchOperation.RemoveNode)
+                                {
+                                    // Mark audio nodes:
+                                    if (targetXmlFileType == EXmlFileType.Audio)
+                                    {
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("a") ?? [])
+                                        {
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+
+                                    // Mark animations <assetPos> nodes which have the attribute 'filename':
+                                    else if (targetXmlFileType == EXmlFileType.Animations)
+                                    {
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos").Where(n => n.Attribute("filename") != null) ?? [])
+                                        {
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+
+                                    // Mark textures nodes:
+                                    else if (targetXmlFileType == EXmlFileType.Textures)
+                                    {
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("t") ?? [])
+                                        {
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                        foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("re") ?? [])
+                                        {
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+                                }
+
+                                // Perform patch operation:
+                                if (!patch.TryRun(targetNodes, modLog))
+                                {
+                                    modLog.Error($@"Patch operation has FAILED. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+                                    Fail();
+                                    return;
+                                }
+
+                                // Done with this patch operation.
+                                modLog.Debug($@"Patch operation applied to {targetNodes.Count} target node(s). {Environment.NewLine}{patch}", modPatchXmlFile.Path);
+                            }
+
+                        }
+
+                    } // END OF PATCH
+
+                } // FOREACH MOD
+
+
+                // Save merged/patched XML file:
+                if (!await spaceHavenXmlFile.TrySaveAsync(Log, ct))
+                    throw new StopException($@"Unable to save ""{spaceHavenXmlFile.Path}""", Paths.BuildStageLibraryDir, CTS);
+
+
+                // Mark XML file as completed:
+                bool composeTextures;
+                lock (completed)
+                {
+                    completed.Add(targetXmlFileType);
+                    composeTextures = completed.Contains(EXmlFileType.Animations) && completed.Contains(EXmlFileType.Textures);
+                }
+
+
+                // POST PROCESSING TASKS:
+                switch (targetXmlFileType)
+                {
+                    case EXmlFileType.Haven:
+                        break;
+
+                    case EXmlFileType.Texts:
+                        if (!await TryFixTextsAsync())
+                            throw new StopException("Unable to fix texts file", Paths.BuildDir, CTS);
+                        break;
+
+                    case EXmlFileType.Audio:
+                        if (!await TryComposeAudioAsync())
+                            throw new StopException("Unable to compose audio", Paths.BuildDir, CTS);
+                        break;
+
+                    case EXmlFileType.Textures:
+                    case EXmlFileType.Animations:
+                        if(!composeTextures)
+                            break;
+                        if(!await TryComposeTexturesAsync())
+                            throw new StopException("Unable to compose textures", Paths.BuildDir, CTS);
+                        break;
+
+                    case EXmlFileType.SpaceHavenSettings:
+                        break;
+
+                    default:
+                        throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
+                }
+
+            }); // PARALLEL FOREACH XMLFILETYPE
 
             // Done.
             MergeXml?.Complete();
+            PatchXml?.Complete();
             Log.Success("XML merge completed", Paths.BuildMergeDir);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsStop(out StopException error))
+        {
+            Log.Error(error.Message, error.Location);
+            return false;
+        }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to merge XML files: {ex}", Paths.BuildMergeDir);
@@ -899,286 +1069,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-
-
-
-
-    public async Task<bool> TryPatchXmlAsync()
-    {
-        try
-        {
-            Log.Info("Patching XML files...", Paths.BuildPatchDir);
-            PatchXml.Start();
-
-            EXmlFileType[] SupportedXmlPatchFileTypes =
-            [
-                EXmlFileType.SpaceHavenSettings,
-                EXmlFileType.Audio,
-                EXmlFileType.Textures,
-                EXmlFileType.Animations,
-                EXmlFileType.Texts,
-                EXmlFileType.Haven,
-            ];
-
-            // Select mods with library XML files:
-            foreach (Mod mod in Build.Mods)
-            {
-                CT.ThrowIfCancellationRequested();
-
-                HashSet<XmlFile> spaceHavenModifiedFiles = [];
-                try
-                {
-                    ILogger modLog = mod.Log;
-
-                    if (!mod.HasPatchXml)
-                    {
-                        modLog.Debug("This mod has no XML patch files", mod.Dir);
-                        continue;
-                    }
-
-                    modLog.Debug("Performing XML patch operations...", mod.BuildPatchDir);
-
-                    // Create mod patch dir:
-                    if (!await IOUtils.TryCreateDirAsync(mod.BuildPatchDir, modLog, CT))
-                    {
-                        modLog.Error($@"Unable to create directory: ""{mod.BuildPatchDir}""", Paths.BuildPatchDir);
-                        return false;
-                    }
-
-                    foreach (XmlFile modPatchXmlFile in mod.XmlFiles[EXmlFileType.Patch].Values)
-                    {
-                        CT.ThrowIfCancellationRequested();
-
-                        if (modPatchXmlFile.IsIgnored)
-                        {
-                            modLog.Warn($@"Ignoring ""{modPatchXmlFile}"" as defined by '{XmlFile.ATTRIBUTE_IGNORE}' attribute in root node", modPatchXmlFile.Path);
-                            continue;
-                        }
-
-                        // Get the target XML file:
-                        if (!XmlFile.TryGetPatchXmlFileType(modPatchXmlFile, out EXmlFileType targetXmlType))
-                        {
-                            modLog.Error($@"Unable to detect target XML file of patches in file ""{modPatchXmlFile}""", modPatchXmlFile.Path);
-                            return false;
-                        }
-
-                        // Check for unsupported target patch file:
-                        if (!SupportedXmlPatchFileTypes.Contains(targetXmlType))
-                        {
-                            modLog.Error($@"Patching '{targetXmlType}' with ""{modPatchXmlFile.Path}"" is not supported", modPatchXmlFile.Path);
-                            return false;
-                        }
-
-                        // Get target file:
-                        if (!Build.XmlFile.TryGetValue(targetXmlType, out XmlFile spaceHavenXmlFile))
-                        {
-                            modLog.Error($@"Unable to get target XML file of type '{targetXmlType}'", Paths.BuildStageDir);
-                            return false;
-                        }
-                        spaceHavenModifiedFiles.Add(spaceHavenXmlFile);
-
-                        // Start patching:
-                        modLog.Debug($@"Executing patch operations from file ""{modPatchXmlFile}"" to the {spaceHavenXmlFile.FileName} file...", modPatchXmlFile.Path);
-
-                        // Strip XML comments out:
-                        modPatchXmlFile.Root.DescendantNodesAndSelf().OfType<XComment>().Remove();
-
-                        // Iterate over patch nodes:
-                        List<XElement> nodes = modPatchXmlFile.Root.Elements("Operation").ToList();
-                        modLog.Debug($@"Processing {nodes.Count} patch nodes from ""{modPatchXmlFile}""...", modPatchXmlFile.Path);
-                        foreach (XElement patchNode in nodes)
-                        {
-                            CT.ThrowIfCancellationRequested();
-
-                            // Parse patch operation:
-                            if (!XmlPatchOperation.TryCreate(modPatchXmlFile, mod.Variables, patchNode, out XmlPatchOperation patch, modLog))
-                                return false;
-
-                            // Skip if disabled by patch logic:
-                            if (!patch.IsEnabled)
-                            {
-                                modLog.Info($@"Skipping DISABLED patch node {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-                                continue;
-                            }
-
-                            // Validate XPATH unevaluated variables:
-                            if (patch.XPath.ContainsAny('{', '}'))
-                                modLog.Warn($@"The evaluated XPATH '{patch.XPath}' could still contain undefined variables. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-
-                            // Execute XPATH:
-                            if (!spaceHavenXmlFile.TryRunXPath(patch.XPath, out List<XElement> targetNodes, modLog))
-                            {
-                                modLog.Error($@"Failed to execute the evaluated xpath='{patch.XPath}'. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-                                return false;
-                            }
-
-                            // No target nodes?
-                            if (targetNodes.Count <= 0)
-                            {
-                                modLog.Warn($@"The evaluated XPATH returned ZERO RESULTS => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-                                continue; // Nothing else to do...
-                            }
-
-                            // Too many target nodes?
-                            if (targetNodes.Count > 25)
-                                modLog.Warn($@"The evaluated XPATH is targeting {targetNodes.Count} NODES => This could be an ERROR {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-
-
-                            // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                            // (1) Attribute Operation
-                            if (patch.IsAttributePatchOperation)
-                            {
-                                // Mark audio nodes:
-                                if (targetXmlType == EXmlFileType.Audio)
-                                {
-                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "a"))
-                                    {
-                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                        string targetAttribute = patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value;
-                                        if (targetAttribute == "filename" || targetAttribute == "mp3" || targetAttribute == "ogg")
-                                        {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                        }
-                                    }
-                                }
-
-                                // Mark animations <assetPos> nodes which have the attribute 'filename':
-                                else if (targetXmlType == EXmlFileType.Animations)
-                                {
-                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "assetPos"))
-                                    {
-                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "filename")
-                                        {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                        }
-                                    }
-                                }
-
-                                // Mark texture nodes:
-                                else if (targetXmlType == EXmlFileType.Textures)
-                                {
-                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "t"))
-                                    {
-                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "i")
-                                        {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                        }
-                                    }
-                                    foreach (XElement targetNode in targetNodes.Where(n => n.Name == "re"))
-                                    {
-                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                        if (patch.PatchNode.Element(XmlPatchOperation.ATTRIBUTE)?.Value == "n")
-                                        {
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                            targetNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // MARK NODES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                            // (2) Node Operation
-                            else if (patch.IsNodePatchOperation && patch.Operation != EPatchOperation.RemoveNode)
-                            {
-                                // Mark audio nodes:
-                                if (targetXmlType == EXmlFileType.Audio)
-                                {
-                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("a") ?? [])
-                                    {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                    }
-                                }
-
-                                // Mark animations <assetPos> nodes which have the attribute 'filename':
-                                else if (targetXmlType == EXmlFileType.Animations)
-                                {
-                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("assetPos").Where(n => n.Attribute("filename") != null) ?? [])
-                                    {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                    }
-                                }
-
-                                // Mark textures nodes:
-                                else if (targetXmlType == EXmlFileType.Textures)
-                                {
-                                    string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
-                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("t") ?? [])
-                                    {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                    }
-                                    foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("re") ?? [])
-                                    {
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
-                                        valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
-                                    }
-                                }
-                            }
-
-                            // Perform patch operation:
-                            if (!patch.TryRun(targetNodes, modLog))
-                            {
-                                modLog.Error($@"Patch operation has FAILED. {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-                                return false;
-                            }
-
-                            // Done with this patch operation.
-                            modLog.Debug($@"Patch operation applied to {targetNodes.Count} target node(s). {Environment.NewLine}{patch}", modPatchXmlFile.Path);
-                        }
-                    }
-
-                    // Save Space Haven XML files modified by this mod, for debugging:
-                    foreach (XmlFile spaceHavenXmlFile in spaceHavenModifiedFiles)
-                    {
-                        // STRONG PERFORMANCE HIT => Maybe add options for generating detailed intermediary files?
-
-                        //if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(mod.BuildPatchDir, spaceHavenXmlFile.RelativePath), Log, CT))
-                        //    return false;
-                        // Save and reload to update line numbers of XML nodes:
-                        //if (!await spaceHavenXmlFile.TrySaveAndReloadAsync(Log, CT))
-                        //    return false;
-                    }
-                }
-                finally
-                {
-                    PatchXml?.IncrementNormalized(1.0 / Build.Mods.Count);
-                }
-            }
-
-            foreach (XmlFile spaceHavenXmlFile in Build.XmlFile.Values)
-            {
-                if (!await spaceHavenXmlFile.TrySaveToAsync(IOUtils.CombineAsOSPath(Paths.BuildPatchDir, spaceHavenXmlFile.RelativePath), Log, CT))
-                    return false;
-                // Update line numbers:
-                if (!await spaceHavenXmlFile.TryReparse(Log, CT))
-                    return false;
-            }
-
-            // Done.
-            PatchXml?.Complete();
-            Log.Success("XML patch completed", Paths.BuildPatchDir);
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            Log.Error($@"Unable to patch XML files: {ex}", Paths.BuildPatchDir);
-            return false;
-        }
-    }
 
 
 
@@ -1200,10 +1090,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
             // Get texts document:
             XmlFile spaceHavenTextsXmlFile = Build.XmlFile[EXmlFileType.Texts];
-
-            // Also save here, for debugging:
-            if (!await spaceHavenTextsXmlFile.TrySaveToAsync(Paths.BuildTextsXmlPath, Log, CT))
-                return false;
 
             // Supported "languages
             string[] languages = Enum.GetNames<ELanguage>();
@@ -2373,7 +2259,6 @@ public sealed class ModBuilder : IAsyncDisposable
             ResetBuildStage?.Dispose();
             LoadSpaceHavenXml?.Dispose();
             ResetXmlBuild?.Dispose();
-            LoadModsXml?.Dispose();
             MergeXml?.Dispose();
             PatchXml?.Dispose();
             ComposeAudio?.Dispose();

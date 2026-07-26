@@ -1,6 +1,7 @@
 ﻿using SH.Content;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SH.Modding.Models;
@@ -45,7 +46,7 @@ public sealed class PathData
 
     public string LearningDir => AppDir.CombineAsOSPath("Learning");
 
-    public string AppLogPath => WorkDir.CombineAsOSPath("log.txt");
+    public string AppLogPath => SpaceHavenLauncher.LogPath;
     public string LauncherAgentLogPath => CacheDir.CombineAsOSPath("LauncherAgent.log");
 
     public string ModListPath => WorkDir.CombineAsOSPath("mods.xml");
@@ -164,5 +165,17 @@ public sealed class PathData
     public string ExportModifiedTexturesDir => ExportDir.CombineAsOSPath("ModifiedTextures");
 
     #endregion Derived Properties
+
+    public List<(string, string)> GetLogReplacements()
+    {
+        List<(string, string)> list = [];
+        if (!AppDir.IsNullOrWhiteSpace()) list.Add((SpaceHavenDir, "SPACEHAVEN_DIR"));
+        if (!WorkDir.IsNullOrWhiteSpace()) list.Add((SpaceHavenDir, "SPACEHAVEN_DIR"));
+        if (!SpaceHavenDir.IsNullOrWhiteSpace()) list.Add((SpaceHavenDir, "SPACEHAVEN_DIR"));
+        if (!ClassicModsDir.IsNullOrWhiteSpace()) list.Add((ClassicModsDir, "CLASSIC_MODS_DIR"));
+        if (!SteamModsDir.IsNullOrWhiteSpace()) list.Add((SteamModsDir, "STEAM_MODS_DIR"));
+        if (!SteamDir.IsNullOrWhiteSpace()) list.Add((SteamDir, "STEAM_DIR"));
+        return list;
+    }
 
 }

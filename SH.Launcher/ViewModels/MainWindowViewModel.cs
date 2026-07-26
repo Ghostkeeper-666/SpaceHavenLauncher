@@ -11,6 +11,7 @@ using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using SH.Modding.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,7 +78,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (await InitializeSettings(ct))
         {
             bool isNewAppVersion = State.AppSettings.PreviousAppVersion != SpaceHavenLauncher.Version;
-            if(isNewAppVersion)
+            if (isNewAppVersion)
                 Log.Warn($"NEW VERSION DETECTED: Space Haven Launcher {SpaceHavenLauncher.Version}  (previously: {State.AppSettings.PreviousAppVersion})");
 
             State.CurrentPage = IsNewInstall ? State.LearningComputerPage : State.NavigationConsolePage;
@@ -98,9 +99,9 @@ public partial class MainWindowViewModel : ViewModelBase
 #endif
             // Also automatically initialize:
             await State.InitializeAsync(forceReset: isNewAppVersion);
-            
+
             // Reset JAVA arguments for each new version:
-            if(isNewAppVersion)
+            if (isNewAppVersion)
             {
                 State.AppSettings.JavaMainClass = State.DefaultJavaMainClass;
                 State.AppSettings.JavaVMArgs = State.DefaultJavaVMArgs;

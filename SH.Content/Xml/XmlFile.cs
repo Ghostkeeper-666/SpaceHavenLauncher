@@ -16,8 +16,7 @@ public sealed class XmlFile
 {
     public static readonly string ATTRIBUTE_IGNORE = "ignore";
 
-    public static bool TryGetLibraryXmlFileType(string path, out EXmlFileType type) =>
-        EXmlFileType.Unknown != (type =
+    public static EXmlFileType GetLibraryXmlFileType(string path) =>
         IOUtils.TextFileContains(path, "<Patch>", 4096, true, StringComparison.OrdinalIgnoreCase) ? EXmlFileType.Patch : // ignore case is OK
         IOUtils.TextFileContains(path, "<AllTexturesAndRegions>", 4096, true, StringComparison.Ordinal) ? EXmlFileType.Textures :
         IOUtils.TextFileContains(path, "<AllAnimations>", 4096, true, StringComparison.Ordinal) ? EXmlFileType.Animations :
@@ -25,50 +24,38 @@ public sealed class XmlFile
         IOUtils.TextFileContains(path, "<audio>", 4096, true, StringComparison.Ordinal) ? EXmlFileType.Audio :
         IOUtils.TextFileContains(path, "<settings>", 4096, true, StringComparison.Ordinal) ? EXmlFileType.SpaceHavenSettings :
         IOUtils.TextFileContains(path, "<t>", 4096, true, StringComparison.Ordinal) ? EXmlFileType.Texts :
-        EXmlFileType.Unknown);
+        EXmlFileType.Unknown;
 
-    public static bool TryGetPatchXmlFileType(XmlFile patchXmlFile, out EXmlFileType type)
+    public static EXmlFileType GetPatchXmlFileType(string path)
     {
-        type = EXmlFileType.Unknown;
+        string filename = IOUtils.GetFileName(path);
 
         // Detect by filename:
         StringComparison ic = StringComparison.OrdinalIgnoreCase;
-        type =
-            patchXmlFile.FileName.StartsWith("haven", ic) ? EXmlFileType.Haven :
-            patchXmlFile.FileName.StartsWith("texts", ic) ? EXmlFileType.Texts :
-            patchXmlFile.FileName.StartsWith("audio", ic) ? EXmlFileType.Audio :
-            patchXmlFile.FileName.StartsWith("textures", ic) ? EXmlFileType.Textures :
-            patchXmlFile.FileName.StartsWith("animations", ic) ? EXmlFileType.Animations :
-            patchXmlFile.FileName.StartsWith("spacehavensettings", ic) ? EXmlFileType.SpaceHavenSettings :
-            patchXmlFile.FileName.StartsWith("settings", ic) ? EXmlFileType.SpaceHavenSettings :
+
+        EXmlFileType type =
+            filename.StartsWith("haven", ic) ? EXmlFileType.Haven :
+            filename.StartsWith("texts", ic) ? EXmlFileType.Texts :
+            filename.StartsWith("audio", ic) ? EXmlFileType.Audio :
+            filename.StartsWith("textures", ic) ? EXmlFileType.Textures :
+            filename.StartsWith("animations", ic) ? EXmlFileType.Animations :
+            filename.StartsWith("spacehavensettings", ic) ? EXmlFileType.SpaceHavenSettings :
+            filename.StartsWith("settings", ic) ? EXmlFileType.SpaceHavenSettings :
             EXmlFileType.Unknown;
 
         if (type != EXmlFileType.Unknown)
-            return true;
+            return type;
 
         // Detect by xpath content:
-        IEnumerable<XElement> elements = patchXmlFile?.Root?.Nodes()?.Select(n => n as XElement);
-        foreach (XElement xpathNode in patchXmlFile?.Root?.Descendants("xpath"))
-        {
-            string xpath = xpathNode?.Value;
-            if (xpath.IsNullOrEmpty())
-                continue;
-
-            type =
-                xpath.StartsWith("/AllTexturesAndRegions") ? EXmlFileType.Textures :
-                xpath.StartsWith("/AllAnimations") ? EXmlFileType.Animations :
-                xpath.StartsWith("/data") ? EXmlFileType.Haven :
-                xpath.StartsWith("/audio") ? EXmlFileType.Audio :
-                xpath.StartsWith("/settings") ? EXmlFileType.SpaceHavenSettings :
-                xpath.StartsWith("/t") ? EXmlFileType.Texts :
-                EXmlFileType.Unknown;
-
-            if (type != EXmlFileType.Unknown)
-                return true;
-        }
-
-        // Everything failed...
-        return false;
+        ic = StringComparison.Ordinal;
+        return
+            IOUtils.TextFileContains(path, @"""/AllTexturesAndRegions", 4096, true, ic) ? EXmlFileType.Textures :
+            IOUtils.TextFileContains(path, @"""/AllAnimations", 4096, true, ic) ? EXmlFileType.Animations :
+            IOUtils.TextFileContains(path, @"""/data", 4096, true, ic) ? EXmlFileType.Haven :
+            IOUtils.TextFileContains(path, @"""/audio", 4096, true, ic) ? EXmlFileType.Audio :
+            IOUtils.TextFileContains(path, @"""/settings", 4096, true, ic) ? EXmlFileType.SpaceHavenSettings :
+            IOUtils.TextFileContains(path, @"""/t", 4096, true, ic) ? EXmlFileType.Texts :
+            EXmlFileType.Unknown;
     }
 
 
@@ -82,6 +69,7 @@ public sealed class XmlFile
     }
 
     public EXmlFileType Type { get; }
+    public EXmlFileType PatchType { get; set; } = EXmlFileType.Unknown;
     public string Path { get; set; }
     public string BaseDir { get; set; }
     public string RelativePath => Path.RemovePrefix(BaseDir).TrimStart('/', '\\');
@@ -104,7 +92,7 @@ public sealed class XmlFile
     {
         xml = IOUtils.EraseXmlDeclaration(xml);
         XDocument x = XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
-        if(x == null)
+        if (x == null)
         {
             log?.Error($@"Unable to parse new XML content");
             return false;
@@ -116,7 +104,7 @@ public sealed class XmlFile
     public async Task<bool> TryReparse(ILogger log, CancellationToken ct)
     {
         XDocument reparsed = await IOUtils.TryReparseAsync(Xml, null, log, ct);
-        if(reparsed == null)
+        if (reparsed == null)
             return false;
         Xml = reparsed;
         return true;

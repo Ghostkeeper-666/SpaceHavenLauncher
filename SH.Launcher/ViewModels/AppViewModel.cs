@@ -6,6 +6,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SH.Content;
 using SH.Content.Enums;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
@@ -15,6 +16,7 @@ using SH.Launcher.Core.Models;
 using SH.Launcher.Core.Services;
 using SH.Launcher.ViewModels.Enums;
 using SH.Modding;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,14 +30,21 @@ namespace SH.Launcher.ViewModels;
 
 public partial class AppViewModel : ObservableObject
 {
-    public static AppViewModel State { get; } = new(); // Singleton
+    static AppViewModel()
+    {
+        State = new();
+        State.SetLogReplacements(null);
+    }
+
+    public static AppViewModel State { get; } // Singleton
     public static DispatchQueue Dispatcher { get; } = new(); // Singleton
 
     // LOG:
-    public FileLogger Log { get; } = new FileLogger(null);
+    public FileLogger Log { get; } = new FileLogger(SpaceHavenLauncher.LogPath);
 
     [ObservableProperty]
     private ObservableCollection<LogMessage> _LogHistory = [];
+    public IReadOnlyList<(string, string)> LogReplacements { get; set; } = [];
 
     // PATH Settings:
     [ObservableProperty]
@@ -165,6 +174,8 @@ public partial class AppViewModel : ObservableObject
         LoadModsProgress.Max = 10;
     }
 
+    public void SetLogReplacements(PathData data) =>
+        Log?.Replacements = data?.GetLogReplacements(); // obfuscates absolute directories in log entries
 
 
     private void PersistentSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)

@@ -37,6 +37,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SH.Content\SH.Content.csproj" />
     <ProjectReference Include="..\SH.Framework\SH.Framework.csproj" />
+    <ProjectReference Include="..\SH.Launcher.Console\SH.Launcher.Console.csproj" />
     <ProjectReference Include="..\SH.Launcher.Core\SH.Launcher.Core.csproj" />
   </ItemGroup>
 

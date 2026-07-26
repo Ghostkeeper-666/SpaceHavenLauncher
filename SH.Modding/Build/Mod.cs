@@ -4,6 +4,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Memory;
+using SH.Framework.Tasks;
 using SH.Modding.Models;
 using System;
 using System.Buffers.Binary;
@@ -26,6 +27,7 @@ internal sealed class Mod : IAsyncDisposable
         ErrorFileLogger = new FileLogger(ErrorLogPath);
         ErrorFileLogger.SetLogLevel(ELogLevel.Warn);
         Log = new LoggerCollection(log, FullFileLogger, ErrorFileLogger) { Prefix = $"[{UniqueName}] " };
+        Log.Replacements = log?.Replacements?.ToArray(); // clone
     }
 
     private BuildSettings BuildSettings;
@@ -74,6 +76,26 @@ internal sealed class Mod : IAsyncDisposable
     public SortedDictionary<string, Var> Variables { get; private set; } = [];
     public SortedDictionary<string, Audio> Audio { get; private set; } = [];
 
+    public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> LibraryXmlFiles { get; } = new()
+    {
+        [EXmlFileType.Haven] = new(),
+        [EXmlFileType.Texts] = new(),
+        [EXmlFileType.Audio] = new(),
+        [EXmlFileType.Textures] = new(),
+        [EXmlFileType.Animations] = new(),
+        [EXmlFileType.SpaceHavenSettings] = new(),
+    };
+
+    public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> PatchXmlFiles { get; } = new()
+    {
+        [EXmlFileType.Haven] = new(),
+        [EXmlFileType.Texts] = new(),
+        [EXmlFileType.Audio] = new(),
+        [EXmlFileType.Textures] = new(),
+        [EXmlFileType.Animations] = new(),
+        [EXmlFileType.SpaceHavenSettings] = new(),
+    };
+
     public bool IsXmlMod => HasAudio || HasSprites || HasSpriteSheets || HasLibraryXml || HasPatchXml;
     public bool IsJavaMod => HasJar;
 
@@ -87,28 +109,16 @@ internal sealed class Mod : IAsyncDisposable
     // Mod Build Paths:
     public string FullLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDir, $"{BuildName} (full log).txt");
     public string ErrorLogPath => IOUtils.CombineAsOSPath(Paths.BuildLogsDir, $"{BuildName} (error log).txt");
-    public string BuildAudioDirectory => IOUtils.CombineAsOSPath(Paths.BuildAudioDir, BuildName);
-    public string BuildTexturesDirectory => IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, BuildName);
-    public string BuildMergeDirectory => IOUtils.CombineAsOSPath(Paths.BuildMergeDir, BuildName);
+    public string BuildAudioDir => IOUtils.CombineAsOSPath(Paths.BuildAudioDir, BuildName);
+    public string BuildTexturesDir => IOUtils.CombineAsOSPath(Paths.BuildTexturesDir, BuildName);
+    public string BuildMergeDir => IOUtils.CombineAsOSPath(Paths.BuildMergeDir, BuildName);
     public string BuildPatchDir => IOUtils.CombineAsOSPath(Paths.BuildPatchDir, BuildName);
-
-    public SortedDictionary<EXmlFileType, SortedDictionary<string, XmlFile>> XmlFiles { get; } = new()
-    {
-        [EXmlFileType.Patch] = new(),
-        [EXmlFileType.Haven] = new(),
-        [EXmlFileType.Texts] = new(),
-        [EXmlFileType.Audio] = new(),
-        [EXmlFileType.Textures] = new(),
-        [EXmlFileType.Animations] = new(),
-        [EXmlFileType.SpaceHavenSettings] = new(),
-    };
 
     public string XmlHash { get; private set; } = string.Empty;
     public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new SortedDictionary<string, string>();
 
     public string JavaHash { get; private set; } = string.Empty;
     public IReadOnlyDictionary<string, string> JavaHashes { get; private set; } = new SortedDictionary<string, string>();
-
 
     public async Task<bool> ComputeHash()
     {
@@ -241,75 +251,143 @@ internal sealed class Mod : IAsyncDisposable
             return false;
         }
     }
-    public async Task<bool> TryLoadXmlFiles()
+
+    private readonly IReadOnlyDictionary<EXmlFileType, SemaphoreSlim> LibraryXmlFileSemaphores = new Dictionary<EXmlFileType, SemaphoreSlim>()
     {
+        [EXmlFileType.Haven] = new(1, 1),
+        [EXmlFileType.Texts] = new(1, 1),
+        [EXmlFileType.Audio] = new(1, 1),
+        [EXmlFileType.Textures] = new(1, 1),
+        [EXmlFileType.Animations] = new(1, 1),
+        [EXmlFileType.SpaceHavenSettings] = new(1, 1),
+    };
+
+    public async Task<bool> TryLoadLibraryXmlFilesAsync(EXmlFileType targetXmlFileType)
+    {
+        // Should never happen if targetXmlFileType is a valid value:
+        if (!LibraryXmlFileSemaphores.TryGetValue(targetXmlFileType, out SemaphoreSlim semaphore))
+            throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
+
+        await semaphore.WaitAsync(BuildSettings.CT);
         try
         {
-            Log.Debug($"Loading XML files with evaluated variable values...", Dir);
+            Log.Debug($"Loading LIBRARY XML files of type '{targetXmlFileType}'...", Dir);
 
-            // Library:
-            foreach (string path in Data.XmlLibraryPaths.OrderBy(path => path))
+            if (!LibraryXmlFiles.TryGetValue(targetXmlFileType, out SortedDictionary<string, XmlFile> dict))
+                throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
+
+            string[] paths =
+                Data.XmlLibraryPaths
+                .Where(path => XmlFile.GetLibraryXmlFileType(path) == targetXmlFileType)
+                .OrderBy(path => path.ToLowerInvariant())
+                .ToArray();
+
+            await Parallel.ForEachAsync(paths, BuildSettings.ParallelOptions, async (path, ct) =>
             {
-                CT.ThrowIfCancellationRequested();
+                XmlFile xmlFile = new(targetXmlFileType, Data.XmlLibraryDir, path);
 
-                if (!XmlFile.TryGetLibraryXmlFileType(path, out EXmlFileType xmlFileType))
-                {
-                    Log.Error($@"Unknown target XML file for ""{path}"". Hint: Check for case-sensitive XML tags", path);
-                    return false;
-                }
-
-                if (!XmlFiles.TryGetValue(xmlFileType, out SortedDictionary<string, XmlFile> dict))
-                    XmlFiles[xmlFileType] = dict = new();
-
-                CT.ThrowIfCancellationRequested();
-
-                XmlFile xmlFile = dict[path] = new XmlFile(xmlFileType, Data.XmlLibraryDir, path);
                 if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
-                {
-                    Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
-                    return false;
-                }
+                    throw new StopException($@"The LIBRARY XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path, BuildSettings.InternalCTS);
 
-                string evaluatedPath = IOUtils.CombineAsOSPath(BuildMergeDirectory, "mod", xmlFile.RelativePath);
+                string evaluatedPath = IOUtils.CombineAsOSPath(BuildMergeDir, "mod", xmlFile.RelativePath);
                 if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
-                {
-                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDir);
-                    return false;
-                }
-            }
+                    throw new StopException($@"Unable to write evaluated LIBRARY XML file ""{evaluatedPath}""", BuildPatchDir, BuildSettings.InternalCTS);
 
-            // Patches:
-            SortedDictionary<string, XmlFile> patchDict = new();
-            XmlFiles[EXmlFileType.Patch] = patchDict;
-            foreach (string path in Data.XmlPatchPaths.OrderBy(path => path))
-            {
-                CT.ThrowIfCancellationRequested();
+                if (!LibraryXmlFiles.TryGetValue(targetXmlFileType, out SortedDictionary<string, XmlFile> dict))
+                    throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
 
-                XmlFile xmlFile = patchDict[path] = new XmlFile(EXmlFileType.Patch, Data.XmlPatchesDir, path);
-                if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
-                {
-                    Log.Error($@"This XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path);
-                    return false;
-                }
-
-                string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDir, "mod", xmlFile.RelativePath);
-                if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
-                {
-                    Log.Error($@"Unable to write evaluated XML file ""{evaluatedPath}""", BuildPatchDir);
-                    return false;
-                }
-            }
+                lock (dict)
+                    dict[path] = xmlFile;
+            });
 
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsStop(out StopException error))
         {
-            Log.Error($"{ex}");
+            Log.Error(error.Message, error.Location);
             return false;
         }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex, Dir);
+            return false;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
+
+    private readonly IReadOnlyDictionary<EXmlFileType, SemaphoreSlim> PatchXmlFileSemaphores = new Dictionary<EXmlFileType, SemaphoreSlim>()
+    {
+        [EXmlFileType.Haven] = new(1, 1),
+        [EXmlFileType.Texts] = new(1, 1),
+        [EXmlFileType.Audio] = new(1, 1),
+        [EXmlFileType.Textures] = new(1, 1),
+        [EXmlFileType.Animations] = new(1, 1),
+        [EXmlFileType.SpaceHavenSettings] = new(1, 1),
+    };
+
+    public async Task<bool> TryLoadPatchXmlFilesAsync(EXmlFileType targetXmlFileType)
+    {
+        // Should never happen if targetXmlFileType is a valid value:
+        if (!PatchXmlFileSemaphores.TryGetValue(targetXmlFileType, out SemaphoreSlim semaphore))
+            throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
+
+        await semaphore.WaitAsync(BuildSettings.CT);
+        try
+        {
+            Log.Debug($"Loading PATCH XML files of type '{targetXmlFileType}'...", Dir);
+
+            if (!PatchXmlFiles.TryGetValue(targetXmlFileType, out SortedDictionary<string, XmlFile> dict))
+                throw new NotImplementedException($"{nameof(EXmlFileType)} = {targetXmlFileType}");
+
+            string[] paths =
+                Data.XmlPatchPaths
+                .Where(path => XmlFile.GetPatchXmlFileType(path) == targetXmlFileType)
+                .OrderBy(path => path.ToLowerInvariant())
+                .ToArray();
+
+            await Parallel.ForEachAsync(paths, BuildSettings.ParallelOptions, async (path, ct) =>
+            {
+                CT.ThrowIfCancellationRequested();
+
+                XmlFile xmlFile = new(EXmlFileType.Patch, Data.XmlPatchesDir, path)
+                {
+                    PatchType = targetXmlFileType,
+                };
+                if (!await TryLoadWithEvaluatedVariablesAsync(xmlFile, Data.ModId, Data.AutoId, Data.CustomId, Variables, Log, CT))
+                    throw new StopException($@"The PATCH XML file contains a SYNTAX ERROR and could not be parsed ""{path}""", path, BuildSettings.InternalCTS);
+
+                string evaluatedPath = IOUtils.CombineAsOSPath(BuildPatchDir, "mod", xmlFile.RelativePath);
+                if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
+                    throw new StopException($@"Unable to write evaluated PATCH XML file ""{evaluatedPath}""", BuildPatchDir, BuildSettings.InternalCTS);
+
+                dict[path] = xmlFile;
+            });
+
+            // Done.
+            return true;
+        }
+        catch (Exception ex) when (ex.IsStop(out StopException error))
+        {
+            Log.Error(error.Message, error.Location);
+            return false;
+        }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex, Dir);
+            return false;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
     public async Task<bool> TryMapVariables()
     {
         try
@@ -336,8 +414,6 @@ internal sealed class Mod : IAsyncDisposable
             return false;
         }
     }
-
-
 
     public async Task<bool> TryLoadWithEvaluatedVariablesAsync(XmlFile xmlFile, int modID, int autoID, int customID, IReadOnlyDictionary<string, Var> variables, ILogger log, CancellationToken ct)
     {
@@ -416,8 +492,6 @@ internal sealed class Mod : IAsyncDisposable
             return false;
         }
     }
-
-
 
 
     #region IAsyncDisposable

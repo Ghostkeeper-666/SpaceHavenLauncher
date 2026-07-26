@@ -2,8 +2,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Launcher.Extensions;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

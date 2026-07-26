@@ -22,6 +22,7 @@ internal sealed class BuildInfo : IAsyncDisposable
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         FileLogger = new FileLogger(Paths.BuildLogPath);
         Log = new LoggerCollection(log, FileLogger);
+        Log.Replacements = log?.Replacements?.ToArray(); // clone
     }
 
     private ILogger Log;
@@ -173,8 +174,6 @@ internal sealed class BuildInfo : IAsyncDisposable
             return string.Compare(sid1, sid2, StringComparison.Ordinal);
         return isNum1 ? -1 : 1;
     }
-
-
 
     public async Task<bool> TryLoadSpaceHavenXmlFilesAsync(CancellationToken ct, IProgressInfo progress)
     {

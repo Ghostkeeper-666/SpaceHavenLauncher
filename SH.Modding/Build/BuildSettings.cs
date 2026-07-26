@@ -37,6 +37,7 @@ public sealed class BuildSettings : IDisposable
     public string SpaceHavenJarDir { get; set; }
     public EGamePlatform GamePlatform { get; set; }
 
+    public bool GenerateAdditionalIntermediateBuildFiles { get; set; }
     public bool SkipRebuilding { get; set; }
     public List<ModData> Mods { get; private set; } = [];
 
@@ -47,7 +48,7 @@ public sealed class BuildSettings : IDisposable
     public PathData Paths { get; }
 
     private CancellationToken ExternalCT { get; }
-    private CancellationTokenSource InternalCTS;
+    public CancellationTokenSource InternalCTS { get; private set; }
     private CancellationTokenSource LinkedCTS;
 
     internal ParallelOptions ParallelOptions;

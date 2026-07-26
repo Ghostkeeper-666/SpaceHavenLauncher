@@ -1,6 +1,6 @@
 ﻿using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
+using SH.Modding.Models;
 using ShellLink;
 using System;
 
@@ -23,10 +23,10 @@ public sealed class IconService
                 return;
 
             Shortcut shortcut = Shortcut.CreateShortcut(
-                path: SpaceHavenLauncher.Dir.CombineAsEvaluatedOSPath($"{SpaceHavenLauncher.AssemblyName}.exe"),
+                path: SpaceHavenLauncher.AppDir.CombineAsEvaluatedOSPath($"{SpaceHavenLauncher.AssemblyName}.exe"),
                 args: null,
-                workdir: SpaceHavenLauncher.Dir,
-                iconpath: SpaceHavenLauncher.Dir.CombineAsEvaluatedOSPath($"{SpaceHavenLauncher.AssemblyName}.exe"),
+                workdir: SpaceHavenLauncher.AppDir,
+                iconpath: SpaceHavenLauncher.AppDir.CombineAsEvaluatedOSPath($"{SpaceHavenLauncher.AssemblyName}.exe"),
                 iconindex: 0
             );
 

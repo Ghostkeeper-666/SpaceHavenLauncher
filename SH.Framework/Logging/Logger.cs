@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SH.Framework.Logging;
@@ -9,6 +10,7 @@ public sealed class Logger : ILogger
 
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) => Warn($"Log level has changed to '{LogLevel = logLevel}'");
+    public IReadOnlyList<(string, string)> Replacements { get; set; }
 
     public string Prefix { get; set; }
     public string Suffix { get; set; }
@@ -80,9 +82,17 @@ public sealed class Logger : ILogger
 
     public void Add(LogMessage m)
     {
-        if (m == null || m.Level < LogLevel) return;
-        if (Prefix != null) m.Prefix = Prefix;
-        if (Suffix != null) m.Suffix = Suffix;
+        if (m == null || m.Level < LogLevel)
+            return;
+        if (Prefix != null)
+            m.Prefix = Prefix;
+        if (Suffix != null)
+            m.Suffix = Suffix;
+        IReadOnlyList<(string, string)> replacements = Replacements;
+        if(replacements?.Count > 0)
+            foreach((string value, string token) in Replacements)
+                if(m.RawText.Contains(value))
+                    m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
         try { OnMessage?.Invoke(this, m); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }

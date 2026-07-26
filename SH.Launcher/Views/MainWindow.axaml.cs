@@ -4,7 +4,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Threading;
 using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
@@ -12,6 +11,7 @@ using SH.Launcher.Core.Services;
 using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels;
 using SH.Launcher.ViewModels.Enums;
+using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,7 +34,6 @@ public partial class MainWindow : Window
     private Task SearchTask;
     private SemaphoreSlim SearchSignal;
     private volatile string SearchText;
-
 
     public MainWindow()
     {
@@ -119,8 +118,13 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void OnLog(object sender, LogMessage message) =>
+    private void OnLog(object sender, LogMessage message)
+    {
+        foreach ((string value, string replacement) in State?.LogReplacements ?? [])
+            if (message.RawText.Contains(value, StringComparison.OrdinalIgnoreCase))
+                message.RawText = message.RawText.Replace(value, replacement, StringComparison.OrdinalIgnoreCase);
         Dispatcher.Run(() => State.LogHistory.Add(message));
+    }
 
     private int GetLeftPaneIndexOf(EPageType paneItem)
     {

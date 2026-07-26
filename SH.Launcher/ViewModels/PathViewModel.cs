@@ -1,12 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using SH.Content;
-using SH.Framework.IO;
+﻿
+using CommunityToolkit.Mvvm.ComponentModel;
 using SH.Framework.Logging;
 using SH.Modding.Models;
 using System;
 using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SH.Launcher.ViewModels;
 
@@ -96,15 +93,19 @@ public partial class PathViewModel : ObservableObject
             {
                 case nameof(SteamDir):
                     Data?.SteamDir = SteamDir;
+                    State.SetLogReplacements(Data);
                     return;
                 case nameof(SteamModsDir):
                     Data?.SteamModsDir = SteamModsDir;
+                    State.SetLogReplacements(Data);
                     return;
                 case nameof(SpaceHavenDir):
                     Data?.SpaceHavenDir = SpaceHavenDir;
+                    State.SetLogReplacements(Data);
                     return;
                 case nameof(ClassicModsDir):
                     Data?.ClassicModsDir = ClassicModsDir;
+                    State.SetLogReplacements(Data);
                     return;
                 case nameof(SpaceHavenJarDir):
                     Data?.SpaceHavenJarDir = SpaceHavenJarDir;
@@ -121,6 +122,7 @@ public partial class PathViewModel : ObservableObject
         }
         catch { }
     }
+
 
 
 }

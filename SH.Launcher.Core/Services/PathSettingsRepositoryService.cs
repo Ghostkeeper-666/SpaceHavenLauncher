@@ -2,7 +2,6 @@
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
-using SH.Launcher.Core.Models;
 using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
@@ -206,7 +205,7 @@ public sealed class PathSettingsRepositoryService
 
     public string ResolveAppDir()
     {
-        string dir = SpaceHavenLauncher.Dir;
+        string dir = SpaceHavenLauncher.AppDir;
         Log.Debug($@"{nameof(ResolveAppDir)}: Auto resolved as ""{dir}""");
         return dir;
     }
@@ -220,8 +219,7 @@ public sealed class PathSettingsRepositoryService
         // macOS   ~/Library/Application Support
         try
         {
-            string appDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string dir = appDataDir.CombineAsOSPath("SpaceHavenLauncher");
+            string dir = SpaceHavenLauncher.WorkDir;
             if (!dir.DirExists())
                 IOUtils.TryCreateDir(dir, Log);
             return dir;

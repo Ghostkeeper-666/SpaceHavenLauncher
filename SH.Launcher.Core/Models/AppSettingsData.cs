@@ -1,5 +1,6 @@
 ﻿using SH.Content.Enums;
 using SH.Framework.IO;
+using SH.Modding.Models;
 
 namespace SH.Launcher.Core.Models;
 

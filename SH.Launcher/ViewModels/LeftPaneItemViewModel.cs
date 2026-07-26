@@ -4,12 +4,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Framework.Logging;
 using SH.Launcher.Extensions;
-using SH.Launcher.Core.Models;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using SH.Launcher.Core.Services;
 using SH.Launcher.ViewModels.Enums;
+using SH.Modding.Models;
 
 namespace SH.Launcher.ViewModels;
 

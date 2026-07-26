@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "SH.Launcher": {
+      "commandName": "Project"
+    },
+    "SH.Launcher (Console Mode)": {
+      "commandName": "Project",
+      "commandLineArgs": "-console"
+    }
+  }
+}

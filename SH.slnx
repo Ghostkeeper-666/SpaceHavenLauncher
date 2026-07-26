@@ -24,6 +24,7 @@
   </Folder>
   <Project Path="SH.Content/SH.Content.csproj" />
   <Project Path="SH.Framework/SH.Framework.csproj" />
+  <Project Path="SH.Launcher.Console/SH.Launcher.Console.csproj" Id="00e92f9c-f8a6-4114-8e73-a251b9948984" />
   <Project Path="SH.Launcher.Core/SH.Launcher.Core.csproj" Id="402170b2-5486-4ce9-a4bd-ad672d4f84be" />
   <Project Path="SH.Launcher/SH.Launcher.csproj" />
   <Project Path="SH.Modding/SH.Modding.csproj" Id="92319152-08ed-4fa1-acb6-00839b31df6b" />
