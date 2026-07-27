@@ -1,97 +1,94 @@
 ﻿# Welcome to Space Haven Launcher!
 
-Let's go through this FAQ before asking questions...
+Welcome aboard! Read this short FAQ to get started.
 
-**Space Haven Launcher** mimics the game's theme:
-- [Learning Computer](app://LearningComputer): the right place to **understand** the basics
-- [System Core](app://SystemCore): the **settings** central - check this page if any directory was not auto-detected
-- [Navigation Console](app://NavigationConsole): **launches original** or **modified games**, re-initializes Space Haven Launcher, exports game assets
-- [Airlock](app://Airlock): a relaxing **screensaver**, with some fan art and screenshots from early stages of the game
+**Space Haven Launcher** follows the game's theme:
+- [Learning Computer](app://LearningComputer): **learn** the basics
+- [System Core](app://SystemCore): **configure** the launcher and verify paths
+- [Navigation Console](app://NavigationConsole): **launch** the original or **modded** game, reinitialize the launcher, and export game assets
+- [Airlock](app://Airlock): enjoy a relaxing **screensaver** with fan art and early game screenshots
 
 # Paths
 
-This app only works the paths are correctly set in [System Core](app://SystemCore)
+The launcher works only if the paths are correctly set in [System Core](app://SystemCore)
+
+On Windows, you can create an icon on your desktop for Space Haven Launcher, on [System Core](app://SystemCore)
 
 # Mod list
 
-The mod list defines the **mod loading order** into the game:
-- The mod list can be reloaded by clicking on the **LEFT BUTTONS** of [Navigation Console](app://NavigationConsole)
-- Reorder the mods by using the **up/down arrow buttons** located above the mod list
+The **mod list** defines the **loading order**:
+- Reload it using the **LEFT BUTTONS** in [Navigation Console](app://NavigationConsole)
+- Change the order with the **UP/DOWN ARROW BUTTONS** above the mod list
 
-# What can mods do to the game ?
+# What can mods do?
 
-- A mod can change game settings, game entities, game mechanics, etc
-- Each mod becomes tags like LIBRARY, PATCH, TEXTURE, AUDIO, JAVA, ...
-- These tags give you a clue about what the mod does
+Mods can change **settings**, **entities**, **mechanics**, **textures**, **audio**, and more. Each mod has tags such as **LIBRARY**, **PATCH**, **TEXTURE**, **AUDIO**, **JAVA**, etc. These tags describe what the mod changes.
 
-# How to install mods ?
+# How to install mods
 
-- **Reliable Method**: Download mods from [Nexus Mods](https://www.nexusmods.com/games/spacehaven/mods?sort=createdAt&timeRange=allTime) webpage and extract them to the classic mods directory
-- **Alternative Way**: Subcribe them on [Steam Workshop](https://steamcommunity.com/app/979110/workshop/) - You must do it from the Steam application, otherwise it may not sync correctly!
-- Make sure you don't download the same mod from both sources, since duplicate mod entries are not allowed!
-- The **Classic Mods Directory** and the **Steam Directory** are defined in [System Core](app://SystemCore)
-- Use mods from [My Series](https://www.nexusmods.com/games/spacehaven/mods?sort=uniqueDownloads&timeRange=allTime&author=Ghostkeeper666) to adjust most basic game settings
+- **RECOMMENDED:** Download mods from [Nexus Mods](https://www.nexusmods.com/games/spacehaven/mods?sort=createdAt&timeRange=allTime) and extract them into the **Classic Mods Directory**
+- **ALTERNATIVE:** Subscribe on [Steam Workshop](https://steamcommunity.com/app/979110/workshop/) using the **Steam application**, otherwise mods may not sync correctly
+- Do **NOT** install the same mod from both sources at the same time, **duplicate mods cause loading errors**!
+- The **Classic Mods Directory** and **Steam Directory** are configured in [System Core](app://SystemCore)
+- Use mods from [My Series](https://www.nexusmods.com/games/spacehaven/mods?sort=uniqueDownloads&timeRange=allTime&author=Ghostkeeper666) to customize many game settings
 
-# How to ENABLE or DISABLE mods ?
+# How to ENABLE or DISABLE mods
 
-- Click on the corresponding **★** STAR icon in the mod list (at the **left side of the screen**)
-- Click on the **MOD TITLE** on the mod page (at the **right side of the screen**)
-- To **enable/disable several mods**, use the two **★** STAR icons on the **top left area of the screen** 
-- To restrict the mods you want to enable/disable, use the **search box** (at the **top left area of the screen**)
+- Click the **★ STAR** icon next to the mod name in the mod list (**left side**)
+- Click the **MOD TITLE** on the mod page (**top right side**)
+- To enable or disable **multiple mods**, use the two **★ STAR** buttons (**top left side**)
+- Use the **SEARCH BOX** to filter which mods are affected (**top left side**)
 
-# How to start a modified game ?
+# How to start a modded game
 
-Go to [Navigation Console](app://NavigationConsole) and click on the **(M) Lever** to the game modifed by mods
+Open [Navigation Console](app://NavigationConsole) and pull the **(M) LEVER**.
 
-# How to start the original "vanilla" game ?
+# How to start the original game
 
-Go to [Navigation Console](app://NavigationConsole) and click on the **(V) Lever** to run the original game
+Open [Navigation Console](app://NavigationConsole) and pull the **(V) LEVER**.
 
-# Can the Launcher be closed while playing Space Haven ?
+# Can I close the Launcher while playing?
 
-Yes, you can safely close it
+**Yes.** You can safely close it after the game starts. There is an option to automatically close it on [System Core](app://SystemCore)
 
-# What if a MOD is DISABLED and a modified SAVEGAME is loaded ?
+# What if a MOD is DISABLED but a modded SAVEGAME is loaded?
 
-This is usually not recommended:
+This is usually **not recommended**, but it works in most cases:
+- The game usually should **not crash**, unless the mod author says otherwise
+- Modded entities should disappear
+- Texture and audio changes should return to the original game
 
-- In principle, unless the mod author specifies otherwise, the game should not crash
-- Entities defined by mods should simply disappear
-- All texture and audio modifications should be reset to original
+**Known Mod Removal Issues**
+- Mods that change **floors** require restoring the original floors before loading the savegame
+- Mods that add **new character skins** (instead of replacing existing ones) may crash the game
 
-** Known Mod Removal Issues**
+# Are mod variables kept after updating a mod?
 
-- If you use a mod which changes floors, you must first set original game floors before loading the savegame
-- If characters get newly added skins (not ones which override existing ones), the game could crash
+The launcher tries to automatically **MERGE** existing variable values when a mod is updated. Check the **OLD MOD VALUES** column on the mod variables page.
 
-# When updating mods, are mod variables automatically updated ?
+# How to solve MOD ID errors
 
-- The Launcher does its best to **KEEP** old variable values to the newly updated mod
-- Check the mod's page and look at the **OLD MOD VALUES** column in the mod variables section
+- Replace the **MOD ID** with a **CUSTOM ID**
+- This is usually best for mods tagged only with **JAVA** or **JAVA AOP**
+- Mods using **AUTO ID** usually ignore the custom ID
 
-# How to solve MOD ID errors ?
+# How to solve MOD DEPENDENCY errors
 
-- They are resolved by replacing the **mod ID** with a **custom ID**
-- It's usually best to change the **mod ID** of mods tagged **only** with **JAVA** or **JAVA AOP** tags
-- Mods using **AUTO ID** should not care about which **custom ID** is set
+- Install the required dependency with the correct version
+- Place dependencies **above** the dependent mod in the mod list
 
-# How to solve MOD DEPENDENCY errors ?
+# How to solve MOD CONFLICTS
 
-- The mod dependencies with the correct version must be installed
-- The dependencies must be placed at a higher position in the mod list, so they get loaded first
+**Conflicting mods** perform **incompatible actions**. Choose one mod or the other, as using both may cause problems.
 
-# How to solve MOD CONFLICTS ?
+# What if a mod requires a different SPACE HAVEN VERSION?
 
-It's not possible, since the conflicting mods are performing incompatible actions
-- It's best to choose between one mod or another
-- If you proceed with conflicting mods anyway, there is a high chance of something going wrong
+Some mods **will not work** with **newer game versions**:
+- Very old mods may no longer work
+- Check whether a newer version of the mod exists
+- Check the mod's required **Space Haven version**
+- Also check when the mod was last updated on [Nexus Mods](https://www.nexusmods.com/games/spacehaven)
 
-# How to solve mods requiring a specific SPACE HAVEN VERSION ?
+# You're ready for a launch!
 
-Some mods are incompatible with specific newer versions of **Space Haven**
-- Check whether there is a new version of the mod
-- Old mods will potentially not work anymore
-- Check the mod's last Space Haven version requirement to get a clue how old it is
-- Also check the Nexus Web page to see how long ago the mod was last updated
-
-# Now you are ready to go!
+Enjoy **Space Haven Launcher** and have fun!

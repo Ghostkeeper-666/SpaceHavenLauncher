@@ -28,6 +28,9 @@ public sealed class FileLogger : ILogger
 
     public event EventHandler<LogMessage> OnMessage;
 
+    public string Name { get; set; } = nameof(FileLogger);
+    public IReadOnlyList<ILogger> Children => [];
+
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) =>
         Info($"{nameof(FileLogger)} level = '{LogLevel = logLevel}'");

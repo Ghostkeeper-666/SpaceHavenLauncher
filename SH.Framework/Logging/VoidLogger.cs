@@ -9,6 +9,9 @@ public sealed class VoidLogger : ILogger
 {
     public event EventHandler<LogMessage> OnMessage;
 
+    public string Name { get; set; } = nameof(VoidLogger);
+    public IReadOnlyList<ILogger> Children => [];
+
     public ELogLevel LogLevel => ELogLevel.None;
     public void SetLogLevel(ELogLevel logLevel) { }
     public IReadOnlyList<(string, string)> Replacements { get; set; }

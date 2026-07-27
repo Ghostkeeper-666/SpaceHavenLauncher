@@ -22,6 +22,9 @@ public sealed class BatchLogger : ILogger
         LogTask = Task.Run(LoopAsync);
     }
 
+    public string Name { get; set; } = nameof(BatchLogger);
+    public IReadOnlyList<ILogger> Children => [];
+
     public TimeSpan Interval { get; set; }
 
     public event EventHandler<IReadOnlyList<LogMessage>> OnMessages;

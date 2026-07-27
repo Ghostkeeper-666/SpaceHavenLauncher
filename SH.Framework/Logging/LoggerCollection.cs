@@ -9,8 +9,9 @@ public sealed class LoggerCollection : ILogger
 {
     public event EventHandler<LogMessage> OnMessage;
 
-
-    private List<ILogger> Children = [];
+    public string Name { get; set; } = nameof(LoggerCollection);
+    public IReadOnlyList<ILogger> Children => ChildrenList.ToArray();
+    private List<ILogger> ChildrenList = [];
 
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) =>
@@ -35,20 +36,20 @@ public sealed class LoggerCollection : ILogger
     {
         if (log == null || log is VoidLogger)
             return;
-        Children.Add(log);
+        ChildrenList.Add(log);
     }
 
     public void RemoveLogger(ILogger log)
     {
         if (log == null)
             return;
-        if (Children.FirstOrDefault(l => l == log) == null)
+        if (ChildrenList.FirstOrDefault(l => l == log) == null)
             return;
-        Children.Remove(log);
+        ChildrenList.Remove(log);
     }
 
     public void RemoveAll() =>
-        Children.Clear();
+        ChildrenList.Clear();
 
     public void Add(LogMessage m)
     {
@@ -65,8 +66,8 @@ public sealed class LoggerCollection : ILogger
             foreach((string value, string token) in Replacements)
                 if(m.RawText.Contains(value))
                     m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
-        for (int i = 0; i < Children.Count; ++i)
-            try { Children[i].Add(m); } catch { }
+        for (int i = 0; i < ChildrenList.Count; ++i)
+            try { ChildrenList[i].Add(m); } catch { }
         try { OnMessage?.Invoke(this, m); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
@@ -170,8 +171,8 @@ public sealed class LoggerCollection : ILogger
         if (IsDisposed)
             return;
         IsDisposed = true;
-        Children.Clear();
-        Children = null;
+        ChildrenList.Clear();
+        ChildrenList = null;
     }
     #endregion
 }

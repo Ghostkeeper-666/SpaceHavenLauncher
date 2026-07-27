@@ -13,15 +13,15 @@ using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Linq;
 
 namespace SH.Launcher.Views;
 
 public partial class ConsoleWindow : Window
 {
-    public SpaceHavenLauncherConsole SpaceHavenLauncherConsole { get; }
+    public SpaceHavenLauncherConsole Console { get; }
 
     private readonly IClassicDesktopStyleApplicationLifetime Lifetime;
 
@@ -40,9 +40,11 @@ public partial class ConsoleWindow : Window
         TextEditor.Background = Brushes.Black;
         TextEditor.Foreground = Brushes.LightGray;
 
-        SpaceHavenLauncherConsole = new();
-        SpaceHavenLauncherConsole.Log.OnMessages += OnLogMessages;
-
+        Console = new();
+        BatchLogger batchLogger = Console.Log as BatchLogger ?? Console.Log.Children.FirstOrDefault(log => log is BatchLogger) as BatchLogger;
+        if (batchLogger == null)
+            Console.Log.OnMessage += OnLogMessage;
+        else batchLogger.OnMessages += OnLogMessages;
         TextEditor.TextArea.TextView.LineTransformers.Add(new ConsoleWindowLineColorizer(LogMessages));
         TextEditor.TextArea.AddHandler(PointerPressedEvent, TextArea_PointerPressed, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
 
@@ -53,7 +55,18 @@ public partial class ConsoleWindow : Window
     {
         if (DataContext is not ConsoleWindowViewModel vm)
             return;
-        Lifetime?.Shutdown(await SpaceHavenLauncherConsole.RunAsync(Lifetime?.Args ?? [], vm.CTS));
+        Lifetime?.Shutdown(await Console.RunAsync(Lifetime?.Args ?? [], vm.CTS));
+    }
+
+    private void OnLogMessage(object sender, LogMessage m)
+    {
+        DispatchQueue.Run(() =>
+        {
+            TextEditor.AppendText(m.Text);
+            TextEditorScrollViewer ??= GetScrollViewer();
+            if (TextEditorScrollViewer != null)
+                ScrollLineToBottom();
+        });
     }
 
     private void OnLogMessages(object sender, IReadOnlyList<LogMessage> messages)
@@ -65,7 +78,7 @@ public partial class ConsoleWindow : Window
             {
                 string text = m.Text;
                 int newLineCount = text.Count(c => c == '\n');
-                if(newLineCount <= 0)
+                if (newLineCount <= 0)
                     LogMessages.Add(m);
                 else while (newLineCount-- >= 0)
                     LogMessages.Add(m);

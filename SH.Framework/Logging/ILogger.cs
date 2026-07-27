@@ -6,6 +6,9 @@ namespace SH.Framework.Logging;
 public interface ILogger : IAsyncDisposable
 {
     public event EventHandler<LogMessage> OnMessage;
+
+    public string Name { get; set; }
+    public IReadOnlyList<ILogger> Children { get; }
     public ELogLevel LogLevel { get; }
     public IReadOnlyList<(string, string)> Replacements { get; set; }
     public void SetLogLevel(ELogLevel logLevel);

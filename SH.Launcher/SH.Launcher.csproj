@@ -124,7 +124,7 @@
     <None Update="Learning\600-JAVA_Mod_Overview.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Learning\999-Credits.md">
+    <None Update="Learning\001-Credits.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Learning\XmlModTutorial\audio\facility_newjukebox.ogg">

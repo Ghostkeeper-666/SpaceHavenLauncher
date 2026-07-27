@@ -11,7 +11,8 @@ public static class SpaceHavenLauncher
         Version = new(Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "0");
         AppDir = AppContext.BaseDirectory.AsOSPath();
         WorkDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData).CombineAsOSPath("SpaceHavenLauncher");
-        LogPath = WorkDir.CombineAsOSPath("log.txt");
+        AppLogPath = WorkDir.CombineAsOSPath("AppLog.txt");
+        ConsoleLogPath = WorkDir.CombineAsOSPath("ConsoleLog.txt");
     }
 
     
@@ -20,5 +21,6 @@ public static class SpaceHavenLauncher
     public static readonly VersionInfo Version;
     public static readonly string AppDir;
     public static readonly string WorkDir;
-    public static readonly string LogPath;
+    public static readonly string AppLogPath;
+    public static readonly string ConsoleLogPath;
 }

@@ -8,6 +8,9 @@ public sealed class Logger : ILogger
 {
     public Logger() { }
 
+    public string Name { get; set; } = nameof(Logger);
+    public IReadOnlyList<ILogger> Children => [];
+
     public ELogLevel LogLevel { get; private set; } = ELogLevel.Debug;
     public void SetLogLevel(ELogLevel logLevel) =>
         Info($"{nameof(Logger)} level = '{LogLevel = logLevel}'");

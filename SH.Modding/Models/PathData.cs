@@ -46,7 +46,8 @@ public sealed class PathData
 
     public string LearningDir => AppDir.CombineAsOSPath("Learning");
 
-    public string AppLogPath => SpaceHavenLauncher.LogPath;
+    public string AppLogPath => SpaceHavenLauncher.AppLogPath;
+    public string ConsoleLogPath => SpaceHavenLauncher.ConsoleLogPath;
     public string LauncherAgentLogPath => CacheDir.CombineAsOSPath("LauncherAgent.log");
 
     public string ModListPath => WorkDir.CombineAsOSPath("mods.xml");

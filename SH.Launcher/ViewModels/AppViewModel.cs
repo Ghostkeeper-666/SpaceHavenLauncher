@@ -39,7 +39,7 @@ public partial class AppViewModel : ObservableObject
     public static DispatchQueue Dispatcher { get; } = new(); // Singleton
 
     // LOG:
-    public FileLogger Log { get; } = new FileLogger(SpaceHavenLauncher.LogPath);
+    public FileLogger Log { get; } = new FileLogger(SpaceHavenLauncher.AppLogPath);
 
     [ObservableProperty]
     private ObservableCollection<LogMessage> _LogHistory = [];

@@ -11,6 +11,8 @@
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
+    <File Path="HowtoCreateLocalNugetFeed.md" />
+    <File Path="nuget.config" />
     <File Path="TODO.txt" />
   </Folder>
   <Folder Name="/TEST/">

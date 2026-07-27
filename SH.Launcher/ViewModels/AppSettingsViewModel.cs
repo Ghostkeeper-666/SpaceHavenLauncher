@@ -71,6 +71,7 @@ public partial class AppSettingsViewModel : ObservableObject
     [ObservableProperty]
     private EExportOption _ExportOption;
 
+    // ADVANCED:
     [ObservableProperty]
     private string _JavaVMArgs;
 

@@ -24,11 +24,14 @@ public sealed class SpaceHavenLauncherConsole
     }
     #endregion
 
-    public BatchLogger Log;
+    public ILogger Log;
 
     public SpaceHavenLauncherConsole()
     {
-        Log = new(TimeSpan.FromMilliseconds(200));
+        Log = new LoggerCollection(
+            new BatchLogger(TimeSpan.FromMilliseconds(200)),
+            new FileLogger(SpaceHavenLauncher.ConsoleLogPath)
+        );
     }
 
 
