@@ -56,9 +56,9 @@ public sealed class SpaceHavenLauncherConsole
         PathData paths = pathSvc.TryLoad() ?? new();
         bool success = pathSvc.ResolveAll(paths);
         if (!success)
-            Log.Error("Unable to locate all required paths. Please set them on System Core. Afterwards, re-initialize the Navigation Console");
+            Log.Error("Please set the DIRECTORIES on SYSTEM CORE tab and re-initialize the NAVIGATION CONSOLE afterwards. If you need some help, go to LEARNING COMPUTER tab", "tab://LearningComputer");
         if (!await pathSvc.TrySaveAsync(paths, ct))
-            Log.Error($@"Unable to save file, please check filesystem write permissions for ""{paths.PathSettingsPath}""");
+            Log.Error($@"Unable to load/save path settings file, please make sure you have set write permissions for ""{SpaceHavenLauncher.WorkDir}""", SpaceHavenLauncher.WorkDir);
 
 
         // Obfuscates absolute directories in log entries:
@@ -70,7 +70,7 @@ public sealed class SpaceHavenLauncherConsole
         AppSettingsData appSettingsData = await appSvc.TryLoadOrCreateAsync(ct);
         if (appSettingsData == null)
         {
-            Log.Error($@"Unable to load or create application settings => please check for write permissions on ""{paths.WorkDir}""");
+            Log.Error($@"Unable to load/save application settings file, please make sure you have set write permissions for ""{SpaceHavenLauncher.WorkDir}""");
             appSettingsData = AppSettingsData.GetDefault();
         }
         Log.SetLogLevel(appSettingsData.LogVerbosity.ToLogLevel());

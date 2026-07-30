@@ -10,6 +10,7 @@ using SH.Launcher.ViewModels.Enums;
 using SH.Launcher.Views;
 using SH.Modding.Models;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,9 +136,9 @@ public partial class MainWindowViewModel : ViewModelBase
             PathData pathData = repo.TryLoad() ?? new();
             bool success = repo.ResolveAll(pathData);
             if (!success)
-                Log.Error("Unable to locate all required paths. Please set them on System Core. Afterwards, re-initialize the Navigation Console");
+                Log.Error("Please set the DIRECTORIES on SYSTEM CORE tab and re-initialize the NAVIGATION CONSOLE afterwards. If you need some help, go to LEARNING COMPUTER tab", "tab://LearningComputer");
             if (!await repo.TrySaveAsync(pathData, ct))
-                Log.Error($@"Unable to save file, please check filesystem write permissions for ""{pathData.PathSettingsPath}""");
+                Log.Error($@"Unable to load/save path settings file, please make sure you have set write permissions for ""{SpaceHavenLauncher.WorkDir}""", SpaceHavenLauncher.WorkDir);
             State.Paths = new PathViewModel(pathData);
             State.PropertyChanged += State_PropertyChanged;
             Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
@@ -178,7 +179,7 @@ public partial class MainWindowViewModel : ViewModelBase
             AppSettingsData data = await repo.TryLoadOrCreateAsync(ct);
             if (data == null)
             {
-                Log.Error($@"Unable to load or create application settings => please check for write permissions on ""{Paths.WorkDir}""");
+                Log.Error($@"Unable to load/save application settings file, please make sure you set have write permissions for ""{SpaceHavenLauncher.WorkDir}""");
                 data = AppSettingsData.GetDefault();
             }
             State.Log.SetLogLevel(data.LogVerbosity.ToLogLevel());
