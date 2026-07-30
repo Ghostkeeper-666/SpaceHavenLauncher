@@ -2521,8 +2521,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 return false;
 
             // Recalculate positions:
-            int columnWidth = 12;
-            int columnSpacing = 18;
+            int columnWidth = 15;
+            int columnSpacing = 15;
             int rowHeight = 3;
             int rowSpacing = 3;
             foreach (ResearchTopic topic in topics)

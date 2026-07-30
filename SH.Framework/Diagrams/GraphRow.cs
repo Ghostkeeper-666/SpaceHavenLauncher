@@ -17,10 +17,13 @@ public sealed class GraphRow
     public bool IsTopRow => Grid.TopRow == this;
     public bool IsBottomRow => Grid.BottomRow == this;
 
-    internal GraphRow(GraphGrid grid, int columns)
+    internal GraphRow(GraphGrid grid)
     {
         Grid = grid ?? throw new ArgumentNullException(nameof(grid));
-        Cells = new GraphCell[columns];
+        GraphCell[] cells = new GraphCell[Grid.ColumnCount];
+        for (int i = 0; i < cells.Length; ++i)
+            cells[i] = new();
+        Cells = cells;
     }
 
     public bool IsAbove(GraphRow otherRow) =>
@@ -29,9 +32,9 @@ public sealed class GraphRow
     public bool IsBelow(GraphRow otherRow) =>
         SortOrder > otherRow.SortOrder;
 
-    internal void InsertNewRowAbove()
+    internal GraphRow InsertNewRowAbove()
     {
-        GraphRow newRow = new(Grid, Grid.Columns)
+        GraphRow newRow = new(Grid)
         {
             RowAbove = RowAbove,
             RowBelow = this,
@@ -47,11 +50,12 @@ public sealed class GraphRow
             newRow.RowAbove.RowBelow = newRow;
             newRow.SortOrder = (SortOrder + newRow.RowAbove.SortOrder) / 2.0;
         }
+        return newRow;
     }
 
-    internal void InsertNewRowBelow()
+    internal GraphRow InsertNewRowBelow()
     {
-        GraphRow newRow = new(Grid, Grid.Columns)
+        GraphRow newRow = new(Grid)
         {
             RowBelow = RowBelow,
             RowAbove = this,
@@ -67,5 +71,6 @@ public sealed class GraphRow
             newRow.RowBelow.RowAbove = newRow;
             newRow.SortOrder = (SortOrder + newRow.RowBelow.SortOrder) / 2.0;
         }
+        return newRow;
     }
 }

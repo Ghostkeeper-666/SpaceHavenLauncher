@@ -20,45 +20,27 @@ public sealed class GraphNode
     public string Id => Data.Id;
     public IDataNode Data { get; }
 
-    public int Depth =>
-        Parents.Count <= 0 ? 1 : 1 + Parents.Max(p => p.Depth);
+    public int Depth { get; internal set; }
 
-    /// <summary>
-    /// Is this node a locked child?
-    /// </summary>
-    public bool IsLocked { get; internal set; }
-
-    /// <summary>
-    /// The topmost cell
-    /// </summary>
-    public GraphCell RootCell { get; internal set; }
-    public List<GraphCell> AllCells { get; } = [];
+    public bool IsLeaf { get; internal set; }
+    public bool IsTrunk => !IsLeaf;
+    public bool IsRoot => Parents.Count <= 0;
 
     /// <summary>
     /// Node dependency group
     /// </summary>
     public GraphNodeGroup Group { get; internal set; }
 
-    /// <summary>
-    /// Parent nodes
-    /// </summary>
-    public List<GraphNode> Parents = [];
-
-    public GraphNode LockedParent => Parents[0];
-
-    /// <summary>
-    /// Root ancestor of a locked child node
-    /// </summary>
-    public GraphNode LockedRoot
+    public List<GraphNode> Parents { get; } = [];
+    public GraphNode FirstParent => Parents[0];
+    public GraphNode FirstRoot
     {
         get
         {
-            if (!IsLocked)
-                throw new ArgumentException();
-            GraphNode rootAncestor = this;
-            while (rootAncestor.LockedParent != null)
-                rootAncestor = rootAncestor.LockedParent;
-            return rootAncestor;
+            GraphNode root = this;
+            while (root.FirstParent != null)
+                root = root.FirstParent;
+            return root;
         }
     }
 
@@ -78,12 +60,12 @@ public sealed class GraphNode
     /// - have no children, or have only locked children
     /// - locked children necessarily need 
     /// </summary>
-    public IEnumerable<GraphNode> LockedChildren => Children.Where(n => n.IsLocked);
+    public IEnumerable<GraphNode> LeafChildren => Children.Where(n => n.IsLeaf);
 
     /// <summary>
     /// Lists children nodes which are NOT locked children!
     /// </summary>
-    public IEnumerable<GraphNode> NormalChildren => Children.Where(n => !n.IsLocked);
+    public IEnumerable<GraphNode> NormalChildren => Children.Where(n => !n.IsLeaf);
 
 
     public override string ToString() => $@"{Id} [{Height}]";

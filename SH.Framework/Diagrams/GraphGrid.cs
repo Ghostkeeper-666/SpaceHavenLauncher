@@ -1,34 +1,45 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SH.Framework.Diagrams;
 
-public sealed class GraphGrid
+public sealed class GraphGrid : IEnumerable<GraphRow>
 {
     internal GraphGrid() { }
 
     public OrderedDictionary<string, GraphNode> Nodes { get; internal set; } = [];
     public List<GraphNodeGroup> Groups { get; internal set; } = [];
 
-    public int Columns { get; private set; }
+    public int RowCount { get; internal set; }
+    public int ColumnCount { get; internal set; }
     public GraphRow TopRow { get; internal set; }
     public GraphRow BottomRow { get; internal set; }
 
-    public void CalculateColumns() =>
-        Columns = Nodes.Count <= 0 ? 0 : Nodes.Values.Where(n => n.Children.Count <= 0).Max(n => n.Depth);
-
-    public void AddTopRow()
+    internal GraphRow AddTopRow()
     {
-        if(TopRow == null)
-            TopRow = BottomRow = new GraphRow(this, Columns);
-        else TopRow.InsertNewRowAbove();
+        ++RowCount;
+        if (TopRow == null)
+            return TopRow = BottomRow = new GraphRow(this);
+        else return TopRow.InsertNewRowAbove();
     }
 
-    public void AddBottomRow()
+    internal GraphRow AddBottomRow()
     {
-        if(BottomRow == null)
-            TopRow = BottomRow = new GraphRow(this, Columns);
-        else BottomRow.InsertNewRowBelow();
+        ++RowCount;
+        if (BottomRow == null)
+            return TopRow = BottomRow = new GraphRow(this);
+        else return BottomRow.InsertNewRowBelow();
+    }
+
+    public IEnumerator<GraphRow> GetEnumerator()
+    {
+        for (GraphRow row = TopRow; row != null; row = row.RowBelow)
+            yield return row;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        for (GraphRow row = TopRow; row != null; row = row.RowBelow)
+            yield return row;
     }
 }

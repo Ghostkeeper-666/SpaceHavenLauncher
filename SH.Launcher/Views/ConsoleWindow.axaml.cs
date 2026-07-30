@@ -9,6 +9,7 @@ using AvaloniaEdit.Document;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Console;
+using SH.Launcher.Extensions;
 using SH.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -55,6 +56,16 @@ public partial class ConsoleWindow : Window
     {
         if (DataContext is not ConsoleWindowViewModel vm)
             return;
+
+#if DEBUG
+        try
+        {
+            WindowState = WindowState.Maximized;
+            this.RestoreToMonitor(0);
+        }
+        catch { }
+#endif
+
         Lifetime?.Shutdown(await Console.RunAsync(Lifetime?.Args ?? [], vm.CTS));
     }
 

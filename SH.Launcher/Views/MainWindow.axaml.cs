@@ -23,7 +23,7 @@ namespace SH.Launcher.Views;
 
 public partial class MainWindow : Window
 {
-    internal static Window Window; // disgusting workaround for message box
+    internal static Window Window; // disgusting workaround for message box and to set current monitor
 
     public AppViewModel State => AppViewModel.State;
     public new DispatchQueue Dispatcher => AppViewModel.Dispatcher;
