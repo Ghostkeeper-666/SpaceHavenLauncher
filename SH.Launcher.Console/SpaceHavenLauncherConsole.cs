@@ -34,7 +34,6 @@ public sealed class SpaceHavenLauncherConsole
         );
     }
 
-
     public int Run(string[] args) =>
         RunAsync(args, null).GetAwaiter().GetResult();
 
@@ -127,7 +126,12 @@ public sealed class SpaceHavenLauncherConsole
             SpaceHavenDir = paths.SpaceHavenDir,
             SpaceHavenJarDir = paths.SpaceHavenJarDir,
             GamePlatform = initializationData.GamePlatform,
+#if DEBUG
+            SkipRebuilding = false,
+#else
             SkipRebuilding = appSettingsData.SkipRebuilding,
+#endif
+            GenerateAdditionalIntermediateBuildFiles = false,
         };
         settings.Mods.AddRange(mods.Values.Where(m => m.IsEnabled));
         BuildService builderSvc = new(Log);
@@ -137,6 +141,9 @@ public sealed class SpaceHavenLauncherConsole
 
         // Run Space Haven:
         GameLaunchService launcherSvc = new(paths, Log);
+
+#if DEBUG
+#else
 
         // Run and await Space Haven:
         Task<bool> spaceHaven =
@@ -164,6 +171,8 @@ public sealed class SpaceHavenLauncherConsole
             return -40;
         }
         Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", paths.SpaceHavenDir);
+
+#endif
 
         // Done.
         Log.Success("Press any key to EXIT");

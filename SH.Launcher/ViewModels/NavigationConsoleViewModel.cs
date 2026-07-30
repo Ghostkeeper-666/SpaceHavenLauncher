@@ -322,6 +322,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 InitializationProgress = initializationProgress,
                 JavaBuildProgress = javaBuildProgress,
                 XmlBuildProgress = xmlBuildProgress,
+
+                GenerateAdditionalIntermediateBuildFiles = false,
             };
 
             settings.Mods.AddRange(mods);

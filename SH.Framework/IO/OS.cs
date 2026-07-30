@@ -155,7 +155,7 @@ public static class OS
         });
     }
 
-    private static Task OpenFileAsync(string filePath, ILogger log)
+    public static Task OpenFileAsync(string filePath, ILogger log)
     {
         if (!IOUtils.FileExists(filePath))
             return Task.CompletedTask;

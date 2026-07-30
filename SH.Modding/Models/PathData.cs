@@ -1,4 +1,5 @@
 ﻿using SH.Content;
+using SH.Content.Xml;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using System.Collections.Generic;
@@ -129,6 +130,16 @@ public sealed class PathData
     public string BuildStageDir => BuildDir.CombineAsOSPath(ModdingConstants.STAGE);
     public string BuildStageVersionPath => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.VERSION_TXT);
     public string BuildStageLibraryDir => BuildStageDir.CombineAsOSPath(SpaceHavenConstants.LIBRARY);
+
+    public IReadOnlyDictionary<EXmlFileType, string> BuildStageXmlPaths => new OrderedDictionary<EXmlFileType, string>()
+    {
+        [EXmlFileType.Haven] = BuildStageHavenXmlPath,
+        [EXmlFileType.Animations] = BuildStageAnimationsXmlPath,
+        [EXmlFileType.Textures] = BuildStageTexturesXmlPath,
+        [EXmlFileType.Texts] = BuildStageTextsXmlPath,
+        [EXmlFileType.Audio] = BuildStageAudioXmlPath,
+        [EXmlFileType.SpaceHavenSettings] = BuildStageSpaceHavenSettingsXmlPath,
+    };
     public string BuildStageHavenXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.HAVEN);
     public string BuildStageTextsXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.TEXTS);
     public string BuildStageAudioXmlPath => BuildStageLibraryDir.CombineAsOSPath(SpaceHavenConstants.AUDIO);

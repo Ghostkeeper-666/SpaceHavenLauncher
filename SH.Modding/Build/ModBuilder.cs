@@ -1,6 +1,7 @@
 ﻿using SH.Content;
 using SH.Content.Enums;
 using SH.Content.Xml;
+using SH.Framework.Diagrams;
 using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
@@ -37,9 +38,9 @@ public sealed class ModBuilder : IAsyncDisposable
     public bool NeedsJavaBuild { get; private set; }
 
 
-    private IProgressInfo Initialization => BuildSettings.InitializationProgress;
-    private IProgressInfo XmlBuild => BuildSettings.XmlBuildProgress;
-    private IProgressInfo JavaBuild => BuildSettings.JavaBuildProgress;
+    private IProgressInfo Initialization;
+    private IProgressInfo XmlBuild;
+    private IProgressInfo JavaBuild;
 
     private IProgressInfo ResetBuildStage;
     private IProgressInfo LoadSpaceHavenXml;
@@ -70,12 +71,77 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
+    #region IAsyncDisposable
+    public volatile bool IsDisposed;
+    public async ValueTask DisposeAsync()
+    {
+        if (IsDisposed)
+            return;
+        IsDisposed = true;
+        try
+        {
+            try { await Build.DisposeAsync(); } catch { }
+            Build = null;
+
+            Initialization?.RemoveAll(); // owned by caller, do not dispose!
+            JavaBuild?.RemoveAll(); // owned by caller, do not dispose!
+            XmlBuild?.RemoveAll(); // owned by caller, do not dispose!
+
+            ResetBuildStage?.Dispose();
+            LoadSpaceHavenXml?.Dispose();
+            ResetXmlBuild?.Dispose();
+            MergeXml?.Dispose();
+            PatchXml?.Dispose();
+            ComposeAudio?.Dispose();
+            FixTexts?.Dispose();
+            DeployXmlHash?.Dispose();
+            DeployJavaHash?.Dispose();
+            WriteVersionInfo?.Dispose();
+            ComposeCredits?.Dispose();
+            WriteSpaceHavenXml?.Dispose();
+            ComposeSpaceHavenJar?.Dispose();
+            ComposeModsJson?.Dispose();
+
+            ComposeTextures?.RemoveAll();
+            ComposeTextures?.Dispose();
+            ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
+            ComposeTextures_LoadPredefinedSprites?.Dispose();
+            ComposeTextures_WritePredefinedSpriteSheets?.Dispose();
+            ComposeTextures_ReadReferencedSprites?.Dispose();
+            ComposeTextures_LoadReferencedSprites?.Dispose();
+            ComposeTextures_PackReferencedSprites?.Dispose();
+            ComposeTextures_WriteReferencedSpriteSheets?.Dispose();
+            ComposeTextures_ComposeTexturesXml?.Dispose();
+
+            Initialization = null;
+            XmlBuild = null;
+            JavaBuild = null;
+
+            SKGraphics.PurgeResourceCache();
+            SKGraphics.PurgeFontCache();
+            SKGraphics.PurgeAllCaches();
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        }
+        catch { }
+    }
+    #endregion
+
+
+
+
 
     public ModBuilder(BuildSettings settings, ILogger log)
     {
         BuildSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         Log = log ?? new VoidLogger();
+        Initialization = BuildSettings.InitializationProgress ?? new VoidProgressInfo();
+        XmlBuild = BuildSettings.XmlBuildProgress ?? new VoidProgressInfo();
+        JavaBuild = BuildSettings.JavaBuildProgress ?? new VoidProgressInfo();
     }
+
 
 
 
@@ -322,7 +388,13 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Read Space Haven XML files:
                 if (!await Build.TryLoadSpaceHavenXmlFilesAsync(CT, LoadSpaceHavenXml))
                     return false;
+
+                if (!await TryRecalculateTechTreeLayout())
+                    return true;
             }
+
+
+
 
 
 
@@ -368,8 +440,12 @@ public sealed class ModBuilder : IAsyncDisposable
             // Final deployment to cache directory:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
+                // Recalculate Tech Tree Layout:
+                if (!await TryRecalculateTechTreeLayout())
+                    return false;
+
                 // Write version to haven.xml AND to version.txt:
-                if (!await TryWriteVersionInfoAsync(CT))
+                if (!await TryWriteVersionInfoAsync())
                     return false;
 
                 // Credits.txt:
@@ -381,7 +457,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     if (!await xmlFile.TrySaveAsync(Log, ct))
                         throw new StopException("Unable to save game XML files", Paths.CacheDir, CTS);
-                    lock(WriteSpaceHavenXml)
+                    lock (WriteSpaceHavenXml)
                         WriteSpaceHavenXml.IncrementNormalized(1.0 / Build.XmlFile.Count);
                 });
                 WriteSpaceHavenXml.Complete();
@@ -641,7 +717,7 @@ public sealed class ModBuilder : IAsyncDisposable
             {
                 ct.ThrowIfCancellationRequested();
 
-                
+
                 // Get target file:
                 if (!Build.XmlFile.TryGetValue(targetXmlFileType, out XmlFile spaceHavenXmlFile))
                     throw new StopException($@"Unable to locate space haven target XML file of type '{targetXmlFileType}' in ""{Paths.BuildStageDir}""", Paths.BuildStageDir, CTS);
@@ -655,7 +731,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
                     // Get MERGE files:
-                    if(!await mod.TryLoadLibraryXmlFilesAsync(targetXmlFileType))
+                    if (!await mod.TryLoadLibraryXmlFilesAsync(targetXmlFileType))
                         throw new StopException($@"[{mod}] Unable to load mod LIBRARY XML files of type '{targetXmlFileType}'", mod.Dir, CTS);
 
                     XmlFile[] mergeFiles =
@@ -806,7 +882,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
                     // Get PATCH files:
-                    if(!await mod.TryLoadPatchXmlFilesAsync(targetXmlFileType))
+                    if (!await mod.TryLoadPatchXmlFilesAsync(targetXmlFileType))
                         throw new StopException($@"[{mod}] Unable to load PATCH XML files of type '{targetXmlFileType}'", Paths.BuildPatchDir, CTS);
 
                     XmlFile[] patchFiles =
@@ -1031,9 +1107,9 @@ public sealed class ModBuilder : IAsyncDisposable
 
                     case EXmlFileType.Textures:
                     case EXmlFileType.Animations:
-                        if(!composeTextures)
+                        if (!composeTextures)
                             break;
-                        if(!await TryComposeTexturesAsync())
+                        if (!await TryComposeTexturesAsync())
                             throw new StopException("Unable to compose textures", Paths.BuildDir, CTS);
                         break;
 
@@ -2206,7 +2282,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    public async Task<bool> TryWriteVersionInfoAsync(CancellationToken ct)
+    private async Task<bool> TryWriteVersionInfoAsync()
     {
         try
         {
@@ -2219,7 +2295,7 @@ public sealed class ModBuilder : IAsyncDisposable
             WriteVersionInfo.SetNormalized(0.50);
 
             // Version.txt:
-            if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), Log, ct))
+            if (!await IOUtils.TryWriteAllTextAsync(Paths.BuildStageVersionPath, lines.JoinToString("\n"), Log, CT))
                 return false;
             WriteVersionInfo.Complete();
 
@@ -2241,58 +2317,510 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-    #region IAsyncDisposable
-    public volatile bool IsDisposed;
-    public async ValueTask DisposeAsync()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryRecalculateTechTreeLayout()
     {
-        if (IsDisposed)
-            return;
-        IsDisposed = true;
+        Log.Info($@"Recalculating the tech tree layout...", Paths.BuildStageHavenXmlPath);
+
         try
         {
-            try { await Build.DisposeAsync(); } catch { }
-            Build = null;
+            // WARNING : <tree id="2535" sizeX="1500" sizeY="3000"> => maybe change size!
 
-            Initialization?.RemoveAll(); // owned by caller, do not dispose!
-            JavaBuild?.RemoveAll(); // owned by caller, do not dispose!
-            XmlBuild?.RemoveAll(); // owned by caller, do not dispose!
+            // Get haven document:
+            XmlFile havenXml = Build.XmlFile[EXmlFileType.Haven];
+            XmlFile textsXml = Build.XmlFile[EXmlFileType.Texts];
 
-            ResetBuildStage?.Dispose();
-            LoadSpaceHavenXml?.Dispose();
-            ResetXmlBuild?.Dispose();
-            MergeXml?.Dispose();
-            PatchXml?.Dispose();
-            ComposeAudio?.Dispose();
-            FixTexts?.Dispose();
-            DeployXmlHash?.Dispose();
-            DeployJavaHash?.Dispose();
-            WriteVersionInfo?.Dispose();
-            ComposeCredits?.Dispose();
-            WriteSpaceHavenXml?.Dispose();
-            ComposeSpaceHavenJar?.Dispose();
-            ComposeModsJson?.Dispose();
+            // Research groups:
+            List<ResearchGroup> origGroups = [];
+            List<XElement> labelNodes = havenXml.Root.Element("TechTree").Element("tree").Element("labels").Elements().ToList();
+            foreach (XElement e in labelNodes)
+            {
+                string textId = e.Attribute("tid")?.Value ?? "?";
+                string name = textsXml.Root.Elements().FirstOrDefault(n => n.Attribute("id")?.Value == textId)?.Element("EN")?.Value ?? "?";
+                _ = int.TryParse(e.Attribute("x")?.Value, out int x);
+                _ = int.TryParse(e.Attribute("y")?.Value, out int y);
+                _ = int.TryParse(e.Element("box")?.Attribute("sizeX")?.Value, out int sizeX);
+                _ = int.TryParse(e.Element("box")?.Attribute("sizeY")?.Value, out int sizeY);
+                //string fontColor = "#" + (e.Attribute("fontColor")?.Value ?? "b7dde5e5");
+                //string backgroundColor = "#" + (e.Element("box")?.Attribute("color")?.Value ?? "1d3340be");
 
-            ComposeTextures?.RemoveAll();
-            ComposeTextures?.Dispose();
-            ComposeTextures_LoadPredefinedSpriteSheets?.Dispose();
-            ComposeTextures_LoadPredefinedSprites?.Dispose();
-            ComposeTextures_WritePredefinedSpriteSheets?.Dispose();
-            ComposeTextures_ReadReferencedSprites?.Dispose();
-            ComposeTextures_LoadReferencedSprites?.Dispose();
-            ComposeTextures_PackReferencedSprites?.Dispose();
-            ComposeTextures_WriteReferencedSpriteSheets?.Dispose();
-            ComposeTextures_ComposeTexturesXml?.Dispose();
+                ResearchGroup group = new()
+                {
+                    Name = name,
+                    X = x,
+                    Y = y,
+                    SizeX = sizeX,
+                    SizeY = sizeY,
+                    //FontColor = fontColor,
+                    //BackgroundColor = backgroundColor,
+                };
+                origGroups.Add(group);
+            }
 
-            SKGraphics.PurgeResourceCache();
-            SKGraphics.PurgeFontCache();
-            SKGraphics.PurgeAllCaches();
+            // Research topics:
+            List<ResearchTopic> origTopics = [];
+            List<XElement> techNodes = havenXml.Root.Element("Tech").Elements().ToList();
+            foreach (XElement e in techNodes)
+            {
+                string techId = e.Attribute("id")?.Value;
+                if (techId.IsNullOrWhiteSpace())
+                    continue;
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-            GC.WaitForPendingFinalizers();
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                string textId = e.Element("name")?.Attribute("tid")?.Value ?? "?";
+                string name = textsXml.Root.Elements().FirstOrDefault(n => n.Attribute("id")?.Value == textId)?.Element("EN")?.Value ?? "?";
+                _ = bool.TryParse(e.Attribute("hidden")?.Value, out bool isHidden);
+                _ = int.TryParse(e.Attribute("sizeX")?.Value, out int sizeX);
+                _ = int.TryParse(e.Attribute("sizeY")?.Value, out int sizeY);
+
+                string owner = e.Attribute(NodeType.ATTRIBUTE_OWNER)?.Value;
+                Mod mod;
+                if (!owner.IsNullOrWhiteSpace())
+                {
+                    mod = Build.Mods.FirstOrDefault(m => m.UniqueName == owner);
+                    if (mod == null)
+                    {
+                        Log.Error($@"Unable to find owner mod for <Tech> entry at line {e.Line()}", Paths.BuildAudioFilePath);
+                        return false;
+                    }
+                }
+                else mod = null;
+
+                ResearchTopic topic = new()
+                {
+                    TechId = techId,
+                    Name = name,
+                    IsHidden = isHidden,
+                    SizeX = sizeX,
+                    SizeY = sizeY,
+                    Mod = mod,
+                };
+                origTopics.Add(topic);
+            }
+
+            // Research topic x, y:
+            List<XElement> itemNodes = havenXml.Root.Element("TechTree").Element("tree").Element("items").Elements("i").ToList();
+            foreach (XElement e in itemNodes)
+            {
+                _ = int.TryParse(e.Attribute("x")?.Value, out int x);
+                _ = int.TryParse(e.Attribute("y")?.Value, out int y);
+                string techId = e.Attribute("tid")?.Value ?? "?";
+                ResearchTopic topic = origTopics.FirstOrDefault(t => t.TechId == techId);
+                if(x != 0 || topic.Mod != null)
+                    topic.X = x;
+                if(y != 0 || topic.Mod != null)
+                    topic.Y = y;
+            }
+
+            // Research topic links:
+            List<XElement> linkNodes = havenXml.Root.Element("TechTree").Element("tree").Element("links").Elements("l").ToList();
+            foreach (XElement e in linkNodes)
+            {
+                string fromId = e.Attribute("fromId")?.Value ?? "?";
+                string toId = e.Attribute("toId")?.Value ?? "?";
+                ResearchTopic parent = origTopics.FirstOrDefault(t => t.TechId == fromId);
+                ResearchTopic child = origTopics.FirstOrDefault(t => t.TechId == toId);
+
+                //_ = int.TryParse(e.Attribute("startLenOffX")?.Value, out int startLenOffX);
+                //_ = int.TryParse(e.Attribute("startLenOffY")?.Value, out int startLenOffY);
+
+                child.Parents.Add(parent);
+                parent.Children.Add(child);
+            }
+
+
+            // TODO: Detect circular refs!
+            Debug.WriteLine($"RESEARCH GROUPS:{Environment.NewLine}{origGroups.Select(g => $"{g}").JoinToString($",{Environment.NewLine}")}");
+            Debug.WriteLine($"RESEARCH TOPICS:{Environment.NewLine}{origTopics.Select(t => $"{t}").JoinToString($",{Environment.NewLine}")}");
+
+
+
+            SortedDictionary<int, List<ResearchTopic>> origTopicsByDepLevel = [];
+
+            List<ResearchTopic> remaining =
+                origTopics
+                .Where(kvp => kvp.Name != "?" && !kvp.IsHidden)
+                .ToList();
+
+            List<ResearchTopic> topics = [];
+
+            while (remaining.Count > 0)
+            {
+                List<ResearchTopic> selected = remaining.Where(t => t.Parents.Count <= 0 || t.Parents.All(origParent => topics.Any(newParent => newParent.TechId == origParent.TechId))).ToList();
+                if (selected.Count <= 0)
+                    break;
+
+                List<ResearchTopic> list = origTopicsByDepLevel[origTopicsByDepLevel.Count] = [];
+
+                foreach (ResearchTopic origTopic in selected.OrderBy(t => t.Y))
+                {
+                    remaining.Remove(origTopic);
+                    ResearchTopic topic = new(origTopic);
+                    foreach (ResearchTopic origParent in origTopic.Parents.OrderBy(t => t.Y))
+                    {
+                        ResearchTopic parent = topics.FirstOrDefault(t => t.TechId == origParent.TechId);
+                        topic.Parents.Add(parent);
+                        parent.Children.Add(topic);
+                    }
+                    topics.Add(topic);
+                    list.Add(topic);
+                }
+            }
+            if (remaining.Count > 0)
+            {
+                Log.Error($@"Circular reference detected in tech tree - the following techs could not be processed: {remaining.OrderBy(t => t.Name).JoinToString(", ")}");
+                return false;
+            }
+
+
+            // TODO: Create groups based on node connections!
+            // Sort by groups, isolate groups
+            // Build from refs to deps
+            // if ref has dependency on deps of non-neighbor column, deny usage of neighbor space in neighbor column
+
+            GraphBuilder graphBuilder = new(Log);
+
+            if(!graphBuilder.Populate(topics.Where(t => t.Name != "?" && !t.Name.IsNullOrWhiteSpace() && t.IsHidden == false && t.X >= 0 && t.Y >= 0), CT))
+                return false;
+
+            if(!graphBuilder.CalculateLayout(CT))
+                return false;
+
+            // Recalculate positions:
+            int columnWidth = 12;
+            int columnSpacing = 18;
+            int rowHeight = 3;
+            int rowSpacing = 3;
+            foreach (ResearchTopic topic in topics)
+            {
+                int lockedDepth = topic.GetLockedDepth();
+                topic.X = columnSpacing + topic.Column * (columnWidth + columnSpacing) + lockedDepth * 6;
+                topic.Y = rowSpacing + topic.Row * (rowHeight + rowSpacing);
+                topic.SizeX = columnWidth;
+                topic.SizeY = rowHeight;
+            }
+
+            string path = IOUtils.CombineAsOSPath(Paths.BuildDir, "graph.png");
+            await TryExportTechTreeLayout(path, 2, null, topics);
+            await OS.OpenFileAsync(path, Log);
+
+            // Done.
+            return true;
         }
-        catch { }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return false;
+        }
     }
-    #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private async Task<bool> TryExportTechTreeLayout(string path, float globalScale, List<ResearchGroup> groups, List<ResearchTopic> topics)
+    {
+        groups ??= new();
+
+        float scale = 10 * globalScale;
+
+        int width = groups.Count > 0 ? groups.Max(g => g.X + g.SizeX) : 0;
+        width = 3 + Math.Max(width, topics.Max(t => t.X + t.SizeX));
+        width = (int)(scale * width);
+
+        int height = groups.Count > 0 ? groups.Max(g => g.Y) : 0;
+        height = 3 + Math.Max(height, topics.Max(t => t.Y));
+        height = (int)(scale * height);
+
+        using SKSurface surface = SKSurface.Create(new SKImageInfo(width, height));
+        // BACKGROUND:
+        SKCanvas canvas = surface.Canvas;
+        canvas.Clear(SKColor.Parse("#ff00030d"));
+
+        // GROUPS:
+        using SKPaint groupFillPaint = new()
+        {
+            Style = SKPaintStyle.Fill,
+            Color = SKColor.Parse(ResearchGroup.BackgroundColor),
+            IsAntialias = false,
+        };
+        using SKPaint groupBorderPaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            Color = SKColor.Parse(ResearchGroup.BorderColor),
+            StrokeWidth = 1,
+            IsAntialias = false,
+        };
+        using SKFont groupFont = new(SKTypeface.Default, globalScale * 16)
+        {
+            Edging = SKFontEdging.Antialias,
+        };
+        using SKPaint groupFontPaint = new()
+        {
+            Color = SKColor.Parse(ResearchGroup.FontColor),
+            IsAntialias = true,
+        };
+
+        foreach (ResearchGroup group in groups)
+        {
+            // Fill: 
+            canvas.DrawRect(scale * group.X, height - scale * group.Y, scale * group.SizeX, scale * group.SizeY, groupFillPaint);
+
+            // Border:
+            canvas.DrawRect(scale * group.X + 0.5f, height - scale * group.Y + 0.5f, scale * group.SizeX - 1, scale * group.SizeY - 1, groupBorderPaint);
+
+            // Text:
+            groupFont.MeasureText(group.Name, out SKRect bounds);
+            float x = scale * group.X + 8;
+            float y = (height - scale * group.Y) - bounds.Top + 8;
+            canvas.DrawText(group.Name.ToUpperInvariant(), x, y, SKTextAlign.Left, groupFont, groupFontPaint);
+        }
+
+        // TOPICS:
+        using SKPaint topicFillPaint = new()
+        {
+            Style = SKPaintStyle.Fill,
+            Color = SKColor.Parse(ResearchTopic.BackgroundColor),
+            IsAntialias = false,
+        };
+        using SKPaint topicBorderPaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            Color = SKColor.Parse(ResearchTopic.BorderColor),
+            StrokeWidth = 1,
+            IsAntialias = false,
+        };
+        using SKFont topicFont = new(SKTypeface.Default, scale - 2)
+        {
+            Edging = SKFontEdging.SubpixelAntialias,
+        };
+        using SKPaint topicFontPaint = new()
+        {
+            Color = SKColor.Parse(ResearchTopic.FontColor),
+            IsAntialias = true,
+        };
+
+        foreach (ResearchTopic topic in topics)
+        {
+            // Fill: 
+            canvas.DrawRect(scale * topic.X, height - scale * topic.Y, scale * topic.SizeX, scale * topic.SizeY, topicFillPaint);
+
+            // Border:
+            canvas.DrawRect(scale * topic.X + 0.5f, height - scale * topic.Y + 0.5f, scale * topic.SizeX - 1, scale * topic.SizeY - 1, topicBorderPaint);
+
+            // Text:
+            groupFont.MeasureText(topic.Name, out SKRect bounds);
+            float x = scale * topic.X + scale / 2;
+            float y = (height - scale * topic.Y) - bounds.Top + 1; // scale * topic.SizeY
+            canvas.DrawText(topic.Name, x, y, SKTextAlign.Left, topicFont, topicFontPaint);
+        }
+
+        using SKPaint linkPaint = new()
+        {
+            Color = SKColor.Parse(ResearchTopic.BorderColor),
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1,
+            IsAntialias = false,
+        };
+
+        foreach (ResearchTopic to in topics.Where(t => t.Parents.Count > 0))
+        {
+            foreach (ResearchTopic from in to.Parents)
+            {
+                float toX = to.X;
+                float toY = to.Y - 0.5f * to.SizeY;
+                // Vertical line
+                if (to.X < from.X + from.SizeX)
+                {
+                    float startX = from.X + 0.25f * from.SizeX;
+                    float startY = to.Y > from.Y ? from.Y : from.Y - from.SizeY;
+                    canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * startX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                    canvas.DrawLine(scale * startX + 0.5f, height - scale * toY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                }
+                // Horizontal line
+                else
+                {
+                    float startX = from.X + from.SizeX;
+                    float startY = from.Y - 0.5f * from.SizeY;
+
+                    if (startY == toY)
+                        canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                    else
+                    {
+                        float middleX;
+                        (ResearchTopic child, int afterColumn) link = from.LinkVerticalLine.FirstOrDefault(i => i.child == to);
+                        if (link != default)
+                            middleX = startX + 9.0f + (link.afterColumn - from.Column) * (12.0f + 18.0f);
+                        else middleX = 0.5f * (startX + toX /* + startLenOffX */);
+                        canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * middleX + 0.5f, height - scale * startY + 0.5f, linkPaint);
+                        canvas.DrawLine(scale * middleX + 0.5f, height - scale * startY + 0.5f, scale * middleX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                        canvas.DrawLine(scale * middleX + 0.5f, height - scale * toY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                    }
+                }
+            }
+        }
+
+
+        // SAVE as PNG:
+        using SKImage image = surface.Snapshot();
+        using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+        await File.WriteAllBytesAsync(path, data.ToArray());
+
+        // Done.
+        return true;
+    }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public sealed class ResearchTopic : IDataNode<ResearchTopic>
+{
+    public static string BorderColor { get; set; } = "#ff4bf08d";
+    public static string FontColor { get; set; } = "#ff4bf08d";
+    public static string BackgroundColor { get; set; } = "#ff00420b";
+
+    public ResearchTopic() { }
+
+    public ResearchTopic(ResearchTopic other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        TechId = other.TechId;
+        Name = other.Name;
+        IsHidden = other.IsHidden;
+        X = other.X;
+        Y = other.Y;
+        SizeX = other.SizeX;
+        SizeY = other.SizeY;
+    }
+
+    public ResearchGroup Group { get; set; }
+    public string TechId { get; set; }
+    public string Name { get; set; }
+    public bool IsHidden { get; set; }
+    public int X { get; set; } = int.MinValue;
+    public int Y { get; set; } = int.MinValue;
+    public int SizeX { get; set; }
+    public int SizeY { get; set; }
+
+
+    public List<ResearchTopic> Parents { get; } = [];
+    public List<ResearchTopic> Children { get; } = [];
+
+
+    // For diagram computation:
+    public int GroupId { get; set; }
+    public int Column { get; set; }
+    public int Row { get; set; }
+    public bool IsLockedChild { get; set; }
+    public int GetLockedDepth() =>
+        !IsLockedChild ? 0 : 1 + Parents.Max(p => p.GetLockedDepth());
+    public List<(ResearchTopic child, int afterColumn)> LinkVerticalLine { get; set; }
+
+    #region IDataNode
+    IEnumerable<ResearchTopic> IDataNode<ResearchTopic>.Dependencies => Parents;
+    string IDataNode.Id => Name;
+
+    internal Mod Mod { get; set; }
+    #endregion
+
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        sb.Append($@"""{Name}""");
+        //if (IsHidden)
+        //sb.Append($@" (hidden)");
+        //sb.Append($@": x={X}, y={Y}, sizeX={SizeX}, sizeY={SizeY}");
+        if (Parents.Count > 0)
+            sb.Append($@": {{ ""deps"": {{ {Parents.Select(d => $@"""{d.Name}""").JoinToString(",")} }} }}");
+        return sb.ToString();
+    }
+}
+
+
+
+
+
+
+public sealed class ResearchGroup
+{
+    public string Name { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int SizeX { get; set; }
+    public int SizeY { get; set; }
+
+    public static string BorderColor { get; set; } = "#b7dde5e5";
+    public static string FontColor { get; set; } = "#b7dde5e5";
+    public static string BackgroundColor { get; set; } = "#1d3340be";
+
+    public List<ResearchTopic> Topics { get; } = [];
+
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        sb.Append($@"""{Name}""");
+        sb.Append($@": x={X}, y={Y}, sizeX={SizeX}, sizeY={SizeY}");
+        if (Topics.Count > 0)
+            sb.Append($@", topics=[{Topics.Select(d => $@"""{d.Name}""").JoinToString(",")}]");
+        return sb.ToString();
+    }
+}

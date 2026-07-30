@@ -6,6 +6,7 @@ using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
+using SH.Framework.Tasks;
 using SH.Modding.Models;
 using System;
 using System.Collections.Generic;
@@ -182,46 +183,25 @@ internal sealed class BuildInfo : IAsyncDisposable
             Log.Info($@"Loading XML files...", Paths.BuildStageDir);
             progress?.Start();
 
-            // Instantiate:
-            XmlFile[EXmlFileType.Haven] = new(EXmlFileType.Haven, Paths.BuildStageDir, Paths.BuildStageHavenXmlPath);
-            if (!await XmlFile[EXmlFileType.Haven].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.30);
-
-            XmlFile[EXmlFileType.Texts] = new(EXmlFileType.Texts, Paths.BuildStageDir, Paths.BuildStageTextsXmlPath);
-            if (!await XmlFile[EXmlFileType.Texts].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.60);
-
-            XmlFile[EXmlFileType.Audio] = new(EXmlFileType.Audio, Paths.BuildStageDir, Paths.BuildStageAudioXmlPath);
-            if (!await XmlFile[EXmlFileType.Audio].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.61);
-
-            XmlFile[EXmlFileType.Textures] = new(EXmlFileType.Textures, Paths.BuildStageDir, Paths.BuildStageTexturesXmlPath);
-            if (!await XmlFile[EXmlFileType.Textures].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.64);
-
-            XmlFile[EXmlFileType.Animations] = new(EXmlFileType.Animations, Paths.BuildStageDir, Paths.BuildStageAnimationsXmlPath);
-            if (!await XmlFile[EXmlFileType.Animations].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.94);
-
-            XmlFile[EXmlFileType.SpaceHavenSettings] = new(EXmlFileType.SpaceHavenSettings, Paths.BuildStageDir, Paths.BuildStageSpaceHavenSettingsXmlPath);
-            if (!await XmlFile[EXmlFileType.SpaceHavenSettings].TryLoadAsync(Log, ct))
-                return false;
-            progress.SetNormalized(0.95);
+            await Parallel.ForEachAsync(Paths.BuildStageXmlPaths, BuildSettings.ParallelOptions, async (kvp, ct) =>
+            {
+                // Instantiate:
+                XmlFile xmlFile;
+                lock(XmlFile)
+                    xmlFile = XmlFile[kvp.Key] = new(kvp.Key, Paths.BuildStageDir, kvp.Value);
+                if (!await xmlFile.TryLoadAsync(Log, ct))
+                    throw new StopException($@"Unable to load original '{kvp.Key}' file", Paths.BuildStageDir, BuildSettings.InternalCTS);
+                progress.IncrementNormalized(1.0 / Paths.BuildStageXmlPaths.Count);
+            });
 
             // Compute registered XML node IDs:
             if (!await TryComputeRegisteredNodeIDs(ct))
                 return false;
-            progress.Complete();
 
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

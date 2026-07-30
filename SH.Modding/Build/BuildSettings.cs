@@ -23,22 +23,22 @@ public sealed class BuildSettings : IDisposable
             CancellationToken = LinkedCTS.Token,
         };
         SkipRebuilding = true;
-        InitializationProgress = new ProgressInfo(nameof(InitializationProgress));
-        XmlBuildProgress = new ProgressInfo(nameof(XmlBuildProgress));
-        JavaBuildProgress = new ProgressInfo(nameof(JavaBuildProgress));
+        //InitializationProgress = new ProgressInfo(nameof(InitializationProgress));
+        //XmlBuildProgress = new ProgressInfo(nameof(XmlBuildProgress));
+        //JavaBuildProgress = new ProgressInfo(nameof(JavaBuildProgress));
     }
 
-    public VersionInfo AppVersion { get; set; }
-    public string AppDir { get; set; }
-    public string WorkDir { get; set; }
+    public required VersionInfo AppVersion { get; init; }
+    public required string AppDir { get; init; }
+    public required string WorkDir { get; init; }
 
-    public VersionInfo SpaceHavenVersion { get; set; }
-    public string SpaceHavenDir { get; set; }
-    public string SpaceHavenJarDir { get; set; }
-    public EGamePlatform GamePlatform { get; set; }
+    public required VersionInfo SpaceHavenVersion { get; init; }
+    public required string SpaceHavenDir { get; init; }
+    public required string SpaceHavenJarDir { get; init; }
+    public required EGamePlatform GamePlatform { get; init; }
 
-    public bool GenerateAdditionalIntermediateBuildFiles { get; set; }
-    public bool SkipRebuilding { get; set; }
+    public required bool GenerateAdditionalIntermediateBuildFiles { get; init; }
+    public required bool SkipRebuilding { get; init; }
     public List<ModData> Mods { get; private set; } = [];
 
     public IProgressInfo InitializationProgress { get; set; }
