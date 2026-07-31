@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace SH.Framework.Diagrams;
+
 
 public sealed class GraphBuilder
 {
@@ -29,13 +31,9 @@ public sealed class GraphBuilder
                 ct.ThrowIfCancellationRequested();
                 for (int depth = 0; depth < Grid.ColumnCount; ++depth)
                 {
-                    List<GraphNode> selected = group.Where(n => n.Depth == depth && !n.IsLeaf).ToList();
+                    List<GraphNode> selected = group.Where(n => n.TrunkDepth == depth && !n.IsLeaf).ToList();
                     foreach (GraphNode truncNode in selected)
-                    {
-                        Grid.AddBottomRow()[depth].Node = truncNode;
-                        foreach (GraphNode leafNode in truncNode.LeafChildren)
-                            Grid.AddBottomRow()[depth].Node = leafNode;
-                    }
+                        AddToGraph(truncNode, depth);
                 }
             }
 
@@ -49,6 +47,16 @@ public sealed class GraphBuilder
             return false;
         }
     }
+
+    private void AddToGraph(GraphNode node, int depth)
+    {
+        GraphCell cell = Grid.AddBottomRow()[depth];
+        cell.Node = node;
+        node.Data.Cell = cell;
+        foreach (GraphNode leafNode in node.LeafChildren)
+            AddToGraph(leafNode, depth);
+    }
+
 
     public bool Populate<T>(IEnumerable<T> dataNodes, CancellationToken ct) where T : class, IDataNode<T>
     {
@@ -114,7 +122,8 @@ public sealed class GraphBuilder
                             remainingNodes.Remove(child);
                             continue;
                         }
-                        // Merge groups:
+
+                        // Merge:
                         GraphNodeGroup otherGroup = child.Group;
                         group.AddRange(otherGroup);
                         foreach (GraphNode otherNode in otherGroup)
@@ -138,49 +147,50 @@ public sealed class GraphBuilder
 
     private void FindLeafNodes(CancellationToken ct)
     {
-        List<GraphNode> parents;
-        List<GraphNode> selected = Grid.Nodes.Values.Where(n => n.Children.Count <= 0).ToList();
+        List<GraphNode> selected = Grid.Nodes.Values.Where(n => n.Children.Count <= 0).ToList(); // childless nodes
         while (selected.Count > 0)
         {
             ct.ThrowIfCancellationRequested();
-
-            parents = [];
 
             foreach (GraphNode node in selected)
             {
-                if (node.Parents.Count == 1 && node.Children.All(ch => ch.IsLeaf))
-                {
-                    node.IsLeaf = true;
-                    parents.Add(node.FirstParent);
-                }
+                node.IsLeaf = node.Parents.Count == 1 && node.Children.All(ch => ch.IsLeaf);
+                node.Size = 1 + node.LeafChildren.Sum(ch => ch.Size);
             }
 
-            // Update height of parents:
-            foreach (GraphNode parent in parents)
-                parent.Height = 1 + parent.LeafChildren.Sum(ch => ch.Height);
-
-            // Check whether parents are locked children of their parents:
-            selected = parents;
+            selected = selected.SelectMany(n => n.Parents).Distinct().ToList();
         }
     }
 
-    private List<GraphNode> CalculateDepth(CancellationToken ct)
+    private bool CalculateDepth(CancellationToken ct)
     {
-        foreach (GraphNode node in Grid.Nodes.Values)
-            node.Depth = -1;
-
-        int depth = 0;
-        List<GraphNode> selected = Grid.Nodes.Values.Where(n => n.IsRoot).ToList();
-        while (selected.Count > 0)
+        // Trunk depth (a leaf node has same trunk depth as its closest trunk ancestor):
+        List<GraphNode> selected = Grid.Nodes.Values.Where(n => n.IsRoot).ToList(); // root nodes
+        for (Grid.MaxTrunkDepth = 0; selected.Count > 0; ++Grid.MaxTrunkDepth)
         {
             ct.ThrowIfCancellationRequested();
             foreach (GraphNode node in selected)
-                node.Depth = node.IsLeaf ? depth - 1 : depth;
-            selected = Grid.Nodes.Values.Where(n => n.Depth < 0 && n.Parents.All(p => p.Depth >= 0)).ToList();
-            ++depth;
+                node.TrunkDepth = node.IsLeaf ? node.FirstParent.TrunkDepth : Grid.MaxTrunkDepth;
+            selected = selected.SelectMany(n => n.Children).Distinct().ToList();
         }
-        Grid.ColumnCount = depth;
-        return selected;
+        Grid.ColumnCount = Grid.MaxTrunkDepth;
+        if (Grid.MaxTrunkDepth > 0)
+            --Grid.MaxTrunkDepth;
+
+        // Leaf depth (all root/trunk nodes have leaf depth = 0):
+        selected = Grid.Nodes.Values.Where(n => n.IsTrunk && n.HasLeafChildren).ToList();
+        for (Grid.MaxLeafDepth = 0; selected.Count > 0; ++Grid.MaxLeafDepth)
+        {
+            ct.ThrowIfCancellationRequested();
+            foreach (GraphNode node in selected)
+                node.LeafDepth = Grid.MaxLeafDepth;
+            selected = selected.SelectMany(n => n.LeafChildren).ToList();
+        }
+        if (Grid.MaxLeafDepth > 0)
+            --Grid.MaxLeafDepth;
+
+        // Done.
+        return true;
     }
 
     private void CreateNodes<T>(IEnumerable<T> dataNodes, CancellationToken ct) where T : class, IDataNode<T>

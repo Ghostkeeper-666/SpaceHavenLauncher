@@ -61,7 +61,7 @@ public partial class ConsoleWindow : Window
         try
         {
             WindowState = WindowState.Maximized;
-            this.RestoreToMonitor(0);
+            this.RestoreToMonitor(1);
         }
         catch { }
 #endif

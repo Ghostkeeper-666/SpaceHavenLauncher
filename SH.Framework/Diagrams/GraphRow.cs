@@ -1,30 +1,37 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace SH.Framework.Diagrams;
 
-public sealed class GraphRow
+public sealed class GraphRow : IReadOnlyList<GraphCell>
 {
+    internal GraphRow(GraphGrid grid)
+    {
+        Grid = grid ?? throw new ArgumentNullException(nameof(grid));
+        Cells = new GraphCell[Grid.ColumnCount];
+        for (int i = 0; i < Cells.Length; ++i)
+            Cells[i] = new();
+    }
+
+
+
     public GraphGrid Grid { get; }
     internal double SortOrder { get; set; }
 
-    public IReadOnlyList<GraphCell> Cells { get; }
+    private readonly GraphCell[] Cells;
     public GraphRow RowAbove { get; internal set; }
     public GraphRow RowBelow { get; internal set; }
-
-    public GraphCell this[int index] => Cells[index];
 
     public bool IsTopRow => Grid.TopRow == this;
     public bool IsBottomRow => Grid.BottomRow == this;
 
-    internal GraphRow(GraphGrid grid)
-    {
-        Grid = grid ?? throw new ArgumentNullException(nameof(grid));
-        GraphCell[] cells = new GraphCell[Grid.ColumnCount];
-        for (int i = 0; i < cells.Length; ++i)
-            cells[i] = new();
-        Cells = cells;
-    }
+    public int Count => Cells.Length;
+    public int Columns => Cells.Length;
+
+
+
+    public GraphCell this[int index] => Cells[index];
 
     public bool IsAbove(GraphRow otherRow) =>
     SortOrder < otherRow.SortOrder;
@@ -73,4 +80,7 @@ public sealed class GraphRow
         }
         return newRow;
     }
+
+    public IEnumerator<GraphCell> GetEnumerator() => ((IEnumerable<GraphCell>)Cells).GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => Cells.GetEnumerator();
 }

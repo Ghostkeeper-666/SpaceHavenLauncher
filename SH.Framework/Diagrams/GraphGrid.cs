@@ -7,13 +7,17 @@ public sealed class GraphGrid : IEnumerable<GraphRow>
 {
     internal GraphGrid() { }
 
-    public OrderedDictionary<string, GraphNode> Nodes { get; internal set; } = [];
+    public SortedDictionary<string, GraphNode> Nodes { get; internal set; } = [];
     public List<GraphNodeGroup> Groups { get; internal set; } = [];
 
     public int RowCount { get; internal set; }
     public int ColumnCount { get; internal set; }
+
     public GraphRow TopRow { get; internal set; }
     public GraphRow BottomRow { get; internal set; }
+
+    public int MaxTrunkDepth { get; internal set;}
+    public int MaxLeafDepth { get; internal set;}
 
     internal GraphRow AddTopRow()
     {

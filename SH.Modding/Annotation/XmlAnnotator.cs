@@ -790,7 +790,15 @@ public sealed class XmlAnnotator
         }
 
         // Tech Tree:
-        XElement techTreeLinkNode = HavenXml.Root.Element("TechTree")?.Element("tree")?.Element("links");
+        XElement techTreeLinkNode = HavenXml.Root.Element("TechTree")?.Element("tree")?.Element("items");
+        foreach (XElement l in techTreeLinkNode?.Elements("i") ?? [])
+        {
+            CT.ThrowIfCancellationRequested();
+
+            string tid = l.Attribute("tid")?.Value; // this is tech id, not text id
+            Techs.TryGetValue(tid, out Tech tech);
+            l.SetAttributeValue(ANNOTATE_TEXT, GetPrettyName(tech.Name));
+        }
         foreach (XElement l in techTreeLinkNode?.Elements("l") ?? [])
         {
             CT.ThrowIfCancellationRequested();

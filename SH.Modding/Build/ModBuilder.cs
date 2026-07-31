@@ -357,7 +357,15 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
             // Build Stage initialization:
-            if (NeedsXmlBuild || (NeedsJavaBuild && !Build.HasXmlMods))
+            bool needsBuildStageReset = NeedsXmlBuild;
+
+            needsBuildStageReset |=
+                NeedsJavaBuild && !Build.HasXmlMods;
+
+            needsBuildStageReset |=
+                NeedsJavaBuild && !IOUtils.DirExists(Paths.BuildStageLibraryDir);
+
+            if (needsBuildStageReset)
             {
                 // Reset build stage files:
                 ResetBuildStage.Start();
@@ -388,9 +396,11 @@ public sealed class ModBuilder : IAsyncDisposable
                 // Read Space Haven XML files:
                 if (!await Build.TryLoadSpaceHavenXmlFilesAsync(CT, LoadSpaceHavenXml))
                     return false;
+#if DEBUG
+await TryRecalculateTechTreeLayout();
+return false;
+#endif
 
-                if (!await TryRecalculateTechTreeLayout())
-                    return true;
             }
 
 
@@ -440,10 +450,12 @@ public sealed class ModBuilder : IAsyncDisposable
             // Final deployment to cache directory:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
+#if DEBUG
+#else
                 // Recalculate Tech Tree Layout:
                 if (!await TryRecalculateTechTreeLayout())
                     return false;
-
+#endif
                 // Write version to haven.xml AND to version.txt:
                 if (!await TryWriteVersionInfoAsync())
                     return false;
@@ -2327,32 +2339,6 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private async Task<bool> TryRecalculateTechTreeLayout()
     {
         Log.Info($@"Recalculating the tech tree layout...", Paths.BuildStageHavenXmlPath);
@@ -2440,10 +2426,14 @@ public sealed class ModBuilder : IAsyncDisposable
                 _ = int.TryParse(e.Attribute("y")?.Value, out int y);
                 string techId = e.Attribute("tid")?.Value ?? "?";
                 ResearchTopic topic = origTopics.FirstOrDefault(t => t.TechId == techId);
-                if(x != 0 || topic.Mod != null)
+
+                if (x != 0 || topic.Mod != null)
                     topic.X = x;
-                if(y != 0 || topic.Mod != null)
+                else topic.X = -1; // DEPRECATED Reasearch Topics
+
+                if (y != 0 || topic.Mod != null)
                     topic.Y = y;
+                else topic.Y = -1; // DEPRECATED Reasearch Topics
             }
 
             // Research topic links:
@@ -2473,7 +2463,7 @@ public sealed class ModBuilder : IAsyncDisposable
 
             List<ResearchTopic> remaining =
                 origTopics
-                .Where(kvp => kvp.Name != "?" && !kvp.IsHidden)
+                .Where(t => t.Name != "?" && !t.Name.IsNullOrWhiteSpace() && t.IsHidden == false && t.X >= 0 && t.Y >= 0)
                 .ToList();
 
             List<ResearchTopic> topics = [];
@@ -2507,41 +2497,234 @@ public sealed class ModBuilder : IAsyncDisposable
             }
 
 
-            // TODO: Create groups based on node connections!
-            // Sort by groups, isolate groups
-            // Build from refs to deps
-            // if ref has dependency on deps of non-neighbor column, deny usage of neighbor space in neighbor column
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+
 
             GraphBuilder graphBuilder = new(Log);
 
-            if(!graphBuilder.Populate(topics.Where(t => t.Name != "?" && !t.Name.IsNullOrWhiteSpace() && t.IsHidden == false && t.X >= 0 && t.Y >= 0), CT))
+            if (!graphBuilder.Populate(topics, CT))
                 return false;
 
-            if(!graphBuilder.CalculateLayout(CT))
+            if (!graphBuilder.CalculateLayout(CT))
                 return false;
 
-            // Recalculate positions:
-            int columnWidth = 15;
-            int columnSpacing = 15;
-            int rowHeight = 3;
-            int rowSpacing = 3;
-            foreach (ResearchTopic topic in topics)
+
+#if DEBUG
             {
-                int lockedDepth = topic.GetLockedDepth();
-                topic.X = columnSpacing + topic.Column * (columnWidth + columnSpacing) + lockedDepth * 6;
-                topic.Y = rowSpacing + topic.Row * (rowHeight + rowSpacing);
-                topic.SizeX = columnWidth;
-                topic.SizeY = rowHeight;
+                int r = 0;
+                StringBuilder sb = new();
+                foreach (GraphRow row in graphBuilder.Grid)
+                {
+                    sb.Append(r.ToString("000"));
+                    for (int colIdx = 0; colIdx < row.Columns; ++colIdx)
+                    {
+                        GraphNode graphicNode = row[colIdx].Node;
+                        if (graphicNode == null)
+                            sb.Append("   ");
+                        else sb.Append($"  {(graphicNode.IsLeaf ? "L" : graphicNode.IsRoot ? "R" : "T")}");
+                    }
+                    sb.AppendLine();
+                }
+                Debug.WriteLine(sb.ToString());
+            }
+#endif
+
+
+
+            const int unitSize = 3;
+            const int researchBoxSizeX = 5 * unitSize;
+            const int researchBoxSizeY = unitSize;
+            int spacingX = unitSize * (2 * graphBuilder.Grid.MaxLeafDepth + 1);
+            int spacingY = unitSize;
+            int leafOffsetX = unitSize;
+            int rowIdx = 0;
+            foreach (GraphRow row in graphBuilder.Grid.Reverse())
+            {
+                for (int colIdx = 0; colIdx < row.Columns; ++colIdx)
+                {
+                    GraphCell cell = row[colIdx];
+
+                    GraphNode graphicNode = cell.Node;
+                    if (graphicNode == null)
+                        continue; // empty cell => skip
+
+                    // Never fails since graphic nodes always have a valid data node:
+                    ResearchTopic topic = topics.First(t => t.TechId == graphicNode.Id);
+
+                    // Set position and size:
+                    topic.SizeX = researchBoxSizeX;
+                    topic.SizeY = researchBoxSizeY;
+                    topic.X = unitSize + colIdx * (researchBoxSizeX + spacingX) + 2 * graphicNode.LeafDepth * leafOffsetX;
+                    topic.Y = unitSize + researchBoxSizeY + rowIdx * (researchBoxSizeY + spacingY);
+
+                    Debug.WriteLine(topic.IsHidden);
+                }
+
+                ++rowIdx;
             }
 
+
+
+
             string path = IOUtils.CombineAsOSPath(Paths.BuildDir, "graph.png");
-            await TryExportTechTreeLayout(path, 2, null, topics);
+            await TryExportTechTreeLayout(path, 2, unitSize, null, topics);
+
             await OS.OpenFileAsync(path, Log);
+            await Task.Delay(2000);
+
+
+
+
 
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);
@@ -2558,163 +2741,246 @@ public sealed class ModBuilder : IAsyncDisposable
 
 
 
-
-
-
-
-
-
-
-    private async Task<bool> TryExportTechTreeLayout(string path, float globalScale, List<ResearchGroup> groups, List<ResearchTopic> topics)
+    private async Task<bool> TryExportTechTreeLayout(string path, float globalScale, int unitSize, List<ResearchGroup> groups, List<ResearchTopic> topics)
     {
-        groups ??= new();
-
-        float scale = 10 * globalScale;
-
-        int width = groups.Count > 0 ? groups.Max(g => g.X + g.SizeX) : 0;
-        width = 3 + Math.Max(width, topics.Max(t => t.X + t.SizeX));
-        width = (int)(scale * width);
-
-        int height = groups.Count > 0 ? groups.Max(g => g.Y) : 0;
-        height = 3 + Math.Max(height, topics.Max(t => t.Y));
-        height = (int)(scale * height);
-
-        using SKSurface surface = SKSurface.Create(new SKImageInfo(width, height));
-        // BACKGROUND:
-        SKCanvas canvas = surface.Canvas;
-        canvas.Clear(SKColor.Parse("#ff00030d"));
-
-        // GROUPS:
-        using SKPaint groupFillPaint = new()
+        try
         {
-            Style = SKPaintStyle.Fill,
-            Color = SKColor.Parse(ResearchGroup.BackgroundColor),
-            IsAntialias = false,
-        };
-        using SKPaint groupBorderPaint = new()
-        {
-            Style = SKPaintStyle.Stroke,
-            Color = SKColor.Parse(ResearchGroup.BorderColor),
-            StrokeWidth = 1,
-            IsAntialias = false,
-        };
-        using SKFont groupFont = new(SKTypeface.Default, globalScale * 16)
-        {
-            Edging = SKFontEdging.Antialias,
-        };
-        using SKPaint groupFontPaint = new()
-        {
-            Color = SKColor.Parse(ResearchGroup.FontColor),
-            IsAntialias = true,
-        };
+            groups ??= new();
 
-        foreach (ResearchGroup group in groups)
-        {
-            // Fill: 
-            canvas.DrawRect(scale * group.X, height - scale * group.Y, scale * group.SizeX, scale * group.SizeY, groupFillPaint);
+            float scale = 10 * globalScale;
 
-            // Border:
-            canvas.DrawRect(scale * group.X + 0.5f, height - scale * group.Y + 0.5f, scale * group.SizeX - 1, scale * group.SizeY - 1, groupBorderPaint);
+            int width = groups.Count > 0 ? groups.Max(g => g.X + g.SizeX) : 0;
+            width = 2 * unitSize + Math.Max(width, topics.Max(t => t.X + t.SizeX));
+            width = (int)(scale * width);
 
-            // Text:
-            groupFont.MeasureText(group.Name, out SKRect bounds);
-            float x = scale * group.X + 8;
-            float y = (height - scale * group.Y) - bounds.Top + 8;
-            canvas.DrawText(group.Name.ToUpperInvariant(), x, y, SKTextAlign.Left, groupFont, groupFontPaint);
-        }
+            int height = groups.Count > 0 ? groups.Max(g => g.Y) : 0;
+            height = 2 * unitSize + Math.Max(height, topics.Max(t => t.Y));
+            height = (int)(scale * height);
 
-        // TOPICS:
-        using SKPaint topicFillPaint = new()
-        {
-            Style = SKPaintStyle.Fill,
-            Color = SKColor.Parse(ResearchTopic.BackgroundColor),
-            IsAntialias = false,
-        };
-        using SKPaint topicBorderPaint = new()
-        {
-            Style = SKPaintStyle.Stroke,
-            Color = SKColor.Parse(ResearchTopic.BorderColor),
-            StrokeWidth = 1,
-            IsAntialias = false,
-        };
-        using SKFont topicFont = new(SKTypeface.Default, scale - 2)
-        {
-            Edging = SKFontEdging.SubpixelAntialias,
-        };
-        using SKPaint topicFontPaint = new()
-        {
-            Color = SKColor.Parse(ResearchTopic.FontColor),
-            IsAntialias = true,
-        };
+            using SKSurface surface = SKSurface.Create(new SKImageInfo(width, height));
 
-        foreach (ResearchTopic topic in topics)
-        {
-            // Fill: 
-            canvas.DrawRect(scale * topic.X, height - scale * topic.Y, scale * topic.SizeX, scale * topic.SizeY, topicFillPaint);
+            //=============================================================
+            // BACKGROUND:
+            SKCanvas canvas = surface.Canvas;
+            canvas.Clear(SKColor.Parse("#ff00030d"));
 
-            // Border:
-            canvas.DrawRect(scale * topic.X + 0.5f, height - scale * topic.Y + 0.5f, scale * topic.SizeX - 1, scale * topic.SizeY - 1, topicBorderPaint);
 
-            // Text:
-            groupFont.MeasureText(topic.Name, out SKRect bounds);
-            float x = scale * topic.X + scale / 2;
-            float y = (height - scale * topic.Y) - bounds.Top + 1; // scale * topic.SizeY
-            canvas.DrawText(topic.Name, x, y, SKTextAlign.Left, topicFont, topicFontPaint);
-        }
-
-        using SKPaint linkPaint = new()
-        {
-            Color = SKColor.Parse(ResearchTopic.BorderColor),
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1,
-            IsAntialias = false,
-        };
-
-        foreach (ResearchTopic to in topics.Where(t => t.Parents.Count > 0))
-        {
-            foreach (ResearchTopic from in to.Parents)
+            //=============================================================
+            // GROUPS:
+            using SKPaint groupFillPaint = new()
             {
-                float toX = to.X;
-                float toY = to.Y - 0.5f * to.SizeY;
-                // Vertical line
-                if (to.X < from.X + from.SizeX)
-                {
-                    float startX = from.X + 0.25f * from.SizeX;
-                    float startY = to.Y > from.Y ? from.Y : from.Y - from.SizeY;
-                    canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * startX + 0.5f, height - scale * toY + 0.5f, linkPaint);
-                    canvas.DrawLine(scale * startX + 0.5f, height - scale * toY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
-                }
-                // Horizontal line
-                else
-                {
-                    float startX = from.X + from.SizeX;
-                    float startY = from.Y - 0.5f * from.SizeY;
+                Style = SKPaintStyle.Fill,
+                Color = SKColor.Parse(ResearchGroup.BackgroundColor),
+                IsAntialias = false,
+            };
+            using SKPaint groupBorderPaint = new()
+            {
+                Style = SKPaintStyle.Stroke,
+                Color = SKColor.Parse(ResearchGroup.BorderColor),
+                StrokeWidth = 1,
+                IsAntialias = false,
+            };
+            using SKFont groupFont = new(SKTypeface.Default, globalScale * 16)
+            {
+                Edging = SKFontEdging.Antialias,
+            };
+            using SKPaint groupFontPaint = new()
+            {
+                Color = SKColor.Parse(ResearchGroup.FontColor),
+                IsAntialias = true,
+            };
 
-                    if (startY == toY)
-                        canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+            foreach (ResearchGroup group in groups)
+            {
+                // Fill: 
+                canvas.DrawRect(
+                    scale * group.X,
+                    height - scale * group.Y,
+                    scale * group.SizeX,
+                    scale * group.SizeY,
+                    groupFillPaint);
+
+                // Border:
+                canvas.DrawRect(
+                    scale * group.X + 0.5f,
+                    height - scale * group.Y + 0.5f,
+                    scale * group.SizeX - 1,
+                    scale * group.SizeY - 1,
+                    groupBorderPaint);
+
+                // Text:
+                groupFont.MeasureText(group.Name, out SKRect bounds);
+                canvas.DrawText(
+                    group.Name.ToUpperInvariant(),
+                    scale * group.X + 8.0f,
+                    (height - scale * group.Y) - bounds.Top + 8.0f,
+                    SKTextAlign.Left,
+                    groupFont,
+                    groupFontPaint);
+            }
+
+
+            //=============================================================
+            // TOPICS:
+            using SKPaint topicFillPaint = new()
+            {
+                Style = SKPaintStyle.Fill,
+                Color = SKColor.Parse(ResearchTopic.BackgroundColor),
+                IsAntialias = false,
+            };
+            using SKPaint topicBorderPaint = new()
+            {
+                Style = SKPaintStyle.Stroke,
+                Color = SKColor.Parse(ResearchTopic.BorderColor),
+                StrokeWidth = 1,
+                IsAntialias = false,
+            };
+            using SKFont topicFont = new(SKTypeface.Default, scale - 2)
+            {
+                Edging = SKFontEdging.SubpixelAntialias,
+            };
+            using SKPaint topicFontPaint = new()
+            {
+                Color = SKColor.Parse(ResearchTopic.FontColor),
+                IsAntialias = true,
+            };
+
+            foreach (ResearchTopic topic in topics)
+            {
+                // Fill: 
+                canvas.DrawRect(
+                    scale * topic.X,
+                    height - scale * topic.Y,
+                    scale * topic.SizeX,
+                    scale * topic.SizeY,
+                    topicFillPaint);
+
+                // Border:
+                canvas.DrawRect(
+                    scale * topic.X,
+                    height - scale * topic.Y,
+                    scale * topic.SizeX,
+                    scale * topic.SizeY,
+                    topicBorderPaint);
+
+                // Text:
+                groupFont.MeasureText(topic.Name, out SKRect bounds);
+                canvas.DrawText(
+                    topic.Name,
+                    scale * topic.X + scale / 2.0f,
+                    (height - scale * topic.Y) - bounds.Top + 1.0f,
+                    SKTextAlign.Left,
+                    topicFont,
+                    topicFontPaint);
+            }
+
+
+            // ====================================================================
+            // DEPENDENCY LINES
+            using SKPaint linkPaint = new()
+            {
+                Color = SKColor.Parse(ResearchTopic.BorderColor),
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1,
+                IsAntialias = false,
+            };
+
+            foreach (ResearchTopic to in topics.Where(t => t.Parents.Count > 0))
+            {
+                foreach (ResearchTopic from in to.Parents)
+                {
+                    float toX = to.X;
+                    float toY = to.Y - 0.5f * to.SizeY;
+
+                    // Vertical + Horizontal:
+                    if (to.X < from.X + from.SizeX)
+                    {
+                        float startX = from.X + unitSize;
+                        float startY = to.Y > from.Y ? from.Y : from.Y - from.SizeY;
+
+                        // Vertical part
+                        canvas.DrawLine(
+                            scale * startX + 0.5f,
+                            height - scale * startY + 0.5f,
+                            scale * startX + 0.5f,
+                            height - scale * toY + 0.5f,
+                            linkPaint);
+
+                        // Horizontal part
+                        canvas.DrawLine(
+                            scale * startX + 0.5f,
+                            height - scale * toY + 0.5f,
+                            scale * toX + 0.5f,
+                            height - scale * toY + 0.5f,
+                            linkPaint);
+                    }
+
                     else
                     {
-                        float middleX;
-                        (ResearchTopic child, int afterColumn) link = from.LinkVerticalLine.FirstOrDefault(i => i.child == to);
-                        if (link != default)
-                            middleX = startX + 9.0f + (link.afterColumn - from.Column) * (12.0f + 18.0f);
-                        else middleX = 0.5f * (startX + toX /* + startLenOffX */);
-                        canvas.DrawLine(scale * startX + 0.5f, height - scale * startY + 0.5f, scale * middleX + 0.5f, height - scale * startY + 0.5f, linkPaint);
-                        canvas.DrawLine(scale * middleX + 0.5f, height - scale * startY + 0.5f, scale * middleX + 0.5f, height - scale * toY + 0.5f, linkPaint);
-                        canvas.DrawLine(scale * middleX + 0.5f, height - scale * toY + 0.5f, scale * toX + 0.5f, height - scale * toY + 0.5f, linkPaint);
+                        float startX = from.X + from.SizeX;
+                        float startY = from.Y - 0.5f * from.SizeY;
+
+                        // Single Horizontal:
+                        if (startY == toY)
+                        {
+                            canvas.DrawLine(
+                                scale * startX + 0.5f,
+                                height - scale * startY + 0.5f,
+                                scale * toX + 0.5f,
+                                height - scale * toY + 0.5f,
+                                linkPaint);
+                        }
+
+                        // Horizontal + Vertical + Horizontal:
+                        else
+                        {
+                            float flipX;
+                            flipX = toX - 0.5f * unitSize;
+
+                            // Horizontal part
+                            canvas.DrawLine(
+                                scale * startX + 0.5f,
+                                height - scale * startY + 0.5f,
+                                scale * flipX + 0.5f,
+                                height - scale * startY + 0.5f,
+                                linkPaint);
+
+                            // Vertical part
+                            canvas.DrawLine(
+                                scale * flipX + 0.5f,
+                                height - scale * startY + 0.5f,
+                                scale * flipX + 0.5f,
+                                height - scale * toY + 0.5f,
+                                linkPaint);
+
+                            // Horizontal part
+                            canvas.DrawLine(
+                                scale * flipX + 0.5f,
+                                height - scale * toY + 0.5f,
+                                scale * toX + 0.5f,
+                                height - scale * toY + 0.5f,
+                                linkPaint);
+                        }
                     }
                 }
             }
+
+
+            // SAVE as PNG:
+            using SKImage image = surface.Snapshot();
+            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+            await File.WriteAllBytesAsync(path, data.ToArray());
+            await Task.Delay(1000);
+
+            // Done.
+            return true;
         }
-
-
-        // SAVE as PNG:
-        using SKImage image = surface.Snapshot();
-        using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-        await File.WriteAllBytesAsync(path, data.ToArray());
-
-        // Done.
-        return true;
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return false;
+        }
     }
 }
 
@@ -2754,30 +3020,23 @@ public sealed class ResearchTopic : IDataNode<ResearchTopic>
 
     public ResearchGroup Group { get; set; }
     public string TechId { get; set; }
+
     public string Name { get; set; }
     public bool IsHidden { get; set; }
-    public int X { get; set; } = int.MinValue;
-    public int Y { get; set; } = int.MinValue;
-    public int SizeX { get; set; }
-    public int SizeY { get; set; }
 
+    public int X { get; set; } = -1; // "not defined"
+    public int Y { get; set; } = -1; // "not defined"
+
+    public int SizeX { get; set; } = -1; // "not defined"
+    public int SizeY { get; set; } = -1; // "not defined"
 
     public List<ResearchTopic> Parents { get; } = [];
     public List<ResearchTopic> Children { get; } = [];
 
-
-    // For diagram computation:
-    public int GroupId { get; set; }
-    public int Column { get; set; }
-    public int Row { get; set; }
-    public bool IsLockedChild { get; set; }
-    public int GetLockedDepth() =>
-        !IsLockedChild ? 0 : 1 + Parents.Max(p => p.GetLockedDepth());
-    public List<(ResearchTopic child, int afterColumn)> LinkVerticalLine { get; set; }
-
     #region IDataNode
     IEnumerable<ResearchTopic> IDataNode<ResearchTopic>.Dependencies => Parents;
-    string IDataNode.Id => Name;
+    string IDataNode.Id => TechId;
+    GraphCell IDataNode.Cell { get; set; }
 
     internal Mod Mod { get; set; }
     #endregion
