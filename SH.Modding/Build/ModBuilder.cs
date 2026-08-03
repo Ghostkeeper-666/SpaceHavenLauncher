@@ -397,8 +397,8 @@ public sealed class ModBuilder : IAsyncDisposable
                 if (!await Build.TryLoadSpaceHavenXmlFilesAsync(CT, LoadSpaceHavenXml))
                     return false;
 #if DEBUG
-await TryRecalculateTechTreeLayout();
-return false;
+                //await TryCalculateTechTreeLayout();
+                //return false;
 #endif
 
             }
@@ -450,12 +450,10 @@ return false;
             // Final deployment to cache directory:
             if (NeedsJavaBuild || NeedsXmlBuild)
             {
-#if DEBUG
-#else
                 // Recalculate Tech Tree Layout:
-                if (!await TryRecalculateTechTreeLayout())
+                if (!await TryCalculateTechTreeLayout())
                     return false;
-#endif
+
                 // Write version to haven.xml AND to version.txt:
                 if (!await TryWriteVersionInfoAsync())
                     return false;
@@ -880,6 +878,15 @@ return false;
                                             a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
                                         }
                                     }
+                                    else if (targetXmlFileType == EXmlFileType.Haven)
+                                    {
+                                        // Mark tech nodes:
+                                        foreach (XElement a in node.DescendantsAndSelf("tech"))
+                                        {
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            a.SetAttributeValue(NodeType.ATTRIBUTE_LIBRARY, src);
+                                        }
+                                    }
 
 
                                     // Add to parent node:
@@ -1061,6 +1068,17 @@ return false;
                                             valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
                                         }
                                         foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("re") ?? [])
+                                        {
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
+                                            valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
+                                        }
+                                    }
+
+                                    // Mark audio nodes:
+                                    else if (targetXmlFileType == EXmlFileType.Haven)
+                                    {
+                                        string src = $"{mod.UniqueName}, {modPatchXmlFile.RelativePath}, line {patchNode.Line()}";
+                                        foreach (XElement valueNode in patch?.PatchNode?.Element(XmlPatchOperation.VALUE)?.Descendants("tech") ?? [])
                                         {
                                             valueNode.SetAttributeValue(NodeType.ATTRIBUTE_OWNER, mod.UniqueName);
                                             valueNode.SetAttributeValue(NodeType.ATTRIBUTE_PATCH, src);
@@ -2339,21 +2357,21 @@ return false;
 
 
 
-    private async Task<bool> TryRecalculateTechTreeLayout()
+    private async Task<bool> TryCalculateTechTreeLayout()
     {
-        Log.Info($@"Recalculating the tech tree layout...", Paths.BuildStageHavenXmlPath);
+        Log.Info($@"Calculating the tech tree layout...", Paths.BuildStageHavenXmlPath);
 
         try
         {
-            // WARNING : <tree id="2535" sizeX="1500" sizeY="3000"> => maybe change size!
-
             // Get haven document:
             XmlFile havenXml = Build.XmlFile[EXmlFileType.Haven];
             XmlFile textsXml = Build.XmlFile[EXmlFileType.Texts];
 
+            XElement techTree = havenXml.Root.Element("TechTree").Element("tree");
+
             // Research groups:
             List<ResearchGroup> origGroups = [];
-            List<XElement> labelNodes = havenXml.Root.Element("TechTree").Element("tree").Element("labels").Elements().ToList();
+            List<XElement> labelNodes = techTree.Element("labels").Elements().ToList();
             foreach (XElement e in labelNodes)
             {
                 string textId = e.Attribute("tid")?.Value ?? "?";
@@ -2419,7 +2437,7 @@ return false;
             }
 
             // Research topic x, y:
-            List<XElement> itemNodes = havenXml.Root.Element("TechTree").Element("tree").Element("items").Elements("i").ToList();
+            List<XElement> itemNodes = techTree.Element("items").Elements("i").ToList();
             foreach (XElement e in itemNodes)
             {
                 _ = int.TryParse(e.Attribute("x")?.Value, out int x);
@@ -2437,7 +2455,7 @@ return false;
             }
 
             // Research topic links:
-            List<XElement> linkNodes = havenXml.Root.Element("TechTree").Element("tree").Element("links").Elements("l").ToList();
+            List<XElement> linkNodes = techTree.Element("links").Elements("l").ToList();
             foreach (XElement e in linkNodes)
             {
                 string fromId = e.Attribute("fromId")?.Value ?? "?";
@@ -2452,12 +2470,8 @@ return false;
                 parent.Children.Add(child);
             }
 
-
-            // TODO: Detect circular refs!
-            Debug.WriteLine($"RESEARCH GROUPS:{Environment.NewLine}{origGroups.Select(g => $"{g}").JoinToString($",{Environment.NewLine}")}");
-            Debug.WriteLine($"RESEARCH TOPICS:{Environment.NewLine}{origTopics.Select(t => $"{t}").JoinToString($",{Environment.NewLine}")}");
-
-
+            //Debug.WriteLine($"RESEARCH GROUPS:{Environment.NewLine}{origGroups.Select(g => $"{g}").JoinToString($",{Environment.NewLine}")}");
+            //Debug.WriteLine($"RESEARCH TOPICS:{Environment.NewLine}{origTopics.Select(t => $"{t}").JoinToString($",{Environment.NewLine}")}");
 
             SortedDictionary<int, List<ResearchTopic>> origTopicsByDepLevel = [];
 
@@ -2497,153 +2511,7 @@ return false;
             }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////
-
+            ////////////////////////////////////////////////////////////////////////////////////////
 
             GraphBuilder graphBuilder = new(Log);
 
@@ -2653,73 +2521,113 @@ return false;
             if (!graphBuilder.CalculateLayout(CT))
                 return false;
 
+            const int researchBoxSizeX = 14;
+            const int researchBoxSizeY = 4;
+            int leafOffsetX = 6;
+            int spacingY = 3;
+            int rowIdx = 1;
 
-#if DEBUG
+            // Reset position and size of research boxes:
+            foreach (ResearchTopic t in topics)
             {
-                int r = 0;
-                StringBuilder sb = new();
-                foreach (GraphRow row in graphBuilder.Grid)
-                {
-                    sb.Append(r.ToString("000"));
-                    for (int colIdx = 0; colIdx < row.Columns; ++colIdx)
-                    {
-                        GraphNode graphicNode = row[colIdx].Node;
-                        if (graphicNode == null)
-                            sb.Append("   ");
-                        else sb.Append($"  {(graphicNode.IsLeaf ? "L" : graphicNode.IsRoot ? "R" : "T")}");
-                    }
-                    sb.AppendLine();
-                }
-                Debug.WriteLine(sb.ToString());
+                t.X = 0;
+                t.Y = 0;
+                t.SizeX = 0;
+                t.SizeY = 0;
             }
-#endif
 
-
-
-            const int unitSize = 3;
-            const int researchBoxSizeX = 5 * unitSize;
-            const int researchBoxSizeY = unitSize;
-            int spacingX = unitSize * (2 * graphBuilder.Grid.MaxLeafDepth + 1);
-            int spacingY = unitSize;
-            int leafOffsetX = unitSize;
-            int rowIdx = 0;
-            foreach (GraphRow row in graphBuilder.Grid.Reverse())
+            // Compute position and size of research boxes:
+            foreach (GraphGroup group in graphBuilder.Groups)
             {
-                for (int colIdx = 0; colIdx < row.Columns; ++colIdx)
+                int[] spacingX = new int[group.Grid.ColCount];
+                int[] totalSpacingX = new int[group.Grid.ColCount];
+                for (int c = 1; c < spacingX.Length; ++c)
                 {
-                    GraphCell cell = row[colIdx];
-
-                    GraphNode graphicNode = cell.Node;
-                    if (graphicNode == null)
-                        continue; // empty cell => skip
-
-                    // Never fails since graphic nodes always have a valid data node:
-                    ResearchTopic topic = topics.First(t => t.TechId == graphicNode.Id);
-
-                    // Set position and size:
-                    topic.SizeX = researchBoxSizeX;
-                    topic.SizeY = researchBoxSizeY;
-                    topic.X = unitSize + colIdx * (researchBoxSizeX + spacingX) + 2 * graphicNode.LeafDepth * leafOffsetX;
-                    topic.Y = unitSize + researchBoxSizeY + rowIdx * (researchBoxSizeY + spacingY);
-
-                    Debug.WriteLine(topic.IsHidden);
+                    spacingX[c] = 6 + leafOffsetX * group.GetColumnMaxLeafDepth(c - 1);
+                    for (int cc = 1; cc <= c; ++cc)
+                        totalSpacingX[c] += spacingX[cc];
                 }
 
-                ++rowIdx;
+                foreach (GraphRow row in group.Grid.Reverse())
+                {
+                    for (int c = 0; c < row.ColCount; ++c)
+                    {
+                        GraphCell cell = row[c];
+
+                        GraphNode graphicNode = cell.Node;
+                        if (graphicNode == null)
+                            continue; // empty cell => skip
+
+                        // Never fails since graphic nodes always have a valid data node:
+                        ResearchTopic topic = topics.First(t => t.TechId == graphicNode.Id);
+                        topic.IsLeaf = graphicNode.IsLeaf;
+
+                        // Set position and size:
+                        topic.SizeX = researchBoxSizeX;
+                        topic.SizeY = researchBoxSizeY;
+                        topic.X = 6 + c * researchBoxSizeX + totalSpacingX[c] + graphicNode.LeafDepth * leafOffsetX;
+                        topic.Y = 6 + researchBoxSizeY + rowIdx * (researchBoxSizeY + spacingY);
+                    }
+                    ++rowIdx;
+                }
             }
 
 
 
 
             string path = IOUtils.CombineAsOSPath(Paths.BuildDir, "graph.png");
-            await TryExportTechTreeLayout(path, 2, unitSize, null, topics);
+            await TryExportTechTreeLayout(path, 2, null, topics);
+            //await OS.OpenFileAsync(path, Log);
 
-            await OS.OpenFileAsync(path, Log);
-            await Task.Delay(2000);
+            // Clear all groups (obsolete)
+            XElement labelsNode = havenXml.Root.Element("TechTree").Element("tree").Element("labels");
+            labelsNode.SetAttributeValue("counter", 0);
+            labelsNode.RemoveNodes();
+
+            // Tree size:
+            int techTreeSizeX = 10 * (2 + topics.Max(t => t.X + t.SizeX));
+            int techTreeSizeY = 10 * (2 + topics.Max(t => t.Y));
+            techTree.SetAttributeValue("sizeX", techTreeSizeX);
+            techTree.SetAttributeValue("sizeY", techTreeSizeY);
+
+            // Write research topics:
+            foreach (ResearchTopic topic in topics)
+            {
+                XElement techNode = techNodes.FirstOrDefault(n => n.Attribute("id")?.Value == topic.TechId);
+                techNode.SetAttributeValue("sizeX", topic.SizeX);
+                techNode.SetAttributeValue("sizeY", topic.SizeY);
+                techNode.SetAttributeValue("hidden", topic.IsHidden);
+
+                XElement itemNode = itemNodes.FirstOrDefault(n => n.Attribute("tid")?.Value == topic.TechId);
+                itemNode.SetAttributeValue("x", topic.X);
+                itemNode.SetAttributeValue("y", topic.Y);
+
+                List<XElement> links = linkNodes.Where(n => n.Attribute("fromId")?.Value == topic.TechId).ToList();
 
 
+                List<ResearchTopic> trunkChildren = topic.Children.Where(ch => !ch.IsLeaf).ToList();
+                int closestTrunkChildX = trunkChildren.Count <= 0 ? 0 : trunkChildren.Min(ch => ch.X);
 
+                foreach (ResearchTopic dep in topic.Children)
+                {
+                    XElement link = links.FirstOrDefault(l => l.Attribute("toId")?.Value == dep.TechId);
+                    if (link == null)
+                        throw new Exception("Link not found");
 
+                    if (dep.IsLeaf)
+                    {
+                        Debug.WriteLine(dep.Name + " is LEAF");
+                        link.SetAttributeValue("startLenOffX", 0);
+                        continue;
+                    }
+
+                    int defaultLengthX = (closestTrunkChildX - topic.X - topic.SizeX) / 2;
+                    int totalLengthX = dep.X - topic.X - topic.SizeX;
+                    int offsetX = totalLengthX - defaultLengthX - 3;
+
+                    link.SetAttributeValue("startLenOffX", offsetX);
+                }
+            }
 
             // Done.
             return true;
@@ -2741,7 +2649,7 @@ return false;
 
 
 
-    private async Task<bool> TryExportTechTreeLayout(string path, float globalScale, int unitSize, List<ResearchGroup> groups, List<ResearchTopic> topics)
+    private async Task<bool> TryExportTechTreeLayout(string path, float globalScale, List<ResearchGroup> groups, List<ResearchTopic> topics)
     {
         try
         {
@@ -2750,11 +2658,11 @@ return false;
             float scale = 10 * globalScale;
 
             int width = groups.Count > 0 ? groups.Max(g => g.X + g.SizeX) : 0;
-            width = 2 * unitSize + Math.Max(width, topics.Max(t => t.X + t.SizeX));
+            width = 2 + Math.Max(width, topics.Max(t => t.X + t.SizeX));
             width = (int)(scale * width);
 
             int height = groups.Count > 0 ? groups.Max(g => g.Y) : 0;
-            height = 2 * unitSize + Math.Max(height, topics.Max(t => t.Y));
+            height = 2 + Math.Max(height, topics.Max(t => t.Y));
             height = (int)(scale * height);
 
             using SKSurface surface = SKSurface.Create(new SKImageInfo(width, height));
@@ -2835,7 +2743,7 @@ return false;
                 StrokeWidth = 1,
                 IsAntialias = false,
             };
-            using SKFont topicFont = new(SKTypeface.Default, scale - 2)
+            using SKFont topicFont = new(SKTypeface.Default, scale)
             {
                 Edging = SKFontEdging.SubpixelAntialias,
             };
@@ -2866,7 +2774,7 @@ return false;
                 // Text:
                 groupFont.MeasureText(topic.Name, out SKRect bounds);
                 canvas.DrawText(
-                    topic.Name,
+                    $"{topic.Name} [{topic.TechId}]",
                     scale * topic.X + scale / 2.0f,
                     (height - scale * topic.Y) - bounds.Top + 1.0f,
                     SKTextAlign.Left,
@@ -2895,7 +2803,7 @@ return false;
                     // Vertical + Horizontal:
                     if (to.X < from.X + from.SizeX)
                     {
-                        float startX = from.X + unitSize;
+                        float startX = from.X + 3;
                         float startY = to.Y > from.Y ? from.Y : from.Y - from.SizeY;
 
                         // Vertical part
@@ -2935,7 +2843,7 @@ return false;
                         else
                         {
                             float flipX;
-                            flipX = toX - 0.5f * unitSize;
+                            flipX = toX - 3.0f;
 
                             // Horizontal part
                             canvas.DrawLine(
@@ -2981,105 +2889,5 @@ return false;
             Log.Error(ex);
             return false;
         }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-public sealed class ResearchTopic : IDataNode<ResearchTopic>
-{
-    public static string BorderColor { get; set; } = "#ff4bf08d";
-    public static string FontColor { get; set; } = "#ff4bf08d";
-    public static string BackgroundColor { get; set; } = "#ff00420b";
-
-    public ResearchTopic() { }
-
-    public ResearchTopic(ResearchTopic other)
-    {
-        ArgumentNullException.ThrowIfNull(other);
-        TechId = other.TechId;
-        Name = other.Name;
-        IsHidden = other.IsHidden;
-        X = other.X;
-        Y = other.Y;
-        SizeX = other.SizeX;
-        SizeY = other.SizeY;
-    }
-
-    public ResearchGroup Group { get; set; }
-    public string TechId { get; set; }
-
-    public string Name { get; set; }
-    public bool IsHidden { get; set; }
-
-    public int X { get; set; } = -1; // "not defined"
-    public int Y { get; set; } = -1; // "not defined"
-
-    public int SizeX { get; set; } = -1; // "not defined"
-    public int SizeY { get; set; } = -1; // "not defined"
-
-    public List<ResearchTopic> Parents { get; } = [];
-    public List<ResearchTopic> Children { get; } = [];
-
-    #region IDataNode
-    IEnumerable<ResearchTopic> IDataNode<ResearchTopic>.Dependencies => Parents;
-    string IDataNode.Id => TechId;
-    GraphCell IDataNode.Cell { get; set; }
-
-    internal Mod Mod { get; set; }
-    #endregion
-
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        sb.Append($@"""{Name}""");
-        //if (IsHidden)
-        //sb.Append($@" (hidden)");
-        //sb.Append($@": x={X}, y={Y}, sizeX={SizeX}, sizeY={SizeY}");
-        if (Parents.Count > 0)
-            sb.Append($@": {{ ""deps"": {{ {Parents.Select(d => $@"""{d.Name}""").JoinToString(",")} }} }}");
-        return sb.ToString();
-    }
-}
-
-
-
-
-
-
-public sealed class ResearchGroup
-{
-    public string Name { get; set; }
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int SizeX { get; set; }
-    public int SizeY { get; set; }
-
-    public static string BorderColor { get; set; } = "#b7dde5e5";
-    public static string FontColor { get; set; } = "#b7dde5e5";
-    public static string BackgroundColor { get; set; } = "#1d3340be";
-
-    public List<ResearchTopic> Topics { get; } = [];
-
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        sb.Append($@"""{Name}""");
-        sb.Append($@": x={X}, y={Y}, sizeX={SizeX}, sizeY={SizeY}");
-        if (Topics.Count > 0)
-            sb.Append($@", topics=[{Topics.Select(d => $@"""{d.Name}""").JoinToString(",")}]");
-        return sb.ToString();
     }
 }

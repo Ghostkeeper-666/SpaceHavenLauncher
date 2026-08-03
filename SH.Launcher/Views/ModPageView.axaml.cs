@@ -377,8 +377,6 @@ public partial class ModPageView : UserControl
     /// </summary>
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        Debug.WriteLine(e.Source);
-
         if (DataContext is not ModPageViewModel vm)
             return;
         vm.State.StatusBarText = "You can press 'F2' to edit a variable value.";

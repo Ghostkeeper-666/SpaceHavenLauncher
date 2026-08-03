@@ -1,86 +1,44 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SH.Framework.Diagrams;
 
 public sealed class GraphRow : IReadOnlyList<GraphCell>
 {
-    internal GraphRow(GraphGrid grid)
+    internal GraphRow(GraphGrid grid, int r)
     {
         Grid = grid ?? throw new ArgumentNullException(nameof(grid));
-        Cells = new GraphCell[Grid.ColumnCount];
-        for (int i = 0; i < Cells.Length; ++i)
-            Cells[i] = new();
+        RowNum = r;
+        GraphCell[] cells = new GraphCell[Grid.ColCount];
+        for (int c = 0; c < cells.Length; ++c)
+            cells[c] = new(this, c);
+        Cells = cells;
     }
 
-
-
     public GraphGrid Grid { get; }
-    internal double SortOrder { get; set; }
-
-    private readonly GraphCell[] Cells;
-    public GraphRow RowAbove { get; internal set; }
-    public GraphRow RowBelow { get; internal set; }
-
-    public bool IsTopRow => Grid.TopRow == this;
-    public bool IsBottomRow => Grid.BottomRow == this;
-
-    public int Count => Cells.Length;
-    public int Columns => Cells.Length;
-
+    public int RowNum { get; internal set; }
+    public int Count => Cells.Count;
+    public int ColCount => Cells.Count;
+    public IReadOnlyList<GraphCell> Cells { get; }
 
 
     public GraphCell this[int index] => Cells[index];
 
-    public bool IsAbove(GraphRow otherRow) =>
-    SortOrder < otherRow.SortOrder;
 
-    public bool IsBelow(GraphRow otherRow) =>
-        SortOrder > otherRow.SortOrder;
+    public bool IsEmpty() => Cells.All(c => c.IsEmpty);
 
-    internal GraphRow InsertNewRowAbove()
+    internal void Clear()
     {
-        GraphRow newRow = new(Grid)
-        {
-            RowAbove = RowAbove,
-            RowBelow = this,
-        };
-        RowAbove = newRow;
-        if (newRow.RowAbove == null)
-        {
-            Grid.TopRow = newRow;
-            newRow.SortOrder = SortOrder - 1.0;
-        }
-        else
-        {
-            newRow.RowAbove.RowBelow = newRow;
-            newRow.SortOrder = (SortOrder + newRow.RowAbove.SortOrder) / 2.0;
-        }
-        return newRow;
+        foreach (GraphCell cell in Cells)
+            cell.Node = null;
     }
 
-    internal GraphRow InsertNewRowBelow()
-    {
-        GraphRow newRow = new(Grid)
-        {
-            RowBelow = RowBelow,
-            RowAbove = this,
-        };
-        RowBelow = newRow;
-        if (newRow.RowBelow == null)
-        {
-            Grid.BottomRow = newRow;
-            newRow.SortOrder = SortOrder + 1.0;
-        }
-        else
-        {
-            newRow.RowBelow.RowAbove = newRow;
-            newRow.SortOrder = (SortOrder + newRow.RowBelow.SortOrder) / 2.0;
-        }
-        return newRow;
-    }
 
     public IEnumerator<GraphCell> GetEnumerator() => ((IEnumerable<GraphCell>)Cells).GetEnumerator();
+
     IEnumerator IEnumerable.GetEnumerator() => Cells.GetEnumerator();
+
+    public override string ToString() => RowNum.ToString("000");
 }

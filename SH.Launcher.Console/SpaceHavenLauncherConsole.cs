@@ -142,9 +142,6 @@ public sealed class SpaceHavenLauncherConsole
         // Run Space Haven:
         GameLaunchService launcherSvc = new(paths, Log);
 
-#if DEBUG
-#else
-
         // Run and await Space Haven:
         Task<bool> spaceHaven =
             launcherSvc.TryLaunchModifiedGameAsync(
@@ -171,8 +168,6 @@ public sealed class SpaceHavenLauncherConsole
             return -40;
         }
         Log.Success($"{SpaceHavenConstants.SpaceHavenName} has completed successfully", paths.SpaceHavenDir);
-
-#endif
 
         // Done.
         Log.Success("Press any key to EXIT");

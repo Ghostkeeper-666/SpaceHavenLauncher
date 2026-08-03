@@ -124,11 +124,8 @@ public partial class ConsoleWindow : Window
             return;
         try
         {
-
             int position = TextEditor.TextArea.Caret.Offset;
             DocumentLine line = TextEditor.Document.GetLineByOffset(position);
-
-            Debug.WriteLine($"Double clicked line {line.LineNumber}");
 
             if (line.LineNumber > 0 && line.LineNumber <= LogMessages.Count)
             {
