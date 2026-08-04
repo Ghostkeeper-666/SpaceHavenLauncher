@@ -15,4 +15,11 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
+  <Target Name="RemovePdbFilesFromReleasePublish" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <PublishedPdbFiles Include="$(PublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(PublishedPdbFiles)" />
+  </Target>
+
 </Project>
