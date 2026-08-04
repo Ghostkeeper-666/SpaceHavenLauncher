@@ -128,8 +128,10 @@ public sealed class SpaceHavenLauncherConsole
             GamePlatform = initializationData.GamePlatform,
 #if DEBUG
             SkipRebuilding = false,
+            AutoArrangeTechTreeLayout = true,
 #else
             SkipRebuilding = appSettingsData.SkipRebuilding,
+            AutoArrangeTechTreeLayout = appSettingsData.AutoArrangeTechTreeLayout;
 #endif
             GenerateAdditionalIntermediateBuildFiles = false,
         };

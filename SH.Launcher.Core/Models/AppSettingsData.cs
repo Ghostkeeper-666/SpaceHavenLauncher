@@ -18,6 +18,7 @@ public sealed class AppSettingsData
         ModPageSplitterHeight = 380,
         IsBackgroundEnabled = true,
         BackgroundDarkness = 0.80,
+        AutoArrangeTechTreeLayout = false,
         SkipRebuilding = true,
         StartSpaceHavenAutomatically = true,
         CloseAppAutomaticallyOnLaunch = false,
@@ -39,6 +40,7 @@ public sealed class AppSettingsData
     public double BackgroundDarkness { get; set; }
     public bool StartSpaceHavenAutomatically { get; set; }
     public bool CloseAppAutomaticallyOnLaunch { get; set; }
+    public bool AutoArrangeTechTreeLayout { get; set; }
     public bool SkipRebuilding { get; set; }
     public ELanguage ExportXmlAnnotationLanguage { get; set; }
     public bool ExportTextures { get; set; }

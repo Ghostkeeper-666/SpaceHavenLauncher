@@ -56,19 +56,19 @@ public partial class NavigationConsoleCentralScreenViewModel : ObservableObject
     private readonly string Title_Original = "LAUNCH ORIGINAL GAME";
     private readonly string[] Text_Original =
     [
-        "LAUNCH APPLICATION",
-        "POLISH HYPERDRIVES",
-        "COPY CONFIGURATION",
-        "INITIALIZE LAUNCH ",
+        "LAUNCH SPACE HAVEN",
+        "POLISH HYPERDRIVE ",
+        "DRINK COLD COFFEE ",
+        "CHAT WITH FRIENDS ",
     ];
 
     private readonly string Title_Modified = "LAUNCH MODIFIED GAME";
     private readonly string[] Text_Modified =
     [
-        "LAUNCH APPLICATION",
-        "BUILD ALL XML MODS",
-        "JOIN ALL JAVA MODS",
-        "INITIALIZE LAUNCH ",
+        "LAUNCH SPACE HAVEN",
+        "PERFORM MOD BUILD ",
+        "TRY TO SKIP BUILD ",
+        "INITIALIZE  BUILD ",
     ];
 
     [ObservableProperty]

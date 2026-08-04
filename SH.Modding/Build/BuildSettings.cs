@@ -22,10 +22,6 @@ public sealed class BuildSettings : IDisposable
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = LinkedCTS.Token,
         };
-        SkipRebuilding = true;
-        //InitializationProgress = new ProgressInfo(nameof(InitializationProgress));
-        //XmlBuildProgress = new ProgressInfo(nameof(XmlBuildProgress));
-        //JavaBuildProgress = new ProgressInfo(nameof(JavaBuildProgress));
     }
 
     public required VersionInfo AppVersion { get; init; }
@@ -38,12 +34,11 @@ public sealed class BuildSettings : IDisposable
     public required EGamePlatform GamePlatform { get; init; }
 
     public required bool GenerateAdditionalIntermediateBuildFiles { get; init; }
+    public required bool AutoArrangeTechTreeLayout { get; init; }
     public required bool SkipRebuilding { get; init; }
     public List<ModData> Mods { get; private set; } = [];
 
-    public IProgressInfo InitializationProgress { get; set; }
-    public IProgressInfo XmlBuildProgress { get; set; }
-    public IProgressInfo JavaBuildProgress { get; set; }
+    public IProgressInfo BuildProgress { get; set; }
 
     public PathData Paths { get; }
 
@@ -70,9 +65,7 @@ public sealed class BuildSettings : IDisposable
             return;
         IsDisposed = true;
 
-        InitializationProgress = null;
-        XmlBuildProgress = null;
-        JavaBuildProgress = null;
+        BuildProgress = null;
 
         ParallelOptions = null;
 

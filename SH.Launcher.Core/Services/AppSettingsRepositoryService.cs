@@ -83,6 +83,9 @@ public sealed class AppSettingsRepositoryService
             data.BackgroundDarkness =
                 double.TryParse(root.Element(nameof(AppSettingsData.BackgroundDarkness))?.Value ?? string.Empty, out double backgroundDarkness) ? backgroundDarkness : data.BackgroundDarkness;
 
+            data.AutoArrangeTechTreeLayout =
+                bool.TryParse(root.Element(nameof(AppSettingsData.AutoArrangeTechTreeLayout))?.Value ?? string.Empty, out bool autoArrangeTechTreeLayout) ? autoArrangeTechTreeLayout : data.AutoArrangeTechTreeLayout;
+
             data.SkipRebuilding =
                 bool.TryParse(root.Element(nameof(AppSettingsData.SkipRebuilding))?.Value ?? string.Empty, out bool skipRebuilding) ? skipRebuilding : data.SkipRebuilding;
 
@@ -140,6 +143,7 @@ public sealed class AppSettingsRepositoryService
             root.Add(new XElement(nameof(AppSettingsData.ModPageSplitterHeight), data.ModPageSplitterHeight));
             root.Add(new XElement(nameof(AppSettingsData.IsBackgroundEnabled), data.IsBackgroundEnabled));
             root.Add(new XElement(nameof(AppSettingsData.BackgroundDarkness), data.BackgroundDarkness));
+            root.Add(new XElement(nameof(AppSettingsData.AutoArrangeTechTreeLayout), data.AutoArrangeTechTreeLayout));
             root.Add(new XElement(nameof(AppSettingsData.SkipRebuilding), data.SkipRebuilding));
             root.Add(new XElement(nameof(AppSettingsData.StartSpaceHavenAutomatically), data.StartSpaceHavenAutomatically));
             root.Add(new XElement(nameof(AppSettingsData.CloseAppAutomaticallyOnLaunch), data.CloseAppAutomaticallyOnLaunch));

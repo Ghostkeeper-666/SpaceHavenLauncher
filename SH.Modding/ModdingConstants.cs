@@ -22,12 +22,12 @@ public static class ModdingConstants
     public static readonly string INFO_XML = "info.xml";
     public static readonly string DESCRIPTION_MD = "description.md";
 
+    public static readonly string LAUNCHER_AGENT = "LauncherAgent.jar";
     public static readonly string ASPECTJ = "aspectj-1.9.19.jar";
     public static readonly string ASPECTJWEAVER = "aspectjweaver-1.9.19.jar";
     public static readonly string MODS_JSON = "mods.json";
 
-    public static readonly string XML_BUILD_HASH = "xml.hash";
-    public static readonly string JAVA_BUILD_HASH = "java.hash";
+    public static readonly string BUILD_HASH = "build.hash";
     public static readonly string SPACEHAVENJAR_HASH = "spacehavenjar.hash";
 
     public static readonly string IdVariable = "id";

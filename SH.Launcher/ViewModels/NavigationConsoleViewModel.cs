@@ -109,26 +109,25 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             return;
         }
 
-
         // Progress:
-        ProgressInfo progress = new("Progress");
-        ProgressInfo runGame = new(SpaceHavenConstants.SpaceHavenName);
+        ProgressInfo vanillaProgress = new("Vanilla");
+        ProgressInfo launchProgress = new("Launch");
 
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
-        runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
+        vanillaProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
+        vanillaProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
+        vanillaProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
+        launchProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
 
-        runGame.ProgressChanged += CentralScreen.OnProgress_Title;
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
-        progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
+        launchProgress.ProgressChanged += CentralScreen.OnProgress_Title;
+        vanillaProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
+        vanillaProgress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
 
         // Semaphore:
         await State.Semaphore.WaitAsync();
         try
         {
-            progress.Start();
-            runGame.Start();
+            vanillaProgress.Start();
+            launchProgress.Start();
             CentralScreen.ShowOriginal();
 
             using CancellationTokenSource cts = new();
@@ -139,11 +138,11 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             // Nothing to do?
 
-            progress.Complete();
+            vanillaProgress.Complete();
             CentralScreen.LeftLeverState = EControlState.Ready;
 
             // LAUNCH GAME
-            runGame.Complete();
+            launchProgress.Complete();
 
             StringBuilder sb = new($"Jumping to {SpaceHavenConstants.SpaceHavenName}\n");
             string dashedLine = $"{new('=', sb.Length - 1)}";
@@ -193,9 +192,9 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 // COSMETIC SHUTDOWN EFFECT:
                 const int shutdownSteps = 10;
                 double shutdownProgress = 1.0;
-                for (int i = 0; i < shutdownSteps && progress?.NormalizedValue > 0.0; ++i) await Task.Run(async () =>
+                for (int i = 0; i < shutdownSteps && vanillaProgress?.NormalizedValue > 0.0; ++i) await Task.Run(async () =>
                 {
-                    progress?.SetNormalized(shutdownProgress -= 1.0 / shutdownSteps);
+                    vanillaProgress?.SetNormalized(shutdownProgress -= 1.0 / shutdownSteps);
                     await Task.Delay(50);
                 });
             }
@@ -206,8 +205,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             try
             {
-                progress?.Dispose();
-                runGame?.Dispose();
+                vanillaProgress?.Dispose();
+                launchProgress?.Dispose();
             }
             catch (Exception ex)
             {
@@ -253,30 +252,22 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
 
         // Progress:
-        ProgressInfo initializationProgress = new("Build Initialization");
-        ProgressInfo javaBuildProgress = new("Build JAVA Mods");
-        ProgressInfo xmlBuildProgress = new("Build XML Mods");
-        ProgressInfo progress = new("Progress");
-        progress.AddChild(initializationProgress, 1);
-        progress.AddChild(javaBuildProgress, 1);
-        progress.AddChild(xmlBuildProgress, 6);
-        ProgressInfo runGame = new(SpaceHavenConstants.SpaceHavenName);
+        ProgressInfo buildProgress = new("Build");
+        ProgressInfo launchProgress = new("Launch");
 
-        runGame.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
-        xmlBuildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
-        javaBuildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
-        initializationProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
+        buildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine3Async;
+        buildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine2Async;
+        buildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine1Async;
+        launchProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenLine0Async;
 
-        runGame.ProgressChanged += CentralScreen.OnProgress_Title;
-        progress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
-        progress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
+        launchProgress.ProgressChanged += CentralScreen.OnProgress_Title;
+        buildProgress.ProgressChanged += CentralScreen.OnProgress_CentralScreenProgressBarAsync;
+        buildProgress.Max = 8; // since we have 8 progress "bars", we don't need to be notified more than 8 times
 
         // Semaphore:
         await State.Semaphore.WaitAsync();
         try
         {
-            progress.Start();
-            runGame.Start();
             CentralScreen.ShowModified();
 
             using CancellationTokenSource cts = new();
@@ -318,10 +309,9 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 GamePlatform = State.GamePlatform,
 
                 SkipRebuilding = AppSettings.SkipRebuilding,
+                AutoArrangeTechTreeLayout = AppSettings.AutoArrangeTechTreeLayout,
 
-                InitializationProgress = initializationProgress,
-                JavaBuildProgress = javaBuildProgress,
-                XmlBuildProgress = xmlBuildProgress,
+                BuildProgress = buildProgress,
 
                 GenerateAdditionalIntermediateBuildFiles = false,
             };
@@ -335,16 +325,17 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 CentralScreen.RightLeverState = EControlState.Error;
                 return;
             }
-            progress.Complete();
+            buildProgress.Complete();
             CentralScreen.RightLeverState = EControlState.Ready;
 
 
             // LAUNCH GAME
+            launchProgress.Start();
             bool hasXmlMod = mods.Any(m => m.IsXmlMod);
             bool hasJavaMod = mods.Any(m => m.IsJavaMod);
             if (AppSettings.StartSpaceHavenAutomatically)
             {
-                runGame.Complete();
+                launchProgress.Complete();
                 State.IsSpaceHavenRunning = true;
 
                 GameLaunchService launcherSvc = new(Paths.Data, Log);
@@ -402,9 +393,9 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 // COSMETIC SHUTDOWN EFFECT:
                 const int shutdownSteps = 10;
                 double shutdownProgress = 1.0;
-                for (int i = 0; i < shutdownSteps && progress?.NormalizedValue > 0.0; ++i) await Task.Run(async () =>
+                for (int i = 0; i < shutdownSteps && buildProgress?.NormalizedValue > 0.0; ++i) await Task.Run(async () =>
                 {
-                    progress?.SetNormalized(shutdownProgress -= 1.0 / shutdownSteps);
+                    buildProgress?.SetNormalized(shutdownProgress -= 1.0 / shutdownSteps);
                     await Task.Delay(50);
                 });
             }
@@ -415,8 +406,8 @@ public partial class NavigationConsoleViewModel : ViewModelBase
 
             try
             {
-                progress?.Dispose();
-                runGame?.Dispose();
+                buildProgress?.Dispose();
+                launchProgress?.Dispose();
             }
             catch (Exception ex)
             {
