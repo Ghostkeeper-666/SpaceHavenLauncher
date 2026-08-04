@@ -131,7 +131,7 @@ public sealed class SpaceHavenLauncherConsole
             AutoArrangeTechTreeLayout = true,
 #else
             SkipRebuilding = appSettingsData.SkipRebuilding,
-            AutoArrangeTechTreeLayout = appSettingsData.AutoArrangeTechTreeLayout;
+            AutoArrangeTechTreeLayout = appSettingsData.AutoArrangeTechTreeLayout,
 #endif
             GenerateAdditionalIntermediateBuildFiles = false,
         };
