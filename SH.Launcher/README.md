@@ -13,7 +13,6 @@ Installation instructions, prerequisites, and required configuration steps are p
 ## Main Features
 
 - Mod builder and loader for modified game instances
-- Support for both XML and JAVA mods
 - Advanced XML/JAVA mod build system
 - Detailed error detection and reporting
 - Immersive and responsive user interface
