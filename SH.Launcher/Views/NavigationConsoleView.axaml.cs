@@ -285,7 +285,7 @@ public partial class NavigationConsoleView : UserControl
                 vm.RightScreen.RightButtonsHovered = false;
                 if (!State.IsProcessing)
                 {
-                    State.StatusBarText = @"Launch the original 'vanilla' game";
+                    State.StatusBarText = @"LAUNCH the original 'VANILLA' game";
                     vm.CentralScreen.ShowOriginal();
                 }
             }
@@ -300,7 +300,7 @@ public partial class NavigationConsoleView : UserControl
                 vm.RightScreen.RightButtonsHovered = false;
                 if (!State.IsProcessing)
                 {
-                    State.StatusBarText = @"Launch the modified game";
+                    State.StatusBarText = AppSettings.StartSpaceHavenAutomatically ? @"Build & Launch a MODIFIED game" : @"BUILD the modified game - Change your SYSTEM CORE settings for also LAUNCHING the game!";
                     vm.CentralScreen.ShowModified();
                 }
             }

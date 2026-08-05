@@ -114,125 +114,98 @@ internal sealed class Mod : IAsyncDisposable
     public string BuildMergeDir => IOUtils.CombineAsOSPath(Paths.BuildMergeDir, BuildName);
     public string BuildPatchDir => IOUtils.CombineAsOSPath(Paths.BuildPatchDir, BuildName);
 
-    public string XmlHash { get; private set; } = string.Empty;
-    public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new SortedDictionary<string, string>();
-
-    public string JavaHash { get; private set; } = string.Empty;
-    public IReadOnlyDictionary<string, string> JavaHashes { get; private set; } = new SortedDictionary<string, string>();
+    public string BuildHash { get; private set; } = string.Empty;
+    public IReadOnlyDictionary<string, string> BuildHashSources { get; private set; } = new SortedDictionary<string, string>();
 
     public async Task<bool> ComputeHash()
     {
         try
         {
-            Log.Debug("Computing HASH...");
+            Log.Debug("Computing mod build hash...");
+
+            SortedDictionary<string, string> buildHashSources = new();
+            BuildHashSources = buildHashSources;
+
+            // MOD ID:
+            buildHashSources[$"ID[{nameof(ModData.CustomId)}]"] = Data.CustomId.ToString();
+            CT.ThrowIfCancellationRequested();
 
             // info.xml:
-            // - full file content hash
-            string infoXmlHash = await XxHash64Calculator.ComputeFromFileAsync(Data.InfoXmlPath, Log, CT);
+            buildHashSources[$"InfoFile[{ModdingConstants.INFO_XML}]"] = await XxHash64Calculator.ComputeFromFileAsync(Data.InfoXmlPath, Log, CT);
+            CT.ThrowIfCancellationRequested();
 
-            // --- XML MOD ONLY ---
-            if (IsXmlMod)
+            // Hash of all variable values:
+            string variables = Variables.Values?.OrderBy(v => v.Name).JoinToString(v => $@"{v.Name}={v.StrValue}", "\n") ?? string.Empty;
+            buildHashSources["Vars"] = XxHash64Calculator.ComputeFromString(variables, Log) ?? string.Empty;
+            CT.ThrowIfCancellationRequested();
+
+            // XML files: compute hash of full file content
+            List<string> xmlFilesPath = [];
+            xmlFilesPath.AddRange(XmlLibraryPaths);
+            xmlFilesPath.AddRange(XmlPatchPaths);
+            xmlFilesPath.Sort();
+            foreach (string path in xmlFilesPath)
             {
-                SortedDictionary<string, string> xmlHashes = new();
-                XmlHashes = xmlHashes;
+                if (!IOUtils.FileExists(path))
+                    continue;
+                string relativePath = path.Substring(Dir.Length + 1);
+                buildHashSources[$@"XmlFile:{relativePath}"""] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT);
+            }
+            CT.ThrowIfCancellationRequested();
 
-                // MOD ID:
-                xmlHashes[$"ID[{nameof(ModData.CustomId)}]"] = Data.CustomId.ToString();
+            // JAVA-releated files: compute hash of full file content
+            foreach (string path in JarFilePaths)
+            {
+                string relativePath = path.Substring(Dir.Length + 1);
+                buildHashSources[$"JavaFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
+            }
+            CT.ThrowIfCancellationRequested();
 
-                // info.xml:
-                xmlHashes[$"InfoFile[{ModdingConstants.INFO_XML}]"] = infoXmlHash;
+            // Other files: compute hash of full file content
+            foreach (string path in OtherFilesPaths)
+            {
+                string relativePath = path.Substring(Dir.Length + 1);
+                buildHashSources[$"OtherFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
+            }
+            CT.ThrowIfCancellationRequested();
 
-                // Hash of all variable values:
-                string variables = Variables.Values?.OrderBy(v => v.Name).JoinToString(v => $@"{v.Name}={v.StrValue}", "\n") ?? string.Empty;
-                xmlHashes["Vars"] = XxHash64Calculator.ComputeFromString(variables, Log) ?? string.Empty;
+            // Resource files: calculate approximate hash from:
+            // - file size
+            // - last modified time
+            // - header bytes
+            List<string> resourceFilePaths = [];
+            resourceFilePaths.AddRange(AudioPaths);
+            resourceFilePaths.AddRange(SpritePaths);
+            resourceFilePaths.AddRange(SpriteSheetPaths);
+            resourceFilePaths.Sort();
 
-                CT.ThrowIfCancellationRequested();
-
-                // XML files: compute hash of full file content
-                List<string> xmlFilesPath = [];
-                xmlFilesPath.AddRange(XmlLibraryPaths);
-                xmlFilesPath.AddRange(XmlPatchPaths);
-                xmlFilesPath.Sort();
-                foreach (string path in xmlFilesPath)
+            using (ArrayPool<byte> arrayPool = new(1024, 32))
+            {
+                await Parallel.ForEachAsync(resourceFilePaths, BuildSettings.ParallelOptions, async (path, ct) =>
                 {
                     if (!IOUtils.FileExists(path))
-                        continue;
+                        return;
+                    byte[] buffer = arrayPool.Get();
+
+                    if (!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
+                        return; // file not exists
+
+                    Array.Clear(buffer, 0, buffer.Length);
+                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
+                    BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
                     string relativePath = path.Substring(Dir.Length + 1);
-                    xmlHashes[$@"XmlFile:{relativePath}"""] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT);
-                }
-
-                CT.ThrowIfCancellationRequested();
-
-                // Remaining files: Calculate approximate hash from:
-                // - file size
-                // - last modified time
-                // - a few bytes from content
-                List<string> resourceFilePaths = [];
-                resourceFilePaths.AddRange(AudioPaths);
-                resourceFilePaths.AddRange(SpritePaths);
-                resourceFilePaths.Sort();
-
-                using (ArrayPool<byte> arrayPool = new(1024, 32))
-                {
-                    await Parallel.ForEachAsync(resourceFilePaths, BuildSettings.ParallelOptions, async (path, ct) =>
-                    {
-                        if (!IOUtils.FileExists(path))
-                            return;
-                        byte[] buffer = arrayPool.Get();
-
-                        if (!path.TryGetFileInfo(out long size, out DateTime lastWriteTime))
-                            return; // file not exists
-
-                        Array.Clear(buffer, 0, buffer.Length);
-                        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(0, 8), size);
-                        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), lastWriteTime.Ticks);
-                        string relativePath = path.Substring(Dir.Length + 1);
-                        await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log, ct);
-                        lock (xmlHashes)
-                            xmlHashes[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
-                        arrayPool.Return(buffer);
-                    });
-                }
-
-                CT.ThrowIfCancellationRequested();
-
-                // Overall XML Hash:
-                string allXmlHashesStr = xmlHashes.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
-                XmlHash = XxHash64Calculator.ComputeFromString(allXmlHashesStr, Log) ?? string.Empty;
+                    await IOUtils.TryReadFirstBytesAsync(path, 16, buffer, Log, ct);
+                    lock (buildHashSources)
+                        buildHashSources[$@"ResourceFile:{relativePath}"""] = XxHash64Calculator.ComputeFromBytes(buffer, Log);
+                    arrayPool.Return(buffer);
+                });
             }
+            CT.ThrowIfCancellationRequested();
 
-
-            // --- JAVA MOD ONLY ---
-            if (IsJavaMod)
-            {
-                SortedDictionary<string, string> javaHashes = new();
-                JavaHashes = javaHashes;
-
-                // MOD ID:
-                javaHashes[$"ID[{nameof(ModData.CustomId)}]"] = Data.CustomId.ToString();
-
-                // info.xml:
-                javaHashes[$"InfoFile[{ModdingConstants.INFO_XML}]"] = infoXmlHash;
-
-                // JAVA files:
-                foreach (string path in JarFilePaths)
-                {
-                    string relativePath = path.Substring(Dir.Length + 1);
-                    javaHashes[$"JavaFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
-                }
-
-                // Other files:
-                foreach (string path in OtherFilesPaths)
-                {
-                    string relativePath = path.Substring(Dir.Length + 1);
-                    javaHashes[$"OtherFile[{relativePath}]"] = await XxHash64Calculator.ComputeFromFileAsync(path, Log, CT) ?? string.Empty;
-                }
-
-                // Overall JAVA Hash:
-                string allJavaHashesStr = javaHashes.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
-                JavaHash = XxHash64Calculator.ComputeFromString(allJavaHashesStr, Log) ?? string.Empty;
-            }
-
+            // Final hash:
+            string buildHash = buildHashSources.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
+            BuildHash = XxHash64Calculator.ComputeFromString(buildHash, Log) ?? string.Empty;
+            CT.ThrowIfCancellationRequested();
 
             // Done.
             return true;
@@ -240,14 +213,8 @@ internal sealed class Mod : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
+            BuildHash = string.Empty;
             Log.Error($"Unable to compute hash: {ex}");
-
-            // In case of exception, always set a new unique hash value:
-            if (XmlHash.IsNullOrEmpty())
-                XmlHash = XxHash64Calculator.ComputeFromString(DateTime.Now.Ticks.ToString(), Log);
-            if (JavaHash.IsNullOrEmpty())
-                JavaHash = XxHash64Calculator.ComputeFromString(DateTime.Now.Ticks.ToString(), Log);
-
             return false;
         }
     }
@@ -365,7 +332,7 @@ internal sealed class Mod : IAsyncDisposable
                 if (!await xmlFile.TrySaveToAsync(evaluatedPath, Log, CT))
                     throw new StopException($@"Unable to write evaluated PATCH XML file ""{evaluatedPath}""", BuildPatchDir, BuildSettings.InternalCTS);
 
-                lock(dict)
+                lock (dict)
                     dict[path] = xmlFile;
             });
 
@@ -510,6 +477,8 @@ internal sealed class Mod : IAsyncDisposable
 
         Audio?.Clear();
         Audio = null;
+
+        BuildHashSources = null;
 
         try { await FullFileLogger.DisposeAsync(); } catch { }
         FullFileLogger = null;

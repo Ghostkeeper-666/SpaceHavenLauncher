@@ -112,8 +112,7 @@ public sealed class PathData
 
     public string BuildDir => WorkDir.CombineAsOSPath(ModdingConstants.BUILD);
 
-    public string BuildXmlHashPath => BuildDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH);
-    public string BuildJavaHashPath => BuildDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH);
+    public string BuildHashPath => BuildDir.CombineAsOSPath(ModdingConstants.BUILD_HASH);
 
     public string BuildLogsDir => BuildDir.CombineAsOSPath("logs");
     public string BuildLogPath => BuildDir.CombineAsOSPath("buildLog.txt");
@@ -153,8 +152,7 @@ public sealed class PathData
     public string CacheJarPath => CacheDir.CombineAsOSPath(SpaceHavenConstants.SPACEHAVEN_JAR);
     public string CacheJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
     public string CacheModifiedJarHashPath => CacheDir.CombineAsOSPath(ModdingConstants.SPACEHAVENJAR_HASH);
-    public string CacheXmlHashPath => CacheDir.CombineAsOSPath(ModdingConstants.XML_BUILD_HASH);
-    public string CacheJavaHashPath => CacheDir.CombineAsOSPath(ModdingConstants.JAVA_BUILD_HASH);
+    public string CacheBuildHashPath => CacheDir.CombineAsOSPath(ModdingConstants.BUILD_HASH);
     public string CacheModsJsonPath => CacheDir.CombineAsOSPath(ModdingConstants.MODS_JSON);
 
     public string CacheFilesDir => CacheDir.CombineAsOSPath(ModdingConstants.STAGE);

@@ -43,11 +43,8 @@ internal sealed class BuildInfo : IAsyncDisposable
     public SortedDictionary<EKeyPool, SortedSet<string>> UsedIds { get; private set; } = [];
     public int LastOriginalSpriteId { get; private set; }
 
-    public string XmlHash { get; private set; }
-    public IReadOnlyDictionary<string, string> XmlHashes { get; private set; } = new Dictionary<string, string>();
-
-    public string JavaHash { get; private set; }
-    public IReadOnlyDictionary<string, string> JavaHashes { get; private set; } = new Dictionary<string, string>();
+    public string BuildHash { get; private set; }
+    public IReadOnlyDictionary<string, string> BuildHashSources { get; private set; } = new Dictionary<string, string>();
 
     public void AddMods(IEnumerable<ModData> mods)
     {
@@ -62,10 +59,14 @@ internal sealed class BuildInfo : IAsyncDisposable
     {
         try
         {
-            Log.Info("Computing build hash...");
+            Log.Debug("Computing global build hash...");
+
+            SortedDictionary<string, string> buildHashSources = new();
+            BuildHashSources = buildHashSources;
 
             // Compute mod hashes:
             await Parallel.ForEachAsync(ModList, ParallelOptions, async (mod, ct) => await mod.ComputeHash());
+            CT.ThrowIfCancellationRequested();
 
             // From Space Haven Launcher:
             SortedDictionary<string, string> appData = new()
@@ -78,51 +79,22 @@ internal sealed class BuildInfo : IAsyncDisposable
                 ["SpaceHavenDir"] = $@"""{Paths.SpaceHavenDir}""",
                 ["SpaceHavenJarDir"] = $@"""{Paths.SpaceHavenJarDir}""",
             };
-            string appHash = XxHash64Calculator.ComputeFromString(appData.JoinToString("\n"), Log) ?? string.Empty;
-
-            string jarHash = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
-
-            // --- XML ---
+            buildHashSources["App"] = XxHash64Calculator.ComputeFromString(appData.JoinToString("\n"), Log) ?? string.Empty;
             CT.ThrowIfCancellationRequested();
-            {
-                SortedDictionary<string, string> xmlHashes = new();
-                XmlHashes = xmlHashes;
 
-                // App:
-                xmlHashes["App"] = appHash;
-
-                // JAR:
-                xmlHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = jarHash;
-
-                // Mods:
-                string xmlModsHashData = ModList.Where(mod => mod.IsXmlMod).JoinToString(mod => $@"{mod.UniqueName}={mod.XmlHash}", "\n") ?? string.Empty;
-                xmlHashes["Mods"] = XxHash64Calculator.ComputeFromString(xmlModsHashData, Log) ?? string.Empty;
-
-                // Overall XML Hash:
-                string allXmlHashesStr = xmlHashes.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
-                XmlHash = XxHash64Calculator.ComputeFromString(allXmlHashesStr, Log);
-            }
-
-            // --- JAVA ---
+            // JAR:
+            buildHashSources[SpaceHavenConstants.SPACEHAVEN_JAR] = IOUtils.TryReadAllText(Paths.TemplateJarHashPath, out string templateHash) ? templateHash : string.Empty;
             CT.ThrowIfCancellationRequested();
-            {
-                SortedDictionary<string, string> javaHashes = new();
-                JavaHashes = javaHashes;
 
-                // App:
-                javaHashes["App"] = appHash;
+            // Mods:
+            string xmlModsHashData = ModList.JoinToString(mod => $@"{mod.UniqueName}={mod.BuildHash}", "\n") ?? string.Empty;
+            buildHashSources["Mods"] = XxHash64Calculator.ComputeFromString(xmlModsHashData, Log) ?? string.Empty;
+            CT.ThrowIfCancellationRequested();
 
-                // JAR:
-                javaHashes[SpaceHavenConstants.SPACEHAVEN_JAR] = jarHash;
-
-                // Mods:
-                string javaModsHashData = ModList.Where(mod => mod.IsJavaMod).JoinToString(mod => $@"{mod.UniqueName}={mod.JavaHash}", "\n") ?? string.Empty;
-                javaHashes["Mods"] = XxHash64Calculator.ComputeFromString(javaModsHashData, Log) ?? string.Empty;
-
-                // Overall Java Hash:
-                string allJavaHashesStr = javaHashes.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
-                JavaHash = XxHash64Calculator.ComputeFromString(allJavaHashesStr, Log);
-            }
+            // Final hash:
+            string buildHash = buildHashSources.JoinToString((kvp) => $"{kvp.Key}={kvp.Value}", "\n");
+            BuildHash = XxHash64Calculator.ComputeFromString(buildHash, Log);
+            CT.ThrowIfCancellationRequested();
 
             // Done.
             return true;
@@ -130,6 +102,7 @@ internal sealed class BuildInfo : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
+            BuildHash = string.Empty;
             Log.Error($"Unable to compute hash: {ex}");
             return false;
         }
@@ -187,7 +160,7 @@ internal sealed class BuildInfo : IAsyncDisposable
             {
                 // Instantiate:
                 XmlFile xmlFile;
-                lock(XmlFile)
+                lock (XmlFile)
                     xmlFile = XmlFile[kvp.Key] = new(kvp.Key, Paths.BuildStageDir, kvp.Value);
                 if (!await xmlFile.TryLoadAsync(Log, ct))
                     throw new StopException($@"Unable to load original '{kvp.Key}' file", Paths.BuildStageDir, BuildSettings.InternalCTS);
@@ -292,8 +265,7 @@ internal sealed class BuildInfo : IAsyncDisposable
         XmlFile.Clear();
         XmlFile = null;
 
-        JavaHashes = null;
-        XmlHashes = null;
+        BuildHashSources = null;
 
         try { await FileLogger.DisposeAsync(); }
         catch { }

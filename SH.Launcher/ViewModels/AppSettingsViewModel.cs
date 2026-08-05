@@ -53,6 +53,9 @@ public partial class AppSettingsViewModel : ObservableObject
 
     // BUILD / LAUNCH:
     [ObservableProperty]
+    private bool _AutoArrangeTechTreeLayout;
+
+    [ObservableProperty]
     private bool _SkipRebuilding;
 
     [ObservableProperty]
@@ -111,6 +114,7 @@ public partial class AppSettingsViewModel : ObservableObject
             ModPageSplitterHeight = data.ModPageSplitterHeight;
             IsBackgroundEnabled = data.IsBackgroundEnabled;
             BackgroundDarkness = Math.Min(1.00, Math.Max(0.0, data.BackgroundDarkness));
+            AutoArrangeTechTreeLayout = data.AutoArrangeTechTreeLayout;
             SkipRebuilding = data.SkipRebuilding;
             StartSpaceHavenAutomatically = data.StartSpaceHavenAutomatically;
             CloseAppAutomaticallyOnLaunch = data.CloseAppAutomaticallyOnLaunch;
@@ -157,6 +161,9 @@ public partial class AppSettingsViewModel : ObservableObject
                 case nameof(BackgroundDarkness):
                     Data?.BackgroundDarkness = BackgroundDarkness;
                     BackgroundTransparencyText = BackgroundDarkness >= 1.0 ? $"Background: OFF" : $"Background: {(1.0 - BackgroundDarkness):0%}";
+                    break;
+                case nameof(AutoArrangeTechTreeLayout):
+                    Data?.AutoArrangeTechTreeLayout = AutoArrangeTechTreeLayout;
                     break;
                 case nameof(SkipRebuilding):
                     Data?.SkipRebuilding = SkipRebuilding;
