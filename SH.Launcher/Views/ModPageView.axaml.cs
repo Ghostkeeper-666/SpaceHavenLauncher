@@ -99,7 +99,7 @@ public partial class ModPageView : UserControl
             StartBackgroundSaveTask(vm, CTS.Token);
             StartBackgroundSearchTask(vm, CTS.Token);
         }
-        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { }
         catch (Exception ex)
         {
             Log.Debug(ex);
@@ -161,7 +161,7 @@ public partial class ModPageView : UserControl
 
                 Dispatcher.Run(() => ViewModel.Variables = new(vars));
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             {
                 break;
             }
@@ -249,7 +249,7 @@ public partial class ModPageView : UserControl
                         await vm.SaveModValues(true, ct);
                 }
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             {
                 // normal shutdown
                 Log.Debug($@"Background save task stopped for mod '{DisplayName}'");

@@ -99,7 +99,7 @@ public sealed class InitializationService
             Log.Success($"{SpaceHavenLauncher.Name} initialization is complete", Paths.WorkDir);
             return data;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
@@ -158,7 +158,7 @@ public sealed class InitializationService
             data.BackupChanged = true;
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.BackupDir);
@@ -222,7 +222,7 @@ public sealed class InitializationService
             data.TemplateChanged = true;
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.TemplateDir);
@@ -273,7 +273,7 @@ public sealed class InitializationService
             data.CacheChanged = true;
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.CacheDir);
@@ -353,7 +353,7 @@ public sealed class InitializationService
             TemplateProgress?.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.TemplateDir);
@@ -405,7 +405,7 @@ public sealed class InitializationService
             }
             return null;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.BackupDir);
@@ -444,7 +444,7 @@ public sealed class InitializationService
             Log.Success($"Detected {SpaceHavenConstants.SpaceHavenName} version {version}");
             return version;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to read {SpaceHavenConstants.SpaceHavenName} version: {ex}", Paths.BackupDir);

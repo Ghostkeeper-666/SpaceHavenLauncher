@@ -1,4 +1,5 @@
-﻿using SH.Framework.IO;
+﻿using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using System;
@@ -94,7 +95,7 @@ public sealed class ModRepository
             progress?.Complete();
             return mods;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

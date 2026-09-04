@@ -80,62 +80,92 @@ public sealed class FileLogger : ILogger
 
     public void Debug(object o = null)
     {
-        if (LogLevel > ELogLevel.Debug) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Debug)
+            return;
         Add(new(ELogLevel.Debug, o));
     }
 
     public void Info(object o = null)
     {
-        if (LogLevel > ELogLevel.Info) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Info)
+            return;
         Add(new(ELogLevel.Info, o));
     }
 
     public void Success(object o = null)
     {
-        if (LogLevel > ELogLevel.Success) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Success)
+            return;
         Add(new(ELogLevel.Success, o));
     }
 
     public void Warn(object o = null)
     {
-        if (LogLevel > ELogLevel.Warn) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Warn)
+            return;
         Add(new(ELogLevel.Warn, o));
     }
 
     public void Error(object o = null)
     {
-        if (LogLevel > ELogLevel.Error) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Error)
+            return;
         Add(new(ELogLevel.Error, o));
     }
 
 
     public void Debug(object o, string link)
     {
-        if (LogLevel > ELogLevel.Debug) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Debug)
+            return;
         Add(new(ELogLevel.Debug, o, link));
     }
 
     public void Info(object o, string link)
     {
-        if (LogLevel > ELogLevel.Info) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Info)
+            return;
         Add(new(ELogLevel.Info, o, link));
     }
 
     public void Success(object o, string link)
     {
-        if (LogLevel > ELogLevel.Success) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Success)
+            return;
         Add(new(ELogLevel.Success, o, link));
     }
 
     public void Warn(object o, string link)
     {
-        if (LogLevel > ELogLevel.Warn) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Warn)
+            return;
         Add(new(ELogLevel.Warn, o, link));
     }
 
     public void Error(object o, string link)
     {
-        if (LogLevel > ELogLevel.Error) return;
+        if (o == null)
+            return;
+        if (LogLevel > ELogLevel.Error)
+            return;
         Add(new(ELogLevel.Error, o, link));
     }
 
@@ -144,7 +174,7 @@ public sealed class FileLogger : ILogger
     {
         if (IsDisposed)
             return;
-        if (m == null || m.Level < LogLevel)
+        if (m == null || m.Level < LogLevel || m.RawText == null)
             return;
         if (Prefix != null)
             m.Prefix = Prefix;
@@ -185,7 +215,7 @@ public sealed class FileLogger : ILogger
                 batch.Clear();
             }
         }
-        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
@@ -200,7 +230,7 @@ public sealed class FileLogger : ILogger
                 sb.AppendLine(m.ToString());
             await IOUtils.TryAppendAllTextAsync(path, sb.ToString(), null, CTS.Token);
         }
-        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 

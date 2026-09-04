@@ -210,7 +210,7 @@ internal sealed class Mod : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             BuildHash = string.Empty;
@@ -375,7 +375,7 @@ internal sealed class Mod : IAsyncDisposable
             }
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to map mod variables: {ex}");
@@ -453,7 +453,7 @@ internal sealed class Mod : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex, xmlFile.Path);

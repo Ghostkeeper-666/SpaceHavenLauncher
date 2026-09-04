@@ -92,7 +92,7 @@ public sealed class ArtRepository
 
             return success;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log?.Error(ex);
@@ -182,7 +182,7 @@ public sealed class ArtRepository
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"[{cimFilePath}] {ex}");
@@ -224,7 +224,7 @@ public sealed class ArtRepository
             progress.Complete();
             return success;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);
@@ -274,7 +274,7 @@ public sealed class ArtRepository
             progress.Complete();
             return success;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log?.Error(ex);
@@ -333,7 +333,7 @@ public sealed class ArtRepository
             progress.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log?.Error(ex);

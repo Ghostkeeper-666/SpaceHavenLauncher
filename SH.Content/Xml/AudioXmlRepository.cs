@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using SH.Framework.Extensions;
 
 namespace SH.Content.Xml;
 
@@ -65,7 +66,7 @@ public sealed class AudioXmlRepository
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

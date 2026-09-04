@@ -105,7 +105,7 @@ internal sealed class Sprite : IDisposable
                 handle.Free();
             }
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

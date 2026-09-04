@@ -120,7 +120,7 @@ public sealed class ExportService
             progress?.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, jarDir);
@@ -223,7 +223,7 @@ public sealed class ExportService
             progress?.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

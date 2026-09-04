@@ -1,4 +1,5 @@
-﻿using SH.Framework.IO;
+﻿using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using System;
 using System.IO;
@@ -72,7 +73,7 @@ public static class XxHash64Calculator
             await using FileStream sourceStream = File.OpenRead(path);
             return await ComputeFromStreamAsync(sourceStream, log, ct).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error($@"Unable to compute hash of file ""{path}"": {ex}");
@@ -101,7 +102,7 @@ public static class XxHash64Calculator
             byte[] hash = hasher.GetHashAndReset();
             return Convert.ToHexString(hash).ToLowerInvariant();
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error($@"Unable to compute hash of stream: {ex}");

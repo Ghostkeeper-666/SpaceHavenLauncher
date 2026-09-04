@@ -1,4 +1,5 @@
 ﻿using SH.Content.Xml.Textures;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SixLabors.ImageSharp;
@@ -161,7 +162,7 @@ public sealed class SpriteSheet
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -202,7 +203,7 @@ public sealed class SpriteSheet
             await image.SaveAsync(IOUtils.CombineAsOSPath(exportDir, $"{Name}.png"), encoder, ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

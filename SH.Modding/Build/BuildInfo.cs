@@ -99,7 +99,7 @@ internal sealed class BuildInfo : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             BuildHash = string.Empty;
@@ -230,7 +230,7 @@ internal sealed class BuildInfo : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Debug($@"Unable to computing registered XML node IDs: {ex}");

@@ -1,4 +1,5 @@
 ﻿using Avalonia.Threading;
+using SH.Framework.Extensions;
 using System;
 using System.Threading;
 using System.Threading.Channels;
@@ -41,7 +42,7 @@ public sealed class DispatchQueue : IAsyncDisposable
             await foreach (Func<Task> task in Queue.Reader.ReadAllAsync(CTS.Token))
                 await Dispatcher.UIThread.InvokeAsync(async () => await task(), DispatcherPriority.Normal, CTS.Token);
         }
-        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { }
     }
 
     public async ValueTask DisposeAsync()
@@ -49,7 +50,7 @@ public sealed class DispatchQueue : IAsyncDisposable
         Queue.Writer.TryComplete();
         CTS.Cancel();
         try { await ProcessingTask; }
-        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { }
         CTS.Dispose();
     }
 }

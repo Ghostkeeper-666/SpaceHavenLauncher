@@ -1,4 +1,5 @@
 ﻿using SH.Content.Enums;
+using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
 using SH.Modding.Annotation;
@@ -29,7 +30,7 @@ public sealed class XmlAnnotationService
                 return false;
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

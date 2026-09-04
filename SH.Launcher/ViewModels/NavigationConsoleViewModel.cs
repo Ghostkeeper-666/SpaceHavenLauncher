@@ -6,6 +6,7 @@ using MsBox.Avalonia.Enums;
 using SH.Content;
 using SH.Content.Art;
 using SH.Content.Xml;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Framework.Progress;
@@ -173,7 +174,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             // Done.
             CentralScreen.LeftLeverState = EControlState.Standby;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             Log.Error($"Launch was cancelled");
             CentralScreen.LeftLeverState = EControlState.Error;
@@ -374,7 +375,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             // Done.
             CentralScreen.RightLeverState = EControlState.Standby;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             Log.Error($"Launch was cancelled");
             CentralScreen.RightLeverState = EControlState.Error;
@@ -607,7 +608,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
                 exportOriginalSuccess && exportModifiedSuccess ?
                 EControlState.Ready : EControlState.Error;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             Log.Error($"Export was cancelled");
             RightScreen.RightButtonsState = EControlState.Error;
@@ -715,7 +716,7 @@ public partial class NavigationConsoleViewModel : ViewModelBase
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

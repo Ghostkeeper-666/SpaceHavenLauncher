@@ -1,4 +1,5 @@
-﻿using SH.Framework.Logging;
+﻿using SH.Framework.Extensions;
+using SH.Framework.Logging;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -83,7 +84,7 @@ public static class OS
                 return await tcs.Task.ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             log?.Error($@"Process ""{path}"" was cancelled");
             return false;

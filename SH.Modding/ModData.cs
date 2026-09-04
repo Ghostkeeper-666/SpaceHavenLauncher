@@ -102,7 +102,7 @@ public sealed class ModData
 
             return mod;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error($"[{mod.UniqueName}] {ex.Message}", mod.Dir);

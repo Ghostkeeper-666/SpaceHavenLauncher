@@ -144,7 +144,7 @@ public sealed class XmlFile
             Xml = await IOUtils.TryLoadXDocumentAsync(Path, log, ct);
             return Xml != null;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex, Path);
@@ -162,7 +162,7 @@ public sealed class XmlFile
             string sanitized = FixAmpersandAndInvalidCharacters(dirty, new char[] { (char)0x1B });
             return await IOUtils.TryWriteAllTextAsync(Path, sanitized, log, ct);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex, Path);

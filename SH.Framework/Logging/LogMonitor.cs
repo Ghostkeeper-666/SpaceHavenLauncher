@@ -59,7 +59,7 @@ public sealed class LogMonitor : IDisposable
                 catch (Exception ex) { Debug.WriteLine(ex.ToString()); }
             }
 
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             { return; }
 
             catch (Exception ex)

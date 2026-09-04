@@ -1,4 +1,5 @@
 ﻿using SH.Content.Xml.Textures;
+using SH.Framework.Extensions;
 using SH.Framework.Logging;
 using SkiaSharp;
 using System;
@@ -72,7 +73,7 @@ public sealed class Sprite : IEquatable<Sprite>, IDisposable
                 await Task.Run(() => data.SaveTo(stream), ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

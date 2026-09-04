@@ -1,4 +1,5 @@
-﻿using SH.Framework.IO;
+﻿using SH.Framework.Extensions;
+using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Modding;
 using SH.Modding.Models;
@@ -78,7 +79,7 @@ public sealed class ModValuesRepositoryService
             // Done.
             return !atLeastOneVariableValueIsMissing;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.ModValuesDir);
@@ -163,7 +164,7 @@ public sealed class ModValuesRepositoryService
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.ModValuesDir);
@@ -243,7 +244,7 @@ public sealed class ModValuesRepositoryService
             Log.Debug($@"File saved: ""{modValuesPath}""");
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.ModValuesDir);
@@ -299,7 +300,7 @@ public sealed class ModValuesRepositoryService
             // Done.
             return sorted;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
@@ -350,7 +351,7 @@ public sealed class ModValuesRepositoryService
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);

@@ -491,7 +491,7 @@ public partial class AppViewModel : ObservableObject
             InitializationState = EControlState.Ready;
             return true;
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             Log.Warn($"Initialization was cancelled");
             return false;
@@ -536,7 +536,7 @@ public partial class AppViewModel : ObservableObject
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
@@ -622,7 +622,7 @@ public partial class AppViewModel : ObservableObject
             LoadModsProgress.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Info(ex);

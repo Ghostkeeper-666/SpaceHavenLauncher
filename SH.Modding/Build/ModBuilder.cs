@@ -367,7 +367,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Success($"Build has completed in {(int)sw.Elapsed.TotalSeconds}s", Paths.BuildDir);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.BuildDir);
@@ -419,7 +419,7 @@ public sealed class ModBuilder : IAsyncDisposable
             InitializeBuild?.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to initialize mod build: {ex}", Paths.BuildDir);
@@ -472,7 +472,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 IOUtils.FileExists(Paths.CacheBuildHashPath) &&
                 Build.BuildHash == cacheBuildHash;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to compute mod build hashes: {ex}");
@@ -505,7 +505,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to compute build hash: {ex}");
@@ -541,7 +541,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ResetBuildStage.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable reset build stage directory: {ex}");
@@ -588,7 +588,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ResetBuildDirectories.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable reset build directories: {ex}");
@@ -620,7 +620,7 @@ public sealed class ModBuilder : IAsyncDisposable
             DeployHashFiles.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to deploy hash files: {ex}");
@@ -1182,7 +1182,7 @@ public sealed class ModBuilder : IAsyncDisposable
                     }
                 }
             }
-            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
             catch
             {
                 // Save texts document, for debugging:
@@ -1199,7 +1199,7 @@ public sealed class ModBuilder : IAsyncDisposable
             FixTexts.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to fix TEXT entries: {ex}", Paths.BuildAudioDir);
@@ -1312,7 +1312,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Success($"AUDIO files ready", Paths.BuildAudioDir);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to compose AUDIO: {ex}", Paths.BuildAudioDir);
@@ -1992,7 +1992,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Success($"TEXTURES ready", Paths.BuildTexturesDir);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to compose TEXTURES: {ex}", Paths.BuildTexturesDir);
@@ -2049,7 +2049,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ComposeCredits.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to compose final '{SpaceHavenConstants.SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
@@ -2080,7 +2080,7 @@ public sealed class ModBuilder : IAsyncDisposable
             WriteSpaceHavenXml.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to compose final '{SpaceHavenConstants.SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
@@ -2137,7 +2137,7 @@ public sealed class ModBuilder : IAsyncDisposable
             Log.Success($"'{SpaceHavenConstants.SPACEHAVEN_JAR}' is ready", Paths.CacheDir);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($"Unable to compose final '{SpaceHavenConstants.SPACEHAVEN_JAR}' file: {ex}", Paths.CacheDir);
@@ -2226,7 +2226,7 @@ public sealed class ModBuilder : IAsyncDisposable
             ComposeModsJson.Complete();
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log?.Error($"Unable to compose '{ModdingConstants.MODS_JSON}' file: {ex}", Paths.CacheDir);
@@ -2263,7 +2263,7 @@ public sealed class ModBuilder : IAsyncDisposable
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

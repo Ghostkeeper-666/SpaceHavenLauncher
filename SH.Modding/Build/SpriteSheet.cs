@@ -157,7 +157,7 @@ internal sealed class SpriteSheet : IDisposable
             IsRendered = true;
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -184,7 +184,7 @@ internal sealed class SpriteSheet : IDisposable
             await zs.WriteAsync(PixelData, ct).ConfigureAwait(false);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -208,7 +208,7 @@ internal sealed class SpriteSheet : IDisposable
             await stream.WriteAsync(data.ToArray(), ct).ConfigureAwait(false);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

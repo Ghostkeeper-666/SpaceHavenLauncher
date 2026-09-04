@@ -1,4 +1,5 @@
 ﻿using SH.Content.Enums;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
@@ -114,7 +115,7 @@ public sealed class AppSettingsRepositoryService
             Log.Success($"Application settings loaded", Paths.ApplicationSettingsPath);
             return data;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);
@@ -161,7 +162,7 @@ public sealed class AppSettingsRepositoryService
             Log.Debug($"Application settings saved", Paths.ApplicationSettingsPath);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, Paths.WorkDir);

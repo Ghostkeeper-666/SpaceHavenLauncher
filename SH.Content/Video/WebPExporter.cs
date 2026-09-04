@@ -1,4 +1,5 @@
 ﻿using Imazen.WebP;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SkiaSharp;
@@ -78,7 +79,7 @@ public static class WebpExporter
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SH.Content;
+using SH.Framework.Extensions;
 using SH.Framework.IO;
 using SH.Framework.Logging;
 using SH.Launcher.Core.Models;
@@ -120,7 +121,7 @@ public partial class MainWindowViewModel : ViewModelBase
             success &= await InitializeAppSettings(ct);
             return success;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);
@@ -144,7 +145,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Title = $"{SpaceHavenLauncher.Name} {SpaceHavenLauncher.Version.Major}.{SpaceHavenLauncher.Version.Minor}.{SpaceHavenLauncher.Version.Build}";
             return success;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);
@@ -186,7 +187,7 @@ public partial class MainWindowViewModel : ViewModelBase
             State.AppSettings.SetData(data);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

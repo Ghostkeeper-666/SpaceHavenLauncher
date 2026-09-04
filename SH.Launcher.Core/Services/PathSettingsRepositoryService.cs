@@ -51,7 +51,7 @@ public sealed class PathSettingsRepositoryService
             Log.Debug($"Path settings were successfully saved", data.PathSettingsPath);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex, data?.WorkDir);

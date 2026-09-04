@@ -1,4 +1,5 @@
-﻿using SH.Framework.Logging;
+﻿using SH.Framework.Extensions;
+using SH.Framework.Logging;
 using SH.Modding.Build;
 using System;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ public sealed class BuildService
             // Done.
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error(ex);

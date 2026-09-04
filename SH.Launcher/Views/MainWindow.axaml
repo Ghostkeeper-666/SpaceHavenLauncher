@@ -398,7 +398,7 @@ HorizontalAlignment="Stretch"
           Background="Transparent"
           ItemsSource="{Binding State.FilteredLeftPaneItems}"
           SelectedItem="{Binding State.SelectedLeftPaneItem}"
-          ScrollViewer.AllowAutoHide="False"
+          ScrollViewer.AllowAutoHide="{Binding AppSettings.IsLeftPaneCollapsed}"
           ScrollViewer.VerticalScrollBarVisibility="Visible"
           ScrollViewer.HorizontalScrollBarVisibility="Hidden">
 

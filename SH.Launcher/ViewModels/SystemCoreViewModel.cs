@@ -173,7 +173,7 @@ public partial class SystemCoreViewModel : ViewModelBase
                 DebugProgressText = $@"{PathData.DebugFilename} was generated with some errors, check the log on Navigation Console";
             else DebugProgressText = $@"Unable to generate {PathData.DebugFilename}, check the log on Navigation Console";
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex.IsOperationCancelled())
         {
             Log.Warn($"Operation was cancelled");
             DebugProgressText = "Cancelled";

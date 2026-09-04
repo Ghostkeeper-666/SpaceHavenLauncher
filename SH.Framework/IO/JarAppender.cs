@@ -196,7 +196,7 @@ public sealed class JarAppender
 
                 }); // Parallel.ForEachAsync()
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             {
                 if (ownCTS.IsCancellationRequested)
                     return false;
@@ -281,7 +281,7 @@ public sealed class JarAppender
             progress?.Complete();
             return true;
         }
-        catch(OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

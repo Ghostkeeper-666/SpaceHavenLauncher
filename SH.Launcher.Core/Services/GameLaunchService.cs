@@ -197,7 +197,7 @@ public sealed class GameLaunchService
                 await process.WaitForExitAsync(ct);
                 return process.ExitCode == 0;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             {
                 try
                 {

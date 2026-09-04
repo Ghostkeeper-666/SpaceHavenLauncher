@@ -558,7 +558,7 @@ public static class IOUtils
             int read = await fs.ReadAtLeastAsync(bytes.AsMemory(startPos, size), size, throwOnEndOfStream: false, cancellationToken: ct).ConfigureAwait(false);
             return read == size;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error($@"Unable to read first bytes of file ""{path}"": {ex}");
@@ -618,7 +618,7 @@ public static class IOUtils
                 await Task.Run(() => XDocument.Parse(content, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo), ct)
                 .ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -646,7 +646,7 @@ public static class IOUtils
 
             return XDocument.Parse(xml, LoadOptions.SetBaseUri | LoadOptions.SetLineInfo);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -714,7 +714,7 @@ public static class IOUtils
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -758,7 +758,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             return await Task.Run(() => TryCreateDir(directory, log), ct);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -800,7 +800,7 @@ public static class IOUtils
 
                 return true;
             }
-            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
             catch (Exception ex)
             {
                 string parent = null;
@@ -886,7 +886,7 @@ public static class IOUtils
             ct.ThrowIfCancellationRequested();
             return await Task.Run(() => TryDeleteFile(path, log), ct);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -928,7 +928,7 @@ public static class IOUtils
             await File.WriteAllTextAsync(path, text ?? string.Empty, ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -980,7 +980,7 @@ public static class IOUtils
                 return null;
             return await File.ReadAllTextAsync(path, ct).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -1020,7 +1020,7 @@ public static class IOUtils
             await File.AppendAllTextAsync(absolutePath, text ?? string.Empty, ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -1060,7 +1060,7 @@ public static class IOUtils
             await File.WriteAllBytesAsync(path, bytes ?? Array.Empty<byte>(), ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -1112,7 +1112,7 @@ public static class IOUtils
                 return null;
             return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -1152,7 +1152,7 @@ public static class IOUtils
             await File.AppendAllBytesAsync(absolutePath, bytes ?? Array.Empty<byte>(), ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);
@@ -1230,7 +1230,7 @@ public static class IOUtils
             await source.CopyToAsync(target, bufferSize, ct);
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -1291,7 +1291,7 @@ public static class IOUtils
             // Done.
             return !ct.IsCancellationRequested;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             string parent = null;
@@ -1339,7 +1339,7 @@ public static class IOUtils
 
             return true;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             log?.Error(ex);

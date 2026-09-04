@@ -173,7 +173,7 @@ public sealed class DebugService
             else Log.Error($@"A debug file was generated with errors", Paths.BuildDir);
             return !errors;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to generate a debug file: {ex}", Paths.WorkDir);
@@ -211,7 +211,7 @@ public sealed class DebugService
             // Write file:
             return await IOUtils.TryWriteAllTextAsync(Paths.SystemInformationFilePath, sb.ToString(), Log, ct);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
         catch (Exception ex)
         {
             Log.Error($@"Unable to generate a debug file: {ex}", Paths.WorkDir);

@@ -67,6 +67,7 @@ public partial class MainWindow : Window
                     SearchTextbox.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
                     SearchTextbox.Width = 0.0;
                     SearchTextbox.Text = string.Empty;
+
                 }
                 else
                 {
@@ -203,7 +204,7 @@ public partial class MainWindow : Window
 
                 previousSearchText = searchText;
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex.IsOperationCancelled())
             {
                 Log.Debug("Background mod search task has stopped.");
                 throw;
