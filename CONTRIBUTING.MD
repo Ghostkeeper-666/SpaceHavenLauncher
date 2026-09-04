@@ -6,6 +6,11 @@ At the current stage of this project, this repository is published for **referen
 
 **External contributions are currently not accepted** - pull requests, feature requests, or unsolicited code changes.
 
+## Funding
+
+Please consider [donating](https://buymeacoffee.com/ghostkeepeb) to keep the project alive.
+
+Even a small contribution makes me very happy! Thank you!
 
 ## Pull Requests
 

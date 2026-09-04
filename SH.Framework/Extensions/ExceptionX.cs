@@ -8,7 +8,7 @@ public static partial class ExceptionX
     public static bool IsStop(this Exception ex, out StopException stopException)
     {
         stopException = ex as StopException;
-        if (stopException != null)
+        if (stopException is null)
             return true;
 
         if (ex is not AggregateException ae)
@@ -28,6 +28,9 @@ public static partial class ExceptionX
 
     public static bool IsOperationCancelled(this Exception ex)
     {
+        if(ex is null)
+            return false;
+
         if (ex is OperationCanceledException)
             return true;
 

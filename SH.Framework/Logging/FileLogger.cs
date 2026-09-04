@@ -60,15 +60,7 @@ public sealed class FileLogger : ILogger
 
             LogPath = path;
         }
-        catch (Exception ex1)
-        {
-            try { Error(ex1); }
-            catch (Exception ex2)
-            {
-                System.Diagnostics.Debug.WriteLine(ex1);
-                System.Diagnostics.Debug.WriteLine(ex2);
-            }
-        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
     private readonly Task LogTask;
@@ -80,7 +72,7 @@ public sealed class FileLogger : ILogger
 
     public void Debug(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -89,7 +81,7 @@ public sealed class FileLogger : ILogger
 
     public void Info(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -98,7 +90,7 @@ public sealed class FileLogger : ILogger
 
     public void Success(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -107,7 +99,7 @@ public sealed class FileLogger : ILogger
 
     public void Warn(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -116,7 +108,7 @@ public sealed class FileLogger : ILogger
 
     public void Error(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -126,7 +118,7 @@ public sealed class FileLogger : ILogger
 
     public void Debug(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -135,7 +127,7 @@ public sealed class FileLogger : ILogger
 
     public void Info(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -144,7 +136,7 @@ public sealed class FileLogger : ILogger
 
     public void Success(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -153,7 +145,7 @@ public sealed class FileLogger : ILogger
 
     public void Warn(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -162,7 +154,7 @@ public sealed class FileLogger : ILogger
 
     public void Error(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -172,22 +164,27 @@ public sealed class FileLogger : ILogger
 
     public void Add(LogMessage m)
     {
-        if (IsDisposed)
+        if (IsDisposed || m is null)
             return;
-        if (m == null || m.Level < LogLevel || m.RawText == null)
+        if (m.Level < LogLevel || m.RawText is null)
             return;
         if (Prefix != null)
             m.Prefix = Prefix;
         if (Suffix != null)
             m.Suffix = Suffix;
-        IReadOnlyList<(string, string)> replacements = Replacements;
-        if(replacements?.Count > 0)
-            foreach((string value, string token) in Replacements)
-                if(m.RawText.Contains(value))
-                    m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
-        if (!Messages.Writer.TryWrite(m))
-            return;
-        try { OnMessage?.Invoke(this, m); }
+        try
+        {
+            IReadOnlyList<(string, string)> rep = Replacements;
+            if (rep != null && rep.Count > 0)
+                foreach ((string value, string token) in rep ?? [])
+                    if (!value.IsNullOrEmpty() && (m?.RawText?.Contains(value) ?? false))
+                        m.RawText = m.RawText?.Replace(value ?? string.Empty, token ?? string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
+            
+            if (!Messages.Writer.TryWrite(m))
+                return;
+
+            OnMessage?.Invoke(this, m);
+        }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 

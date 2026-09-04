@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SH.Framework.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,28 +54,34 @@ public sealed class LoggerCollection : ILogger
 
     public void Add(LogMessage m)
     {
-        if (IsDisposed)
+        if (IsDisposed || m is null)
             return;
-        if (m == null || m.Level < LogLevel || m.RawText == null)
+        if (m.Level < LogLevel || m.RawText is null)
             return;
         if (Prefix != null)
             m.Prefix = Prefix;
         if (Suffix != null)
             m.Suffix = Suffix;
-        IReadOnlyList<(string, string)> replacements = Replacements;
-        if(replacements?.Count > 0)
-            foreach((string value, string token) in Replacements)
-                if(m.RawText.Contains(value))
-                    m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
-        for (int i = 0; i < ChildrenList.Count; ++i)
-            try { ChildrenList[i].Add(m); } catch { }
-        try { OnMessage?.Invoke(this, m); }
+        try
+        {
+            IReadOnlyList<(string, string)> rep = Replacements;
+            if (rep != null && rep.Count > 0)
+                foreach ((string value, string token) in rep ?? [])
+                    if (!value.IsNullOrEmpty() && (m?.RawText?.Contains(value) ?? false))
+                        m.RawText = m.RawText?.Replace(value ?? string.Empty, token ?? string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
+
+            for (int i = 0; i < ChildrenList.Count; ++i)
+                try { ChildrenList[i].Add(m); }
+                catch(Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
+
+            OnMessage?.Invoke(this, m);
+        }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
     public void Debug(object o = null)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -83,7 +90,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Info(object o = null)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -92,7 +99,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Success(object o = null)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -101,7 +108,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Warn(object o = null)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -110,7 +117,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Error(object o = null)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -120,7 +127,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Debug(object o, string link)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -129,7 +136,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Info(object o, string link)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -138,7 +145,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Success(object o, string link)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -147,7 +154,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Warn(object o, string link)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -156,7 +163,7 @@ public sealed class LoggerCollection : ILogger
 
     public void Error(object o, string link)
     {
-        if (IsDisposed || o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;

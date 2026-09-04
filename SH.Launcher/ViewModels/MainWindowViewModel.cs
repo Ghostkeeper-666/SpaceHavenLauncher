@@ -92,11 +92,6 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             catch (Exception ex) { Log?.Debug(ex); }
 
-            // Try to maximize the window:
-#if DEBUG
-            try { MainWindow.Window.WindowState = Avalonia.Controls.WindowState.Maximized; }
-            catch (Exception ex) { Log?.Debug(ex); }
-#endif
             // Also automatically initialize:
             await State.InitializeAsync(forceReset: isNewAppVersion);
 
@@ -116,7 +111,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             bool success = true;
             success &= await InitializePathSettings(ct);
-            State.Log.SetPath(IOUtils.CombineAsOSPath(Paths.Data.AppLogPath));
+            State.FileLogger.SetPath(IOUtils.CombineAsOSPath(Paths.Data.AppLogPath));
 
             success &= await InitializeAppSettings(ct);
             return success;

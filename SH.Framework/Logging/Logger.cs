@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SH.Framework.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -24,7 +25,7 @@ public sealed class Logger : ILogger
 
     public void Debug(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -33,7 +34,7 @@ public sealed class Logger : ILogger
 
     public void Info(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -42,7 +43,7 @@ public sealed class Logger : ILogger
 
     public void Success(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -51,7 +52,7 @@ public sealed class Logger : ILogger
 
     public void Warn(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -60,7 +61,7 @@ public sealed class Logger : ILogger
 
     public void Error(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -70,7 +71,7 @@ public sealed class Logger : ILogger
 
     public void Debug(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -79,16 +80,16 @@ public sealed class Logger : ILogger
 
     public void Info(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
-        if (LogLevel > ELogLevel.Info) 
+        if (LogLevel > ELogLevel.Info)
             return;
         Add(new(ELogLevel.Info, o, link));
     }
 
     public void Success(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -97,16 +98,16 @@ public sealed class Logger : ILogger
 
     public void Warn(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
-        if (LogLevel > ELogLevel.Warn) 
+        if (LogLevel > ELogLevel.Warn)
             return;
         Add(new(ELogLevel.Warn, o, link));
     }
 
     public void Error(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o == null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -116,22 +117,29 @@ public sealed class Logger : ILogger
 
     public void Add(LogMessage m)
     {
-        if (m == null || m.Level < LogLevel || m.RawText == null)
+        if (IsDisposed || m is null)
+            return;
+        if (m.Level < LogLevel || m.RawText is null)
             return;
         if (Prefix != null)
             m.Prefix = Prefix;
         if (Suffix != null)
             m.Suffix = Suffix;
-        IReadOnlyList<(string, string)> replacements = Replacements;
-        if(replacements?.Count > 0)
-            foreach((string value, string token) in Replacements)
-                if(m.RawText.Contains(value))
-                    m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
-        try { OnMessage?.Invoke(this, m); }
+        try
+        {
+            IReadOnlyList<(string, string)> rep = Replacements;
+            if (rep != null && rep.Count > 0)
+                foreach ((string value, string token) in rep ?? [])
+                    if (!value.IsNullOrEmpty() && (m?.RawText?.Contains(value) ?? false))
+                        m.RawText = m.RawText?.Replace(value ?? string.Empty, token ?? string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
+
+            OnMessage?.Invoke(this, m);
+        }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
     #region IAsyncDisposable
-    public async ValueTask DisposeAsync() { }
+    public volatile bool IsDisposed;
+    public async ValueTask DisposeAsync() { IsDisposed = true; }
     #endregion
 }

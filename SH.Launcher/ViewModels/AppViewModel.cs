@@ -35,11 +35,13 @@ public partial class AppViewModel : ObservableObject
         State.SetLogReplacements(null);
     }
 
+
     public static AppViewModel State { get; } // Singleton
     public static DispatchQueue Dispatcher { get; } = new(); // Singleton
 
     // LOG:
-    public FileLogger Log { get; } = new FileLogger(SpaceHavenLauncher.AppLogPath);
+    public LoggerCollection Log { get; }
+    public FileLogger FileLogger { get; } = new FileLogger(SpaceHavenLauncher.AppLogPath);
 
     [ObservableProperty]
     private ObservableCollection<LogMessage> _LogHistory = [];
@@ -158,9 +160,14 @@ public partial class AppViewModel : ObservableObject
 
     public AppViewModel()
     {
+        FileLogger = new FileLogger(SpaceHavenLauncher.AppLogPath);
+        Log = new LoggerCollection(FileLogger);
+
         AppSettings.PropertyChanged -= PersistentSettings_PropertyChanged;
         AppSettings.PropertyChanged += PersistentSettings_PropertyChanged;
+
         UpdateLeftPanelIsCollapsed();
+
         InitializeProgress = new ProgressInfo("Initialization",
         [
             (BackupProgress, 10),
@@ -168,6 +175,7 @@ public partial class AppViewModel : ObservableObject
             (CacheProgress, 10),
             (LoadModsProgress, 30),
         ]);
+
         BackupProgress.Max = 10;
         TemplateProgress.Max = 10;
         CacheProgress.Max = 10;

@@ -50,34 +50,34 @@ public sealed class BatchLogger : ILogger
 
     public void Debug(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
-        if (LogLevel > ELogLevel.Debug) 
+        if (LogLevel > ELogLevel.Debug)
             return;
         Add(new(ELogLevel.Debug, o));
     }
 
     public void Info(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
-        if (LogLevel > ELogLevel.Info) 
+        if (LogLevel > ELogLevel.Info)
             return;
         Add(new(ELogLevel.Info, o));
     }
 
     public void Success(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
-        if (LogLevel > ELogLevel.Success) 
+        if (LogLevel > ELogLevel.Success)
             return;
         Add(new(ELogLevel.Success, o));
     }
 
     public void Warn(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -86,7 +86,7 @@ public sealed class BatchLogger : ILogger
 
     public void Error(object o = null)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -96,7 +96,7 @@ public sealed class BatchLogger : ILogger
 
     public void Debug(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Debug)
             return;
@@ -105,7 +105,7 @@ public sealed class BatchLogger : ILogger
 
     public void Info(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Info)
             return;
@@ -114,7 +114,7 @@ public sealed class BatchLogger : ILogger
 
     public void Success(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Success)
             return;
@@ -123,7 +123,7 @@ public sealed class BatchLogger : ILogger
 
     public void Warn(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Warn)
             return;
@@ -132,7 +132,7 @@ public sealed class BatchLogger : ILogger
 
     public void Error(object o, string link)
     {
-        if (o == null)
+        if (IsDisposed || o is null)
             return;
         if (LogLevel > ELogLevel.Error)
             return;
@@ -142,22 +142,27 @@ public sealed class BatchLogger : ILogger
 
     public void Add(LogMessage m)
     {
-        if (IsDisposed)
+        if (IsDisposed || m is null)
             return;
-        if (m == null || m.Level < LogLevel || m.RawText == null)
+        if (m.Level < LogLevel || m.RawText is null)
             return;
         if (Prefix != null)
             m.Prefix = Prefix;
         if (Suffix != null)
             m.Suffix = Suffix;
-        IReadOnlyList<(string, string)> replacements = Replacements;
-        if (replacements?.Count > 0)
-            foreach ((string value, string token) in Replacements)
-                if (m.RawText.Contains(value))
-                    m.RawText = m.RawText.Replace(value, token, StringComparison.OrdinalIgnoreCase);
-        if (!Messages.Writer.TryWrite(m))
-            return;
-        try { OnMessage?.Invoke(this, m); }
+        try
+        {
+            IReadOnlyList<(string, string)> rep = Replacements;
+            if (rep != null && rep.Count > 0)
+                foreach ((string value, string token) in rep ?? [])
+                    if (!value.IsNullOrEmpty() && (m?.RawText?.Contains(value) ?? false))
+                        m.RawText = m.RawText?.Replace(value ?? string.Empty, token ?? string.Empty, StringComparison.OrdinalIgnoreCase) ?? string.Empty;
+
+            if (!Messages.Writer.TryWrite(m))
+                return;
+
+            OnMessage?.Invoke(this, m);
+        }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }
     }
 
@@ -170,13 +175,16 @@ public sealed class BatchLogger : ILogger
             List<LogMessage> batch = new(1024);
             await foreach (LogMessage message in Messages.Reader.ReadAllAsync(CTS.Token))
             {
-                // Dequeue all
-                batch.Add(message);
+                if (message != null)
+                    batch.Add(message);
 
                 await Task.Delay(Interval, CTS.Token);
 
-                while (Messages.Reader.TryRead(out LogMessage extra))
+                while (!IsDisposed && Messages.Reader.TryRead(out LogMessage extra))
                     batch.Add(extra);
+
+                if (IsDisposed)
+                    return;
 
                 if (batch.Count > 0)
                 {
@@ -184,8 +192,14 @@ public sealed class BatchLogger : ILogger
                     {
                         OnMessages?.Invoke(this, new List<LogMessage>(batch));
                         if (OnMessage != null)
+                        {
+                            if (IsDisposed)
+                                return;
                             foreach (LogMessage m in batch)
+                            {
                                 OnMessage?.Invoke(this, m);
+                            }
+                        }
                     }
                     catch (Exception ex) when (ex.IsOperationCancelled()) { throw; }
                     catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex); }

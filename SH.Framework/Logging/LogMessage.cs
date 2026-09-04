@@ -12,14 +12,16 @@ public sealed class LogMessage
     {
         SeqNum = Interlocked.Increment(ref GlobalSeqNum);
         Level = level;
-        RawText = $"{o}";
+        try { RawText = $"{o}"; }
+        catch { RawText = null; }
     }
 
     public LogMessage(ELogLevel level, object o, string link)
     {
         Level = level;
         SeqNum = Interlocked.Increment(ref GlobalSeqNum);
-        RawText = $"{o}";
+        try { RawText = $"{o}"; }
+        catch { RawText = null; }
         Link = link;
     }
 
