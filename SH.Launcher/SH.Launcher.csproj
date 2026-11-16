@@ -55,8 +55,11 @@
     <None Update="INSTALL.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="LauncherAgent.class">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="LauncherAgent.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Learning\000-Welcome!.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

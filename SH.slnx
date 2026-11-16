@@ -3,7 +3,10 @@
     <File Path=".github/workflows/release.yml" />
   </Folder>
   <Folder Name="/JAVA/">
-    <File Path="JAVA/LauncherAgent.java" />
+    <File Path="JAVA/LauncherAgent (new version for Java 8 and 11).jar" />
+    <File Path="JAVA/LauncherAgent (old version for Java 8).jar" />
+    <File Path="JAVA/LauncherAgent11.java" />
+    <File Path="JAVA/LauncherAgent8.java" />
     <File Path="JAVA/MANIFEST.MF" />
     <File Path="JAVA/README.md" />
   </Folder>

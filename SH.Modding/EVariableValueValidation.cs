@@ -1,18 +1,6 @@
 ﻿namespace SH.Modding;
 
-public enum EVariableType
-{
-    // All of these are nullable!
-    String = 0,
-    Char,
-    Boolean,
-    Integer,
-    Long,
-    Double,
-    Enum,
-}
-
-public enum EVariableValidation
+public enum EVariableValueValidation
 {
     None = 0, // no validation
     NotNullOrEmpty, // (String and Char) not null or ""

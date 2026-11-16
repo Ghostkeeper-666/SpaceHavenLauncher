@@ -2208,7 +2208,7 @@ public sealed class ModBuilder : IAsyncDisposable
                 {
                     VarInfo varInfo = new();
                     varInfo.Name = var.Name;
-                    varInfo.Type = var.Type;
+                    varInfo.ValueType = var.ValueType;
                     varInfo.Value = var.StrValue;
                     modInfo.Vars.Add(varInfo);
                 }

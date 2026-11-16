@@ -4,18 +4,35 @@ The java agent **LauncherAgent** adds modded JAR files listed in the `jars.txt` 
 
 *Ghostkeeper*
 
-## JRE 8 SDK Details
+## JDK 8 Downloads (used by the game until June 2026)
 
-**Java Development Kit**: Azul Zulu OpenJDK 8u472
-**Version**: Zulu 8.90.0.19-CA
-**Build**: OpenJDK 8u472-b08
-**Platform**: Windows x64
+**Java Version**: Azul Zulu OpenJDK 8u472  
+**Zulu Version**: 8.90.0.19-CA  
+**Build**: OpenJDK 8u472-b08  
+**Architecture**: x64
 
-## JRE 8 SDK Download
+- [JDK 8 - Windows download](https://cdn.azul.com/zulu/bin/zulu8.90.0.19-ca-jdk8.0.472-win_x64.zip)
+- [JDK 8 - macOS download](https://cdn.azul.com/zulu/bin/zulu8.90.0.19-ca-jdk8.0.472-macosx_x64.zip)
+- [JDK 8 - Linux download](https://cdn.azul.com/zulu/bin/zulu8.90.0.19-ca-jdk8.0.472-linux_x64.tar.gz)
 
-[Download link](https://cdn.azul.com/zulu/bin/zulu8.90.0.19-ca-jdk8.0.472-win_x64.zip)
+## JDK 11 Downloads (used by the game until June 2026, but only on MacOS so far...)
 
-## Compile agent class
+**Java Version**: Azul Zulu OpenJDK 11.0.27  
+**Zulu Version**: 11.80.21-CA  
+**Build**: OpenJDK 11.0.27+6-LTS  
+**Architecture**: x64
+
+- [JDK 11 - Windows download](https://cdn.azul.com/zulu/bin/zulu11.80.21-ca-jdk11.0.27-win_x64.zip)
+- [JDK 11 - macOS download](https://cdn.azul.com/zulu/bin/zulu11.80.21-ca-jdk11.0.27-macosx_x64.zip)
+- [JDK 11 - Linux download](https://cdn.azul.com/zulu/bin/zulu11.80.21-ca-jdk11.0.27-linux_x64.tar.gz)
+
+## Compile agent class - use JDK 11 for that
+
+Use the JDK 11, with compatibility for Java 8:
+
+`C:\SH\jre\bin\javac.exe --release 8 -d . LauncherAgent.java`
+
+If for some reason you still want to use the JDK 8:
 
 `C:\SH\jre\bin\javac.exe -source 8 -target 8 -d . LauncherAgent.java`
 

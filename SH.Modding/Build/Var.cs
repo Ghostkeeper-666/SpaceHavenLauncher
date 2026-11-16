@@ -12,16 +12,20 @@ internal sealed class Var
         Data = data ?? throw new ArgumentNullException(nameof(data));
         Name = Data?.Name?.Trim()?.Trim('{', '}') ?? throw new ArgumentException(nameof(Name));
         BracedName = $"{{{Name}}}";
-        StrValue = Data.CurrentValue ?? string.Empty;
         Description = Data.Description ?? string.Empty;
+        StrValue = Data.CurrentValue ?? string.Empty;
+        ValueType = Data.ValueType;
+        IsSecret = Data.IsSecret;
     }
 
     private VarData Data { get; }
+
     public string Name { get; }
-    public EVariableType Type { get; } = EVariableType.String;
     public string BracedName { get; }
-    public string StrValue { get; }
     public string Description { get; }
+    public string StrValue { get; }
+    public EVariableValueType ValueType { get; } = EVariableValueType.String;
+    public bool IsSecret { get; }
 
     public bool TryGetIntValue(out int value) =>
         int.TryParse(StrValue, out value);

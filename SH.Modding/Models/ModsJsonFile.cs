@@ -132,12 +132,12 @@ public sealed class VarInfo
     public string Name { get; set; }
 
     [JsonPropertyOrder(2)]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public EVariableType Type { get; set; }
-
-    [JsonPropertyOrder(3)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string Value { get; set; }
+
+    [JsonPropertyOrder(3)]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public EVariableValueType ValueType { get; set; }
 
 }

@@ -13,13 +13,9 @@ public sealed class VarData
     public string Description { get; set; }
     public int Line { get; set; }
 
+    public EVariableValueType ValueType { get; set; }
+    public EVariableValueValidation Validation { get; set; }
     public bool IsSecret { get; set; }
-    public EVariableType Type { get; set; }
-    public EVariableValidation Validation { get; set; }
-    
-
-
-
 
     public override string ToString() => $@"{Name} = ""{CurrentValue}""";
 }
